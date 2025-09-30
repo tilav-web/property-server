@@ -99,4 +99,25 @@ export class UserController {
       );
     }
   }
+
+  @Post('/resend-otp')
+  async resendOtp(@Body() { id }: { id: string }) {
+    try {
+      const result = await this.service.resendOtp(id);
+      return result;
+    } catch (error) {
+      console.error(error);
+
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
+      if (error instanceof Error) {
+        throw new InternalServerErrorException(error.message);
+      }
+      throw new InternalServerErrorException(
+        "Tizimga kirishda xatolik ketdi. Iltimos birozdan so'ng qayta urinib ko'ring!",
+      );
+    }
+  }
 }

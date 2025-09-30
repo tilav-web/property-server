@@ -8,7 +8,7 @@ interface Email {
 
 @Injectable()
 export class MailService {
-  constructor(private mailerService: MailerService) {}
+  constructor(private readonly mailerService: MailerService) {}
 
   async sendOtpEmail({ to, code }: { to: FlattenMaps<Email>; code: string }) {
     const emailAddress = to.email;

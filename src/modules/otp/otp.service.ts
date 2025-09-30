@@ -7,14 +7,14 @@ import { Model, Types } from 'mongoose';
 export class OtpService {
   constructor(@InjectModel(Otp.name) private model: Model<OtpDocument>) {}
   async create({ code, user }: { code: string; user: string }) {
-    return this.model.create({ code, user });
+    return this.model.create({ code, user: new Types.ObjectId(user) });
   }
 
   async deleteMany(user: string) {
-    return this.model.deleteMany({ user });
+    return this.model.deleteMany({ user: new Types.ObjectId(user) });
   }
 
-  async findByUser(id: string) {
-    return this.model.findOne({ user: new Types.ObjectId(id) });
+  async findByUser(user: string) {
+    return this.model.findOne({ user: new Types.ObjectId(user) });
   }
 }

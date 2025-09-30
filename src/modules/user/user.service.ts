@@ -3,6 +3,7 @@ import {
   ConflictException,
   Injectable,
   InternalServerErrorException,
+  NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { User, UserDocument } from './user.schema';
@@ -33,8 +34,11 @@ export class UserService {
     if (!password) throw new BadRequestException('Parol kiritilmagan!');
 
     const user = await this.model
-      .findOne({ email: { value: email, isVerified: true } })
-      .lean();
+      .findOne({
+        'email.value': email,
+        'email.isVerified': true,
+      })
+      .select('+password');
     if (!user)
       throw new BadRequestException(
         'Foydalanuvchi mavjut emas. Email-ni tekshiring!',
@@ -60,12 +64,13 @@ export class UserService {
       { expiresIn: '7d' },
     );
 
-    return { user, access_token, refresh_token };
+    const { password: _, ...userWithoutPassword } = user.toObject();
+    void _;
+    return { user: userWithoutPassword, access_token, refresh_token };
   }
 
   async register({ email, role, password }: CreateUserDto) {
-    const existingUser = await this.model.findOne({ email: { value: email } });
-
+    const existingUser = await this.model.findOne({ 'email.value': email });
     const code = generateOtp();
     const hashPassword = await bcrypt.hash(password, 10);
 
@@ -142,6 +147,11 @@ export class UserService {
         "Sizga tegishli kod topilmadi, qayta ro'yhatdan o'ting",
       );
 
+    user.email.isVerified = true;
+    const saveUser = await user.save();
+
+    await this.otpService.deleteMany(id);
+
     const access_token = this.jwtService.sign(
       {
         _id: user._id,
@@ -158,6 +168,34 @@ export class UserService {
       { expiresIn: '7d' },
     );
 
-    return { user, access_token, refresh_token };
+    return { user: saveUser, access_token, refresh_token };
+  }
+
+  async resendOtp(id: string) {
+    const user = await this.model.findById(id).lean();
+    if (!user) {
+      throw new NotFoundException('Foydalanuvchi topilmadi!');
+    }
+
+    await this.otpService.deleteMany(id);
+
+    const code = generateOtp();
+
+    // DB ga saqlaymiz
+    await this.otpService.create({
+      code,
+      user: id,
+    });
+
+    return this.mailService
+      .sendOtpEmail({ to: { email: user.email.value }, code })
+      .then(() => {
+        return { message: 'Tasdiqlash kodi yuborildi!', user };
+      })
+      .catch(() => {
+        throw new InternalServerErrorException(
+          `Email-ga habar yuborishda xatolik!`,
+        );
+      });
   }
 }
