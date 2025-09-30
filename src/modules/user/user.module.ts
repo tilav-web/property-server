@@ -1,0 +1,28 @@
+import { Module } from '@nestjs/common';
+import { UserService } from './user.service';
+import { MongooseModule } from '@nestjs/mongoose';
+import { User, UserSchema } from './user.schema';
+import { UserController } from './user.controller';
+import { JwtModule } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
+import { JwtStrategy } from './guards/jwt.strategy';
+import { OtpModule } from '../otp/otp.module';
+import { MailModule } from '../mailer/mail.module';
+
+@Module({
+  imports: [
+    MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
+    JwtModule.registerAsync({
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => ({
+        global: true,
+        secret: config.get<string>('JWT_SECRET'),
+      }),
+    }),
+    OtpModule,
+    MailModule,
+  ],
+  controllers: [UserController],
+  providers: [UserService, JwtStrategy],
+})
+export class UserModule {}

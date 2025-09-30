@@ -1,0 +1,163 @@
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  InternalServerErrorException,
+} from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
+import { User, UserDocument } from './user.schema';
+import { Model } from 'mongoose';
+import * as bcrypt from 'bcrypt';
+import { JwtService } from '@nestjs/jwt';
+import { CreateUserDto } from './dto/create-user.dto';
+import { EnumRole } from 'src/enums/role.enum';
+import { generateOtp } from 'src/utils/generate-otp';
+import { OtpService } from '../otp/otp.service';
+import { MailService } from '../mailer/mail.service';
+
+@Injectable()
+export class UserService {
+  constructor(
+    @InjectModel(User.name) private model: Model<UserDocument>,
+    private readonly jwtService: JwtService,
+    private readonly otpService: OtpService,
+    private readonly mailService: MailService,
+  ) {}
+  async findById(id: string) {
+    return this.model.findById(id);
+  }
+
+  async login({ email, password }: { email: string; password: string }) {
+    if (!email)
+      throw new BadRequestException('Email-ni tekshiring. Email kiritilmagan!');
+    if (!password) throw new BadRequestException('Parol kiritilmagan!');
+
+    const user = await this.model
+      .findOne({ email: { value: email, isVerified: true } })
+      .lean();
+    if (!user)
+      throw new BadRequestException(
+        'Foydalanuvchi mavjut emas. Email-ni tekshiring!',
+      );
+
+    const isMatch = await bcrypt.compare(password, user.password);
+
+    if (!isMatch) throw new BadRequestException('Parolda xatolik bor!');
+
+    const access_token = this.jwtService.sign(
+      {
+        _id: user._id,
+        role: user.role,
+      },
+      { expiresIn: '15m' },
+    );
+
+    const refresh_token = this.jwtService.sign(
+      {
+        _id: user._id,
+        role: user.role,
+      },
+      { expiresIn: '7d' },
+    );
+
+    return { user, access_token, refresh_token };
+  }
+
+  async register({ email, role, password }: CreateUserDto) {
+    const existingUser = await this.model.findOne({ email: { value: email } });
+
+    const code = generateOtp();
+    const hashPassword = await bcrypt.hash(password, 10);
+
+    if (existingUser) {
+      if (existingUser.email.isVerified) {
+        throw new ConflictException(
+          'Bu email bilan foydalanuvchi allaqachon mavjud!',
+        );
+      }
+      await this.otpService.deleteMany(existingUser._id as string);
+      await this.otpService.create({
+        code,
+        user: existingUser._id as string,
+      });
+      existingUser.password = hashPassword;
+      existingUser.role = role ?? EnumRole.PHYSICAL;
+      const saveUser = await existingUser.save();
+
+      return this.mailService
+        .sendOtpEmail({ to: { email: existingUser.email.value }, code })
+        .then(() => {
+          return { message: 'Tasdiqlash kodi yuborildi!', user: saveUser };
+        })
+        .catch(() => {
+          throw new InternalServerErrorException(
+            `Email-ga habar yuborishda xatolik!`,
+          );
+        });
+    }
+
+    const user = await this.model.create({
+      email: {
+        value: email,
+        isVerified: false,
+      },
+      password: hashPassword,
+      role: role ?? EnumRole.PHYSICAL,
+    });
+
+    await this.otpService.create({
+      code,
+      user: user._id as string,
+    });
+
+    this.mailService
+      .sendOtpEmail({ to: { email: user.email.value }, code })
+      .then(() => {
+        return { message: 'Tasdiqlash kodi yuborildi!', user };
+      })
+      .catch(() => {
+        throw new InternalServerErrorException(
+          `Email-ga habar yuborishda xatolik!`,
+        );
+      });
+
+    return { message: 'Tasdiqlash kodi yuborildi!', user };
+  }
+
+  async confirmOtp({ id, code }: { id: string; code: string }) {
+    const otp = await this.otpService.findByUser(id);
+    if (!otp)
+      throw new BadRequestException(
+        'Tasdiqlash kodi eskirgan, undan 1 daqiqa ichida foydalanish kerak!',
+      );
+
+    if (otp.code !== code)
+      throw new BadRequestException(
+        "Tasdiqlash kodida xatolik bor, qayta urinib ko'ring",
+      );
+
+    const user = await this.model.findById(id);
+    if (!user)
+      throw new BadRequestException(
+        "Sizga tegishli kod topilmadi, qayta ro'yhatdan o'ting",
+      );
+
+    const access_token = this.jwtService.sign(
+      {
+        _id: user._id,
+        role: user.role,
+      },
+      { expiresIn: '15m' },
+    );
+
+    const refresh_token = this.jwtService.sign(
+      {
+        _id: user._id,
+        role: user.role,
+      },
+      { expiresIn: '7d' },
+    );
+
+    return { user, access_token, refresh_token };
+  }
+}
