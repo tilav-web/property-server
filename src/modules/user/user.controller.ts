@@ -8,7 +8,6 @@ import {
   Put,
   Req,
   Res,
-  UnauthorizedException,
   UploadedFile,
   UseGuards,
   UseInterceptors,
@@ -138,10 +137,7 @@ export class UserController {
   ) {
     try {
       const refresh_token = req.cookies['refresh_token'];
-      if (!refresh_token) {
-        throw new UnauthorizedException('Refresh token not found');
-      }
-
+      if (!refresh_token) return null;
       const result = await this.service.refresh(refresh_token);
       return result;
     } catch (error) {
@@ -209,6 +205,35 @@ export class UserController {
       if (error instanceof Error) {
         throw new InternalServerErrorException(error.message);
       }
+      throw new InternalServerErrorException(
+        "Xatolik ketdi. Birozdan so'ng qayta urinib ko'ring!",
+      );
+    }
+  }
+
+  @Post('/logout')
+  logout(@Res() res: Response) {
+    try {
+      res.clearCookie('refresh_token', {
+        httpOnly: process.env.NODE_ENV === 'production',
+        secure: true,
+        sameSite: 'strict',
+        path: '/',
+      });
+      return res.status(200).json({
+        message: 'Successfully logged out',
+      });
+    } catch (error) {
+      console.error('Logout error:', error);
+
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
+      if (error instanceof Error) {
+        throw new InternalServerErrorException(error.message);
+      }
+
       throw new InternalServerErrorException(
         "Xatolik ketdi. Birozdan so'ng qayta urinib ko'ring!",
       );

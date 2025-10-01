@@ -181,7 +181,11 @@ export class UserService {
       throw new NotFoundException('Foydalanuvchi topilmadi!');
     }
 
-    await this.otpService.deleteMany(id);
+    const oldOtp = await this.otpService.findByUser(id);
+    if (oldOtp)
+      throw new ConflictException(
+        `${user.email.value} manziliga kod yuborilgan!`,
+      );
 
     const code = generateOtp();
 
