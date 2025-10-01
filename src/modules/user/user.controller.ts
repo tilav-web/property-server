@@ -1,14 +1,25 @@
 import {
   Body,
   Controller,
+  Get,
   HttpException,
   InternalServerErrorException,
   Post,
+  Put,
+  Req,
   Res,
+  UnauthorizedException,
+  UploadedFile,
+  UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { type Response } from 'express';
 import { CreateUserDto } from './dto/create-user.dto';
+import { type IRequestCustom } from 'src/interfaces/custom-request.interface';
+import { AuthGuard } from '@nestjs/passport';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { UpdateUserDto } from './dto/update-user.dto';
 
 @Controller('users')
 export class UserController {
@@ -117,6 +128,89 @@ export class UserController {
       }
       throw new InternalServerErrorException(
         "Tizimga kirishda xatolik ketdi. Iltimos birozdan so'ng qayta urinib ko'ring!",
+      );
+    }
+  }
+
+  @Post('/refresh-token')
+  async refresh(
+    @Req() req: IRequestCustom & { cookies: { refresh_token?: string } },
+  ) {
+    try {
+      const refresh_token = req.cookies['refresh_token'];
+      if (!refresh_token) {
+        throw new UnauthorizedException('Refresh token not found');
+      }
+
+      const result = await this.service.refresh(refresh_token);
+      return result;
+    } catch (error) {
+      console.error(error);
+
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
+      if (error instanceof Error) {
+        throw new InternalServerErrorException(error.message);
+      }
+      throw new InternalServerErrorException(
+        "Xatolik ketdi. Birozdan so'ng qayta urinib ko'ring!",
+      );
+    }
+  }
+
+  @Get('/me')
+  @UseGuards(AuthGuard('jwt'))
+  async findMe(@Req() req: IRequestCustom) {
+    try {
+      const user = req.user;
+      const result = await this.service.findById(user?._id as string);
+      return result;
+    } catch (error) {
+      console.error(error);
+
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
+      if (error instanceof Error) {
+        throw new InternalServerErrorException(error.message);
+      }
+      throw new InternalServerErrorException(
+        "Xatolik ketdi. Birozdan so'ng qayta urinib ko'ring!",
+      );
+    }
+  }
+
+  @Put('/')
+  @UseGuards(AuthGuard('jwt'))
+  @UseInterceptors(FileInterceptor('avatar'))
+  async update(
+    @Body() dto: UpdateUserDto,
+    @Req() req: IRequestCustom,
+    @UploadedFile() avatar: Express.Multer.File,
+  ) {
+    try {
+      const user = req.user;
+      const result = await this.service.update({
+        ...dto,
+        user: user?._id as string,
+        avatar,
+      });
+      return result;
+    } catch (error) {
+      console.error(error);
+
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
+      if (error instanceof Error) {
+        throw new InternalServerErrorException(error.message);
+      }
+      throw new InternalServerErrorException(
+        "Xatolik ketdi. Birozdan so'ng qayta urinib ko'ring!",
       );
     }
   }

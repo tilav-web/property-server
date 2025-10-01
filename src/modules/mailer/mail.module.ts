@@ -12,7 +12,7 @@ import { MailService } from './mail.service';
       useFactory: (configService: ConfigService) => ({
         transport: {
           host: configService.get('EMAIL_HOST'),
-          port: configService.get('EMAIL_PORT'),
+          port: Number(configService.get('EMAIL_PORT')),
           secure: false,
           auth: {
             user: configService.get('EMAIL_USERNAME'),

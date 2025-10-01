@@ -1,0 +1,17 @@
+# Git papkasi
+.git
+.github
+
+# O'rnatilgan kutubxonalar (konteyner ichida qayta o'rnatiladi)
+node_modules
+
+# Build natijalari (konteyner ichida qayta yaratiladi)
+dist
+
+# Log fayllar
+npm-debug.log
+
+# Docker fayllarining o'zi
+Dockerfile
+.dockerignore
+docker-compose.yml

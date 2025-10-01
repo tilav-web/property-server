@@ -15,6 +15,9 @@ import { EnumRole } from 'src/enums/role.enum';
 import { generateOtp } from 'src/utils/generate-otp';
 import { OtpService } from '../otp/otp.service';
 import { MailService } from '../mailer/mail.service';
+import { UpdateUserDto } from './dto/update-user.dto';
+import { FileService } from '../file/file.service';
+import { FileDocument } from '../file/file.schema';
 
 @Injectable()
 export class UserService {
@@ -23,6 +26,7 @@ export class UserService {
     private readonly jwtService: JwtService,
     private readonly otpService: OtpService,
     private readonly mailService: MailService,
+    private readonly fileService: FileService,
   ) {}
   async findById(id: string) {
     return this.model.findById(id);
@@ -197,5 +201,52 @@ export class UserService {
           `Email-ga habar yuborishda xatolik!`,
         );
       });
+  }
+
+  async refresh(refresh_token: string) {
+    const payload = await this.jwtService.verifyAsync<{
+      _id: string;
+      role: EnumRole;
+    }>(refresh_token);
+
+    const access_token = this.jwtService.sign({
+      _id: payload._id,
+      role: payload.role,
+    });
+
+    return access_token;
+  }
+
+  async update({
+    first_name,
+    last_name,
+    password,
+    phone,
+    avatar,
+    user,
+  }: UpdateUserDto & { user: string; avatar?: Express.Multer.File }) {
+    let userAvatar: FileDocument | undefined;
+    const userData = await this.model.findById(user);
+    if (!userData) throw new BadRequestException("Tizimdan ro'yhatdan o'ting");
+    if (avatar) {
+      userAvatar = await this.fileService.updateUserAvatar({
+        userId: user,
+        file: avatar,
+      });
+      userData.avatar = userAvatar.file_path;
+    }
+
+    if (first_name) userData.first_name = first_name;
+    if (last_name) userData.last_name = last_name;
+    if (phone) userData.phone.value = phone;
+
+    if (password) {
+      const hashPassword = await bcrypt.hash(password, 10);
+      userData.password = hashPassword;
+    }
+
+    const saveUser = await userData.save();
+
+    return saveUser;
   }
 }

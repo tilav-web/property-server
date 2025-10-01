@@ -17,7 +17,7 @@ export const EmailSchema = SchemaFactory.createForClass(Email);
 
 @Schema({ _id: false })
 export class Phone {
-  @Prop({ type: String, sparse: true })
+  @Prop({ type: String, sparse: true, default: null })
   value: string;
   @Prop({ type: Boolean, default: false })
   isVerified: boolean;
@@ -27,17 +27,17 @@ export const PhoneSchema = SchemaFactory.createForClass(Phone);
 
 @Schema({ timestamps: true })
 export class User {
-  @Prop({ type: String })
+  @Prop({ type: String, default: null })
   first_name: string;
 
-  @Prop({ type: String })
+  @Prop({ type: String, default: null })
   last_name: string;
 
-  @Prop({ type: PhoneSchema })
+  @Prop({ type: PhoneSchema, default: { value: null, isVerified: false } })
   phone: Phone;
 
-  @Prop({ type: String })
-  photo: string;
+  @Prop({ type: String, default: null })
+  avatar: string;
 
   @Prop({ type: String, required: true, default: EnumRole.PHYSICAL })
   role: EnumRole;
