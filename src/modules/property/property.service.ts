@@ -34,6 +34,7 @@ export interface FindAllParams {
   is_guest_choice?: boolean;
   rating?: number;
   radius?: number;
+  sample?: boolean;
 }
 
 @Injectable()
@@ -83,15 +84,14 @@ export class PropertyService {
     is_guest_choice,
     rating,
     radius = 10000,
-  }: FindAllParams) {
-    // Limitni cheklash
+    sample = false,
+  }: FindAllParams & { sample?: boolean }) {
     limit = Math.min(limit, 100);
     const skip = (page - 1) * limit;
 
-    // Filter obyekti uchun aniq tip
+    // Filter obyektini yaratish
     const filter: FilterQuery<PropertyDocument> = {};
 
-    // Search
     if (search) {
       filter.$or = [
         { title: { $regex: search, $options: 'i' } },
@@ -100,7 +100,6 @@ export class PropertyService {
       ];
     }
 
-    // Basic filters
     if (region) filter.region = region;
     if (district) filter.district = district;
     if (category) filter.category = category;
@@ -112,52 +111,79 @@ export class PropertyService {
     if (is_guest_choice !== undefined) filter.is_guest_choice = is_guest_choice;
     if (rating !== undefined) filter.rating = { $gte: rating };
 
-    // Geolocation
     if (coordinates && coordinates.length === 2) {
       filter['location.coordinates'] = {
         $near: {
-          $geometry: {
-            type: 'Point',
-            coordinates: coordinates,
-          },
+          $geometry: { type: 'Point', coordinates },
           $maxDistance: radius,
         },
       };
     }
 
-    const sort = {
-      is_premium: -1,
-      is_new: -1,
-      is_guest_choice: -1,
-      createdAt: -1,
-    } as const;
+    if (sample) {
+      // Hujjatlar sonini olish
+      const total = await this.model.countDocuments(filter).exec();
+      const sampleSize = Math.min(limit, total);
+      let properties: PropertyDocument[] = [];
 
-    const properties = await this.model
-      .find(filter)
-      .sort(sort)
-      .skip(skip)
-      .limit(limit)
-      .populate('videos')
-      .populate('photos')
-      .populate('region')
-      .populate('district')
-      .populate('author', '-password')
-      .lean()
-      .exec();
+      if (sampleSize > 0) {
+        // Random sample olish
+        const randomSkip = Math.max(
+          0,
+          Math.floor(Math.random() * (total - sampleSize)),
+        );
+        properties = await this.model
+          .find(filter)
+          .skip(randomSkip)
+          .limit(sampleSize)
+          .populate('author', '-password')
+          .populate('region')
+          .populate('district')
+          .populate('photos')
+          .populate('videos')
+          .lean()
+          .exec();
+      }
 
-    const total = await this.model.countDocuments(filter).exec();
-    const totalPages = Math.ceil(total / limit);
+      return {
+        properties,
+        pagination: null,
+      };
+    } else {
+      const sort = {
+        is_premium: -1,
+        is_new: -1,
+        is_guest_choice: -1,
+        createdAt: -1,
+      } as const;
 
-    return {
-      properties,
-      pagination: {
-        currentPage: page,
-        totalPages,
-        totalItems: total,
-        itemsPerPage: limit,
-        hasNextPage: page < totalPages,
-        hasPrevPage: page > 1,
-      },
-    };
+      const properties = await this.model
+        .find(filter)
+        .sort(sort)
+        .skip(skip)
+        .limit(limit)
+        .populate('author', '-password')
+        .populate('region')
+        .populate('district')
+        .populate('photos')
+        .populate('videos')
+        .lean()
+        .exec();
+
+      const total = await this.model.countDocuments(filter).exec();
+      const totalPages = Math.ceil(total / limit);
+
+      return {
+        properties,
+        pagination: {
+          currentPage: page,
+          totalPages,
+          totalItems: total,
+          itemsPerPage: limit,
+          hasNextPage: page < totalPages,
+          hasPrevPage: page > 1,
+        },
+      };
+    }
   }
 }

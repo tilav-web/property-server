@@ -97,6 +97,7 @@ export class PropertyController {
       is_guest_choice: query.is_guest_choice,
       rating,
       radius,
+      sample: query.sample,
     });
 
     return result;
