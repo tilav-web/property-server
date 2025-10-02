@@ -1,5 +1,5 @@
 export enum EnumConstructionStatus {
-  READY = 'READY',
-  UNDER_CONSTRUCTION = 'UNDER_CONSTRUCTION',
-  PLANNED = 'PLANNED',
+  READY = 'ready',
+  UNDER_CONSTRUCTION = 'under_construction',
+  PLANNED = 'planned',
 }

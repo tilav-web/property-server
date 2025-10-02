@@ -9,6 +9,8 @@ import {
   Min,
   Max,
   ValidateNested,
+  Length,
+  IsMongoId,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { EnumAmenities } from 'src/enums/amenities.enum';
@@ -22,6 +24,7 @@ class LocationDto {
   type: string;
 
   @IsArray()
+  @Type(() => Number)
   @IsNumber({}, { each: true })
   @Min(-180, { each: true })
   @Max(180, { each: true })
@@ -31,14 +34,12 @@ class LocationDto {
 export class CreatePropertyDto {
   @IsString()
   @IsNotEmpty()
-  @Min(10)
-  @Max(40)
+  @Length(10, 40)
   title: string;
 
   @IsString()
   @IsNotEmpty()
-  @Min(40)
-  @Max(140)
+  @Length(40, 140)
   description: string;
 
   @IsEnum(EnumPropertyCategory)
@@ -51,9 +52,10 @@ export class CreatePropertyDto {
 
   @IsString()
   @IsNotEmpty()
-  @Min(20)
+  @Length(20)
   address: string;
 
+  @Type(() => Number)
   @IsNumber()
   @IsNotEmpty()
   @Min(0)
@@ -63,21 +65,25 @@ export class CreatePropertyDto {
   @IsNotEmpty()
   price_type: EnumPropertyPriceType;
 
+  @Type(() => Number)
   @IsNumber()
   @IsNotEmpty()
   @Min(0)
   area: number;
 
+  @Type(() => Number)
   @IsNumber()
   @IsOptional()
   @Min(0)
   bedrooms?: number;
 
+  @Type(() => Number)
   @IsNumber()
   @IsOptional()
   @Min(0)
   bathrooms?: number;
 
+  @Type(() => Number)
   @IsNumber()
   @IsOptional()
   @Min(0)
@@ -92,38 +98,46 @@ export class CreatePropertyDto {
   @IsOptional()
   construction_status?: EnumConstructionStatus;
 
+  @Type(() => Number)
   @IsNumber()
   @IsOptional()
   @Min(1900)
   year_built?: number;
 
+  @Type(() => Number)
   @IsNumber()
   @IsOptional()
   @Min(0)
   parking_spaces?: number;
 
+  @Type(() => Boolean)
   @IsBoolean()
   @IsOptional()
   is_premium?: boolean;
 
+  @Type(() => Boolean)
   @IsBoolean()
   @IsOptional()
   is_verified?: boolean;
 
+  @Type(() => Boolean)
   @IsBoolean()
   @IsOptional()
   is_new?: boolean;
 
+  @Type(() => Boolean)
   @IsBoolean()
   @IsOptional()
   is_guest_choice?: boolean;
 
+  @Type(() => Number)
   @IsNumber()
   @IsOptional()
   @Min(0)
   @Max(5)
   rating?: number;
 
+  @Type(() => Number)
   @IsNumber()
   @IsOptional()
   @Min(0)
@@ -133,14 +147,25 @@ export class CreatePropertyDto {
   @IsOptional()
   logo?: string;
 
+  @Type(() => Date)
   @IsOptional()
   delivery_date?: Date;
 
+  @Type(() => Date)
   @IsOptional()
   sales_date?: Date;
 
+  @Type(() => Number)
   @IsNumber()
   @IsOptional()
   @Min(0)
   payment_plans?: number;
+
+  @IsMongoId()
+  @IsNotEmpty()
+  region: string;
+
+  @IsMongoId()
+  @IsNotEmpty()
+  district: string;
 }

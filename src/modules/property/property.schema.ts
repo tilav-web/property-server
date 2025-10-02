@@ -110,6 +110,12 @@ export class Property {
 
   @Prop({ type: Number, min: 0, default: 0 }) // Yangi
   payment_plans: number; // To'lov rejalari soni
+
+  @Prop({ type: Types.ObjectId, ref: 'Region', required: true })
+  region: Types.ObjectId;
+
+  @Prop({ type: Types.ObjectId, ref: 'District', required: true })
+  district: Types.ObjectId;
 }
 
 export const PropertySchema = SchemaFactory.createForClass(Property);

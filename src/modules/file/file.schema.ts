@@ -1,12 +1,12 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
 
-export type FileDocument = Document & File;
-
 export enum FileType {
   AVATAR = 'User',
+  PROPERTY = 'Property',
 }
 
+export type FileDocument = Document & File;
 @Schema({ timestamps: true })
 export class File {
   @Prop({ type: Types.ObjectId, required: true })

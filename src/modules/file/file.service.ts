@@ -6,7 +6,7 @@ import {
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { File, FileDocument, FileType } from './file.schema';
-import { join } from 'path';
+import { join, extname } from 'path';
 import { promises as fs } from 'fs';
 import sharp from 'sharp';
 import { v4 as uuidv4 } from 'uuid';
@@ -25,8 +25,21 @@ interface MulterFile {
 
 @Injectable()
 export class FileService {
-  private readonly uploadFolder = join(process.cwd(), 'uploads', 'avatars');
-  private readonly allowedMimeTypes = ['image/jpeg', 'image/png', 'image/gif'];
+  private readonly baseUploadFolder = join(process.cwd(), 'uploads');
+  private readonly avatarUploadFolder = join(this.baseUploadFolder, 'avatars');
+  private readonly propertyUploadFolder = join(this.baseUploadFolder, 'images');
+
+  private readonly allowedImageMimeTypes = [
+    'image/jpeg',
+    'image/png',
+    'image/gif',
+    'image/webp',
+  ];
+  private readonly allowedVideoMimeTypes = [
+    'video/mp4',
+    'video/webm',
+    'video/quicktime',
+  ];
 
   constructor(@InjectModel(File.name) private fileModel: Model<FileDocument>) {}
 
@@ -42,18 +55,22 @@ export class FileService {
     }
 
     try {
-      // Eski avatar faylini topish
       const oldAvatar = await this.fileModel.findOne({
-        document_id: new Types.ObjectId(userId),
+        document_id: userId,
         document_type: FileType.AVATAR,
       });
 
-      // Yangi avatar yaratish
-      const newAvatar = await this.processAndSaveAvatar(userId, file);
+      const newAvatar = await this.processAndSaveFile(
+        userId,
+        file,
+        'avatar',
+        FileType.AVATAR,
+        this.avatarUploadFolder,
+        this.allowedImageMimeTypes,
+      );
 
-      // Eski avatar faylini o'chirish
       if (oldAvatar) {
-        await this.deleteAvatarFile(oldAvatar).catch((error: unknown) => {
+        await this.deleteFileRecordAndFs(oldAvatar).catch((error: unknown) => {
           console.error(
             `Eski avatar o'chirishda xato: ${
               error instanceof Error ? error.message : "Noma'lum xato"
@@ -72,79 +89,170 @@ export class FileService {
     }
   }
 
-  private async processAndSaveAvatar(
-    userId: string,
+  async uploadPropertyFiles(
+    documentId: string,
+    files: {
+      banner?: MulterFile[];
+      photos?: MulterFile[];
+      videos?: MulterFile[];
+    },
+  ): Promise<FileDocument[]> {
+    if (!Types.ObjectId.isValid(documentId)) {
+      throw new BadRequestException('Yaroqsiz mulk ID');
+    }
+
+    const uploadedFiles: FileDocument[] = [];
+
+    // Handle banner (max 1)
+    if (files.banner && files.banner.length > 0) {
+      if (files.banner.length > 1) {
+        throw new BadRequestException(
+          'Faqat bitta banner rasmi yuklanishi mumkin.',
+        );
+      }
+      const bannerFile = await this.processAndSaveFile(
+        documentId,
+        files.banner[0],
+        'banner',
+        FileType.PROPERTY,
+        this.propertyUploadFolder,
+        this.allowedImageMimeTypes,
+      );
+      uploadedFiles.push(bannerFile);
+    }
+
+    // Handle photos (max 5)
+    if (files.photos && files.photos.length > 0) {
+      if (files.photos.length > 5) {
+        throw new BadRequestException(
+          "Ko'pi bilan 5 ta rasm yuklanishi mumkin.",
+        );
+      }
+      for (const photo of files.photos) {
+        const photoFile = await this.processAndSaveFile(
+          documentId,
+          photo,
+          'photo',
+          FileType.PROPERTY,
+          this.propertyUploadFolder,
+          this.allowedImageMimeTypes,
+        );
+        uploadedFiles.push(photoFile);
+      }
+    }
+
+    // Handle videos (max 5)
+    if (files.videos && files.videos.length > 0) {
+      if (files.videos.length > 5) {
+        throw new BadRequestException(
+          "Ko'pi bilan 5 ta video yuklanishi mumkin.",
+        );
+      }
+      for (const video of files.videos) {
+        const videoFile = await this.processAndSaveFile(
+          documentId,
+          video,
+          'video',
+          FileType.PROPERTY,
+          this.propertyUploadFolder,
+          [], // No image processing for videos
+          this.allowedVideoMimeTypes,
+        );
+        uploadedFiles.push(videoFile);
+      }
+    }
+
+    return uploadedFiles;
+  }
+
+  private async processAndSaveFile(
+    documentId: string,
     file: MulterFile,
+    fileKey: string,
+    documentType: FileType,
+    uploadFolder: string,
+    allowedImageMimeTypes: string[],
+    allowedVideoMimeTypes: string[] = [],
   ): Promise<FileDocument> {
-    // Fayl formatini tekshirish
-    if (!this.allowedMimeTypes.includes(file.mimetype)) {
+    const isImage = allowedImageMimeTypes.includes(file.mimetype);
+    const isVideo = allowedVideoMimeTypes.includes(file.mimetype);
+
+    if (!isImage && !isVideo) {
       throw new BadRequestException(
-        `Faqat ${this.allowedMimeTypes.join(', ')} formatlari qabul qilinadi`,
+        `Faqat ${[...allowedImageMimeTypes, ...allowedVideoMimeTypes].join(', ')} formatlari qabul qilinadi`,
       );
     }
 
-    // Fayl hajmini tekshirish (masalan, 5MB limit)
-    const maxFileSize = 5 * 1024 * 1024; // 5MB
+    const maxFileSize = 20 * 1024 * 1024; // 20MB for properties
     if (file.size > maxFileSize) {
       throw new BadRequestException(
-        "Fayl hajmi 5MB dan katta bo'lmasligi kerak",
+        "Fayl hajmi 20MB dan katta bo'lmasligi kerak",
       );
     }
 
-    // Upload papkasini yaratish
-    await fs.mkdir(this.uploadFolder, { recursive: true });
+    await fs.mkdir(uploadFolder, { recursive: true });
 
-    // Fayl nomini generatsiya qilish
-    const fileName = `avatar-${userId}-${uuidv4()}.webp`;
-    const filePath = join(this.uploadFolder, fileName);
+    const fileExtension = isImage
+      ? 'webp'
+      : extname(file.originalname).toLowerCase();
+    const fileName = `${fileKey}-${uuidv4()}.${fileExtension}`;
+    const filePath = join(uploadFolder, fileName);
+    const relativeFilePath = join(
+      uploadFolder.split(this.baseUploadFolder)[1],
+      fileName,
+    );
 
     try {
-      // Rasmni optimallashtirish
-      const processedImage = await sharp(file.buffer)
-        .resize(300, 300, {
-          fit: 'cover',
-          position: 'center',
-        })
-        .webp({ quality: 80 })
-        .toBuffer();
+      let processedBuffer: Buffer;
+      let finalMimeType: string;
+      let finalSize: number;
 
-      // Faylni saqlash
-      await fs.writeFile(filePath, processedImage);
+      if (isImage) {
+        processedBuffer = await sharp(file.buffer)
+          .resize(800, 600, { fit: 'inside', withoutEnlargement: true })
+          .webp({ quality: 80 })
+          .toBuffer();
+        finalMimeType = 'image/webp';
+        finalSize = processedBuffer.length;
+      } else {
+        processedBuffer = file.buffer;
+        finalMimeType = file.mimetype;
+        finalSize = file.size;
+      }
 
-      // Bazaga yozish
+      await fs.writeFile(filePath, processedBuffer);
+
       const fileRecord = await this.fileModel.create({
-        document_id: new Types.ObjectId(userId),
-        document_type: FileType.AVATAR,
+        document_id: documentId,
+        document_type: documentType,
         file_name: fileName,
-        file_path: join('uploads', 'avatars', fileName),
-        mime_type: 'image/webp',
-        file_size: processedImage.length,
+        file_path: relativeFilePath,
+        mime_type: finalMimeType,
+        file_size: finalSize,
         original_name: file.originalname,
         metadata: {
           original_mime_type: file.mimetype,
           original_size: file.size,
-          processed: true,
-          dimensions: { width: 300, height: 300 },
+          processed: isImage,
+          dimensions: isImage ? { width: 800, height: 600 } : undefined,
         },
       });
 
       return fileRecord;
     } catch (error: unknown) {
-      // Xato yuzaga kelsa, yaratilgan faylni o'chirish
-      await fs.unlink(filePath).catch(() => {}); // Xato logging qilinmaydi
+      await fs.unlink(filePath).catch(() => {});
       throw new InternalServerErrorException(
-        `Rasmni qayta ishlashda xato: ${
+        `Faylni qayta ishlashda xato: ${
           error instanceof Error ? error.message : "Noma'lum xato"
         }`,
       );
     }
   }
 
-  private async deleteAvatarFile(avatar: FileDocument): Promise<void> {
-    const filePath = join(process.cwd(), avatar.file_path);
+  private async deleteFileRecordAndFs(fileRecord: FileDocument): Promise<void> {
+    const filePath = join(this.baseUploadFolder, fileRecord.file_path);
 
     await Promise.all([
-      // Faylni filesystemdan o'chirish
       fs.unlink(filePath).catch((error: unknown) => {
         console.warn(
           `Faylni o'chirishda xato (ehtimol fayl mavjud emas): ${
@@ -152,8 +260,7 @@ export class FileService {
           }`,
         );
       }),
-      // Bazadan o'chirish
-      this.fileModel.findByIdAndDelete(avatar._id),
+      this.fileModel.findByIdAndDelete(fileRecord._id),
     ]);
   }
 
@@ -163,7 +270,7 @@ export class FileService {
     }
 
     return this.fileModel.findOne({
-      document_id: new Types.ObjectId(userId),
+      document_id: userId,
       document_type: FileType.AVATAR,
     });
   }
@@ -175,7 +282,7 @@ export class FileService {
 
     const avatar = await this.getUserAvatar(userId);
     if (avatar) {
-      await this.deleteAvatarFile(avatar);
+      await this.deleteFileRecordAndFs(avatar);
     }
   }
 }

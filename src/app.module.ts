@@ -3,6 +3,9 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { UserModule } from './modules/user/user.module';
 import { FileModule } from './modules/file/file.module';
+import { PropertyModule } from './modules/property/property.module';
+import { RegionModule } from './modules/region/region.module';
+import { DistrictModule } from './modules/district/district.module';
 
 @Module({
   imports: [
@@ -22,6 +25,9 @@ import { FileModule } from './modules/file/file.module';
     }),
     UserModule,
     FileModule,
+    PropertyModule,
+    RegionModule,
+    DistrictModule,
   ],
 })
 export class AppModule {}
