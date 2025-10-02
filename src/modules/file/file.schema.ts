@@ -4,7 +4,7 @@ import { Document, Types } from 'mongoose';
 export type FileDocument = Document & File;
 
 export enum FileType {
-  AVATAR = 'avatar',
+  AVATAR = 'User',
 }
 
 @Schema({ timestamps: true })

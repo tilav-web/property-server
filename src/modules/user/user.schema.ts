@@ -1,7 +1,8 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
+import { Document, Types } from 'mongoose';
 import { EnumLan } from 'src/enums/lan.enum';
 import { EnumRole } from 'src/enums/role.enum';
+import { Location } from '../property/property.schema';
 
 export type UserDocument = Document & User;
 
@@ -47,6 +48,12 @@ export class User {
 
   @Prop({ type: EmailSchema, required: true })
   email: Email;
+
+  @Prop({ type: Types.ObjectId, ref: 'Region' })
+  region: Types.ObjectId;
+
+  @Prop({ type: Types.ObjectId, ref: 'District' })
+  district: Types.ObjectId;
 
   @Prop({ type: String, required: true, select: false })
   password: string;

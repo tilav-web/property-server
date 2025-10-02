@@ -1,0 +1,67 @@
+[
+  {
+    "name": "Andijon",
+    "code": "AN",
+    "location": { "type": "Point", "coordinates": [40.7821, 72.3442] }
+  },
+  {
+    "name": "Fargʻona",
+    "code": "FA",
+    "location": { "type": "Point", "coordinates": [40.3895, 71.7876] }
+  },
+  {
+    "name": "Namangan",
+    "code": "NA",
+    "location": { "type": "Point", "coordinates": [40.9983, 71.6726] }
+  },
+  {
+    "name": "Toshkent",
+    "code": "TO",
+    "location": { "type": "Point", "coordinates": [41.3111, 69.2797] }
+  },
+  {
+    "name": "Samarqand",
+    "code": "SA",
+    "location": { "type": "Point", "coordinates": [39.6542, 66.9597] }
+  },
+  {
+    "name": "Buxoro",
+    "code": "BU",
+    "location": { "type": "Point", "coordinates": [39.7747, 64.4286] }
+  },
+  {
+    "name": "Xorazm",
+    "code": "XO",
+    "location": { "type": "Point", "coordinates": [41.55, 60.6333] }
+  },
+  {
+    "name": "Navoiy",
+    "code": "NV",
+    "location": { "type": "Point", "coordinates": [40.0844, 65.3792] }
+  },
+  {
+    "name": "Qashqadaryo",
+    "code": "QA",
+    "location": { "type": "Point", "coordinates": [38.86, 65.79] }
+  },
+  {
+    "name": "Surxondaryo",
+    "code": "SU",
+    "location": { "type": "Point", "coordinates": [37.2242, 67.2783] }
+  },
+  {
+    "name": "Sirdaryo",
+    "code": "SI",
+    "location": { "type": "Point", "coordinates": [40.8447, 68.6617] }
+  },
+  {
+    "name": "Jizzax",
+    "code": "JI",
+    "location": { "type": "Point", "coordinates": [40.1167, 67.8333] }
+  },
+  {
+    "name": "Qoraqalpogʻiston Respublikasi",
+    "code": "QR",
+    "location": { "type": "Point", "coordinates": [42.4667, 59.6] }
+  }
+]
