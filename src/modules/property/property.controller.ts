@@ -8,6 +8,9 @@ import {
   UseGuards,
   Get,
   Query,
+  InternalServerErrorException,
+  HttpException,
+  Param,
 } from '@nestjs/common';
 import { PropertyService, type FindAllParams } from './property.service';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
@@ -38,68 +41,121 @@ export class PropertyController {
     @Body() dto: CreatePropertyDto,
     @Req() req: IRequestCustom,
   ) {
-    const user = req.user;
-    const newProperty = await this.service.createProperty({
-      ...dto,
-      author: user?._id as string,
-      files,
-    });
-    return newProperty;
+    try {
+      const user = req.user;
+      const newProperty = await this.service.createProperty({
+        ...dto,
+        author: user?._id as string,
+        files,
+      });
+      return newProperty;
+    } catch (error) {
+      console.error(error);
+
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
+      if (error instanceof Error) {
+        throw new InternalServerErrorException(error.message);
+      }
+      throw new InternalServerErrorException(
+        "Tizimga kirishda xatolik ketdi. Iltimos birozdan so'ng qayta urinib ko'ring!",
+      );
+    }
   }
 
   @Get()
   async findAll(@Query() query: FindAllParams) {
-    let coordinates: [number, number] | undefined;
-    if (query.coordinates) {
-      let coords: any = query.coordinates;
+    try {
+      let coordinates: [number, number] | undefined;
+      if (query.coordinates) {
+        let coords: any = query.coordinates;
 
-      // Agar string bo'lsa (masalan: "69.24,41.29")
-      if (typeof coords === 'string') {
-        coords = coords.split(',').map((c: string) => parseFloat(c.trim()));
+        // Agar string bo'lsa (masalan: "69.24,41.29")
+        if (typeof coords === 'string') {
+          coords = coords.split(',').map((c: string) => parseFloat(c.trim()));
+        }
+
+        // Agar string massiv bo'lsa (masalan: ["69.24", "41.29"])
+        if (Array.isArray(coords)) {
+          coords = coords.map((c: any) => parseFloat(c));
+        }
+
+        if (
+          Array.isArray(coords) &&
+          coords.length === 2 &&
+          !isNaN(coords[0]) &&
+          !isNaN(coords[1])
+        ) {
+          // Har doim GeoJSON formati: [lon, lat]
+          coordinates = [coords[0], coords[1]] as [number, number];
+        }
       }
 
-      // Agar string massiv bo'lsa (masalan: ["69.24", "41.29"])
-      if (Array.isArray(coords)) {
-        coords = coords.map((c: any) => parseFloat(c));
+      const page = query.page ? parseInt(query.page.toString(), 10) : 1;
+      const limit = query.limit ? parseInt(query.limit.toString(), 10) : 20;
+      const radius = query.radius
+        ? parseInt(query.radius.toString(), 10)
+        : 10000;
+      const rating = query.rating
+        ? parseFloat(query.rating.toString())
+        : undefined;
+
+      const result = await this.service.findAll({
+        page,
+        limit,
+        region: query.region,
+        district: query.district,
+        coordinates,
+        category: query.category,
+        search: query.search,
+        price_type: query.price_type,
+        construction_status: query.construction_status,
+        is_premium: query.is_premium,
+        is_verified: query.is_verified,
+        is_new: query.is_new,
+        is_guest_choice: query.is_guest_choice,
+        rating,
+        radius,
+        sample: query.sample,
+      });
+
+      return result;
+    } catch (error) {
+      console.error(error);
+
+      if (error instanceof HttpException) {
+        throw error;
       }
 
-      if (
-        Array.isArray(coords) &&
-        coords.length === 2 &&
-        !isNaN(coords[0]) &&
-        !isNaN(coords[1])
-      ) {
-        // Har doim GeoJSON formati: [lon, lat]
-        coordinates = [coords[0], coords[1]] as [number, number];
+      if (error instanceof Error) {
+        throw new InternalServerErrorException(error.message);
       }
+      throw new InternalServerErrorException(
+        "Tizimga kirishda xatolik ketdi. Iltimos birozdan so'ng qayta urinib ko'ring!",
+      );
     }
+  }
 
-    const page = query.page ? parseInt(query.page.toString(), 10) : 1;
-    const limit = query.limit ? parseInt(query.limit.toString(), 10) : 20;
-    const radius = query.radius ? parseInt(query.radius.toString(), 10) : 10000;
-    const rating = query.rating
-      ? parseFloat(query.rating.toString())
-      : undefined;
+  @Get(':id')
+  async findById(@Param('id') id: string) {
+    try {
+      const result = await this.service.findById(id);
+      return result;
+    } catch (error) {
+      console.error(error);
 
-    const result = await this.service.findAll({
-      page,
-      limit,
-      region: query.region,
-      district: query.district,
-      coordinates,
-      category: query.category,
-      search: query.search,
-      price_type: query.price_type,
-      construction_status: query.construction_status,
-      is_premium: query.is_premium,
-      is_verified: query.is_verified,
-      is_new: query.is_new,
-      is_guest_choice: query.is_guest_choice,
-      rating,
-      radius,
-      sample: query.sample,
-    });
+      if (error instanceof HttpException) {
+        throw error;
+      }
 
-    return result;
+      if (error instanceof Error) {
+        throw new InternalServerErrorException(error.message);
+      }
+      throw new InternalServerErrorException(
+        "Tizimga kirishda xatolik ketdi. Iltimos birozdan so'ng qayta urinib ko'ring!",
+      );
+    }
   }
 }

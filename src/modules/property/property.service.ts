@@ -186,4 +186,16 @@ export class PropertyService {
       };
     }
   }
+
+  async findById(id: string) {
+    return this.model
+      .findById(id)
+      .populate('author', '-password')
+      .populate('region')
+      .populate('district')
+      .populate('photos')
+      .populate('videos')
+      .lean()
+      .exec();
+  }
 }

@@ -87,7 +87,7 @@ export class Property {
   @Prop({ type: Boolean, default: false })
   is_verified: boolean;
 
-  @Prop({ type: Boolean, default: false }) // *****************************************8
+  @Prop({ type: Boolean, default: true }) // *****************************************8
   is_new: boolean; // Yangi e'lon statusi
 
   @Prop({ type: Boolean, default: false }) // *********************************************8

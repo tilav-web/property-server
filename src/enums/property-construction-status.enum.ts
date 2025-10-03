@@ -1,5 +1,5 @@
 export enum EnumConstructionStatus {
-  READY = 'ready',
-  UNDER_CONSTRUCTION = 'under_construction',
-  PLANNED = 'planned',
+  READY = 'ready', // Tayyor
+  UNDER_CONSTRUCTION = 'under_construction', // Qurilish jarayonida
+  PLANNED = 'planned', // Rejalashtirilgan
 }

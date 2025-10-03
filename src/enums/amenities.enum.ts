@@ -1,8 +1,8 @@
 export enum EnumAmenities {
-  POOL = 'pool',
-  BALCONY = 'balcony',
-  SECURITY = 'security',
-  AIR_CONDITIONING = 'air_conditioning',
-  PARKING = 'parking',
-  ELEVATOR = 'elevator',
+  POOL = 'pool', // Suzish havzasi
+  BALCONY = 'balcony', // Balkon
+  SECURITY = 'security', // Xavfsizlik xizmati
+  AIR_CONDITIONING = 'air_conditioning', // Konditsioner
+  PARKING = 'parking', // Avtoturargoh
+  ELEVATOR = 'elevator', // Lift
 }

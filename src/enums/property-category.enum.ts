@@ -1,9 +1,9 @@
 export enum EnumPropertyCategory {
-  APARTMENT = 'apartment',
-  HOUSE = 'house',
-  VILLA = 'villa',
-  OFFICE = 'office',
-  LAND = 'land',
-  SHOP = 'shop',
-  GARAGE = 'garage',
+  APARTMENT = 'apartment', // Kvartira
+  HOUSE = 'house', // Xususiy uy
+  VILLA = 'villa', // Villa
+  OFFICE = 'office', // Ofis
+  LAND = 'land', // Yer maydoni
+  SHOP = 'shop', // Do‘kon
+  GARAGE = 'garage', // Garaj
 }
