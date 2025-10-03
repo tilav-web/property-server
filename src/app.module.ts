@@ -6,6 +6,7 @@ import { FileModule } from './modules/file/file.module';
 import { PropertyModule } from './modules/property/property.module';
 import { RegionModule } from './modules/region/region.module';
 import { DistrictModule } from './modules/district/district.module';
+import { MessageModule } from './modules/message/message.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { DistrictModule } from './modules/district/district.module';
     PropertyModule,
     RegionModule,
     DistrictModule,
+    MessageModule,
   ],
 })
 export class AppModule {}

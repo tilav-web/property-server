@@ -57,6 +57,9 @@ export class User {
 
   @Prop({ type: String, required: true, select: false })
   password: string;
+
+  @Prop({ type: [Types.ObjectId], ref: 'Property' })
+  likes: Types.ObjectId[];
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
