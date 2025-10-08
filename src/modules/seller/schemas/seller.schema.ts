@@ -9,6 +9,9 @@ export class Seller {
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
   user: Types.ObjectId;
 
+  @Prop({ type: String, required: true, unique: true })
+  passport: string;
+
   @Prop({
     type: String,
     enum: EnumSellerBusinessType,
@@ -16,9 +19,6 @@ export class Seller {
     default: EnumSellerBusinessType.YTT,
   })
   business_type: EnumSellerBusinessType;
-
-  @Prop({ type: String, required: true })
-  passport: string;
 }
 
 export const SellerSchema = SchemaFactory.createForClass(Seller);

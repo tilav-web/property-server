@@ -234,6 +234,7 @@ export class UserService {
     const userData = await this.model.findById(user);
     if (!userData) throw new BadRequestException("Tizimdan ro'yhatdan o'ting");
     if (avatar) {
+      await this.fileService.deleteUserAvatar(user);
       userAvatar = await this.fileService.updateUserAvatar({
         userId: user,
         file: avatar,

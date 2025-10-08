@@ -10,18 +10,7 @@ import { join, extname } from 'path';
 import { promises as fs } from 'fs';
 import sharp from 'sharp';
 import { v4 as uuidv4 } from 'uuid';
-
-interface MulterFile {
-  fieldname: string;
-  originalname: string;
-  encoding: string;
-  mimetype: string;
-  size: number;
-  buffer: Buffer;
-  destination?: string;
-  filename?: string;
-  path?: string;
-}
+import { MulterFile } from 'src/interfaces/multer-file.interface';
 
 @Injectable()
 export class FileService {
