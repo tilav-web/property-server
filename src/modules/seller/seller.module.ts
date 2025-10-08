@@ -8,6 +8,8 @@ import {
   SelfEmployedSellerSchema,
 } from './schemas/self-employed-seller.schema';
 import { UserModule } from '../user/user.module';
+import { SellerController } from './seller.controller';
+import { SellerService } from './seller.service';
 
 @Module({
   imports: [
@@ -19,7 +21,8 @@ import { UserModule } from '../user/user.module';
     ]),
     UserModule,
   ],
-  controllers: [],
-  providers: [],
+  controllers: [SellerController],
+  providers: [SellerService],
+  exports: [SellerService],
 })
 export class SellerModule {}

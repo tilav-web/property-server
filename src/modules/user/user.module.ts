@@ -26,5 +26,6 @@ import { FileModule } from '../file/file.module';
   ],
   controllers: [UserController],
   providers: [UserService, JwtStrategy],
+  exports: [UserService],
 })
 export class UserModule {}

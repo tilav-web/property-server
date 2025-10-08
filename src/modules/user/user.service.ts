@@ -229,6 +229,7 @@ export class UserService {
     phone,
     avatar,
     user,
+    lan,
   }: UpdateUserDto & { user: string; avatar?: Express.Multer.File }) {
     let userAvatar: FileDocument | undefined;
     const userData = await this.model.findById(user);
@@ -244,6 +245,7 @@ export class UserService {
 
     if (first_name) userData.first_name = first_name;
     if (last_name) userData.last_name = last_name;
+    if (lan) userData.lan = lan;
     if (phone) userData.phone.value = phone;
 
     if (password) {

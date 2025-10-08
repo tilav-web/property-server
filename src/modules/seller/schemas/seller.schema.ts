@@ -9,7 +9,7 @@ export class Seller {
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
   user: Types.ObjectId;
 
-  @Prop({ type: String, required: true, unique: true })
+  @Prop({ type: String, required: true, unique: true, uppercase: true })
   passport: string;
 
   @Prop({
@@ -22,3 +22,27 @@ export class Seller {
 }
 
 export const SellerSchema = SchemaFactory.createForClass(Seller);
+
+SellerSchema.virtual('ytt', {
+  ref: 'YttSeller',
+  localField: '_id',
+  foreignField: 'seller',
+  justOne: true,
+});
+
+SellerSchema.virtual('mchj', {
+  ref: 'MchjSeller',
+  localField: '_id',
+  foreignField: 'seller',
+  justOne: true,
+});
+
+SellerSchema.virtual('self_employed', {
+  ref: 'SelfEmployedSeller',
+  localField: '_id',
+  foreignField: 'seller',
+  justOne: true,
+});
+
+SellerSchema.set('toObject', { virtuals: true });
+SellerSchema.set('toJSON', { virtuals: true });
