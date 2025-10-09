@@ -1,7 +1,11 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Seller, SellerDocument } from './schemas/seller.schema';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { UserService } from '../user/user.service';
 import { CreateSellerDto } from './dto/create-seller.dto';
 import { YttSeller, YttSellerDocument } from './schemas/ytt-seller.schema';
@@ -14,6 +18,9 @@ import { CreateYttSellerDto } from './dto/create-ytt-seller.dto';
 import { UpdateUserDto } from '../user/dto/update-user.dto';
 import { CreateMchjSellerDto } from './dto/create-mchj-seller.dto';
 import { CreateSelfEmployedSellerDto } from './dto/self-employed-seller.dto';
+import { FileService } from '../file/file.service';
+import { FileType } from '../file/file.schema';
+import { MulterFile } from 'src/interfaces/multer-file.interface';
 
 @Injectable()
 export class SellerService {
@@ -26,6 +33,7 @@ export class SellerService {
     @InjectModel(SelfEmployedSeller.name)
     private selfEmployedSellerModel: Model<SelfEmployedSellerDocument>,
     private readonly userService: UserService,
+    private readonly fileService: FileService,
   ) {}
 
   async createSeller({
@@ -72,30 +80,112 @@ export class SellerService {
   }
 
   async createYttSeller(
-    dto: CreateYttSellerDto & {
-      passport_file: Express.Multer.File;
-      ytt_certificate_file: Express.Multer.File;
-      vat_file?: Express.Multer.File;
+    dto: CreateYttSellerDto,
+    files: {
+      passport_file?: MulterFile[];
+      ytt_certificate_file?: MulterFile[];
+      vat_file?: MulterFile[];
     },
-  ) {}
+  ) {
+    const seller = await this.sellerModel.findById(dto.seller);
+    if (!seller) throw new NotFoundException('Sotuvchi profili topilmadi');
+
+    // Use findOneAndUpdate with upsert to create or update the YttSeller document
+    const yttSeller = await this.yttSellerModel.findOneAndUpdate(
+      { seller: new Types.ObjectId(dto.seller) },
+      {
+        ...dto,
+        seller: new Types.ObjectId(dto.seller),
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true },
+    );
+
+    // Delete old files associated with this YTT seller
+    await this.fileService.deleteFilesByDocument(
+      yttSeller._id as string,
+      FileType.YTT_SELLER,
+    );
+
+    // Upload the new files
+    await this.fileService.uploadSellerFiles(
+      yttSeller._id as string,
+      FileType.YTT_SELLER,
+      files,
+    );
+
+    return yttSeller;
+  }
 
   async createMchjSeller(
-    dto: CreateMchjSellerDto & {
-      ustav_file: Express.Multer.File;
-      mchj_license: Express.Multer.File;
-      director_appointment_file?: Express.Multer.File;
-      director_passport_file?: Express.Multer.File;
-      legal_address_file?: Express.Multer.File;
-      kadastr_file?: Express.Multer.File;
-      vat_file?: Express.Multer.File;
+    dto: CreateMchjSellerDto,
+    files: {
+      ustav_file?: MulterFile[];
+      mchj_license?: MulterFile[];
+      director_appointment_file?: MulterFile[];
+      director_passport_file?: MulterFile[];
+      legal_address_file?: MulterFile[];
+      kadastr_file?: MulterFile[];
+      vat_file?: MulterFile[];
     },
-  ) {}
+  ) {
+    const seller = await this.sellerModel.findById(dto.seller);
+    if (!seller) throw new NotFoundException('Sotuvchi profili topilmadi');
+
+    const mchjSeller = await this.mchjSellerModel.findOneAndUpdate(
+      { seller: new Types.ObjectId(dto.seller) },
+      {
+        ...dto,
+        seller: new Types.ObjectId(dto.seller),
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true },
+    );
+
+    await this.fileService.deleteFilesByDocument(
+      mchjSeller._id as string,
+      FileType.MCHJ_SELLER,
+    );
+
+    await this.fileService.uploadSellerFiles(
+      mchjSeller._id as string,
+      FileType.MCHJ_SELLER,
+      files,
+    );
+
+    return mchjSeller;
+  }
 
   async createSelfEmployedSeller(
-    dto: CreateSelfEmployedSellerDto & {
-      passport_file: Express.Multer.File;
-      self_employment_certificate: Express.Multer.File;
-      vat_file?: Express.Multer.File;
+    dto: CreateSelfEmployedSellerDto,
+    files: {
+      passport_file?: MulterFile[];
+      self_employment_certificate?: MulterFile[];
+      vat_file?: MulterFile[];
     },
-  ) {}
+  ) {
+    const seller = await this.sellerModel.findById(dto.seller);
+    if (!seller) throw new NotFoundException('Sotuvchi profili topilmadi');
+
+    const selfEmployedSeller =
+      await this.selfEmployedSellerModel.findOneAndUpdate(
+        { seller: new Types.ObjectId(dto.seller) },
+        {
+          ...dto,
+          seller: new Types.ObjectId(dto.seller),
+        },
+        { upsert: true, new: true, setDefaultsOnInsert: true },
+      );
+
+    await this.fileService.deleteFilesByDocument(
+      selfEmployedSeller._id as string,
+      FileType.SELF_EMPLOYED_SELLER,
+    );
+
+    await this.fileService.uploadSellerFiles(
+      selfEmployedSeller._id as string,
+      FileType.SELF_EMPLOYED_SELLER,
+      files,
+    );
+
+    return selfEmployedSeller;
+  }
 }

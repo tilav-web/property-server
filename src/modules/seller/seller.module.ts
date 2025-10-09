@@ -11,6 +11,8 @@ import { UserModule } from '../user/user.module';
 import { SellerController } from './seller.controller';
 import { SellerService } from './seller.service';
 
+import { FileModule } from '../file/file.module';
+
 @Module({
   imports: [
     MongooseModule.forFeature([
@@ -20,6 +22,7 @@ import { SellerService } from './seller.service';
       { name: SelfEmployedSeller.name, schema: SelfEmployedSellerSchema },
     ]),
     UserModule,
+    FileModule,
   ],
   controllers: [SellerController],
   providers: [SellerService],

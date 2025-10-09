@@ -1,3 +1,4 @@
+import { Type } from 'class-transformer';
 import { IsBoolean, IsNotEmpty, IsString } from 'class-validator';
 
 export class CreateYttSellerDto {
@@ -25,6 +26,7 @@ export class CreateYttSellerDto {
   @IsNotEmpty()
   business_reg_address: string; // Ro‘yxatdan o‘tgan manzil
 
+  @Type(() => Boolean)
   @IsBoolean()
   @IsNotEmpty()
   is_vat_payer: boolean; // QQS mavjudmi

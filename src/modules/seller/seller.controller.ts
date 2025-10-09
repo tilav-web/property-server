@@ -6,12 +6,21 @@ import {
   InternalServerErrorException,
   Post,
   Req,
+  UploadedFiles,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import { SellerService } from './seller.service';
 import { AuthGuard } from '@nestjs/passport';
 import { type IRequestCustom } from 'src/interfaces/custom-request.interface';
 import { EnumSellerBusinessType } from 'src/enums/seller-business-type.enum';
+import { CreateYttSellerDto } from './dto/create-ytt-seller.dto';
+import { FileFieldsInterceptor } from '@nestjs/platform-express';
+import { AuthRoleGuard } from '../user/guards/role.guard';
+import { Roles } from '../user/decorators/roles.decorator';
+import { CreateMchjSellerDto } from './dto/create-mchj-seller.dto';
+import { CreateSelfEmployedSellerDto } from './dto/self-employed-seller.dto';
+import { MulterFile } from 'src/interfaces/multer-file.interface';
 
 @Controller('sellers')
 export class SellerController {
@@ -74,5 +83,79 @@ export class SellerController {
         "Xatolik ketdi. Birozdan so'ng qayta urinib ko'ring!",
       );
     }
+  }
+
+  @Post('/ytt')
+  @Roles('seller')
+  @UseGuards(AuthGuard('jwt'), AuthRoleGuard)
+  @UseInterceptors(
+    FileFieldsInterceptor([
+      { name: 'passport_file', maxCount: 1 },
+      { name: 'ytt_certificate_file', maxCount: 1 },
+      { name: 'vat_file', maxCount: 1 },
+    ]),
+  )
+  async createYttSeller(
+    @Body() dto: CreateYttSellerDto,
+    @UploadedFiles()
+    files: {
+      passport_file?: MulterFile[];
+      ytt_certificate_file?: MulterFile[];
+      vat_file?: MulterFile[];
+    },
+  ) {
+    return this.service.createYttSeller(dto, files);
+  }
+
+  @Post('/mchj')
+  @Roles('seller')
+  @UseGuards(AuthGuard('jwt'), AuthRoleGuard)
+  @UseInterceptors(
+    FileFieldsInterceptor([
+      { name: 'ustav_file', maxCount: 1 },
+      { name: 'mchj_license', maxCount: 1 },
+      { name: 'director_appointment_file', maxCount: 1 },
+      { name: 'director_passport_file', maxCount: 1 },
+      { name: 'legal_address_file', maxCount: 1 },
+      { name: 'kadastr_file', maxCount: 1 },
+      { name: 'vat_file', maxCount: 1 },
+    ]),
+  )
+  async createMchjSeller(
+    @Body() dto: CreateMchjSellerDto,
+    @UploadedFiles()
+    files: {
+      ustav_file?: MulterFile[];
+      mchj_license?: MulterFile[];
+      director_appointment_file?: MulterFile[];
+      director_passport_file?: MulterFile[];
+      legal_address_file?: MulterFile[];
+      kadastr_file?: MulterFile[];
+      vat_file?: MulterFile[];
+    },
+  ) {
+    return this.service.createMchjSeller(dto, files);
+  }
+
+  @Post('/self-employed')
+  @Roles('seller')
+  @UseGuards(AuthGuard('jwt'), AuthRoleGuard)
+  @UseInterceptors(
+    FileFieldsInterceptor([
+      { name: 'passport_file', maxCount: 1 },
+      { name: 'self_employment_certificate', maxCount: 1 },
+      { name: 'vat_file', maxCount: 1 },
+    ]),
+  )
+  async createSelfEmployedSeller(
+    @Body() dto: CreateSelfEmployedSellerDto,
+    @UploadedFiles()
+    files: {
+      passport_file?: MulterFile[];
+      self_employment_certificate?: MulterFile[];
+      vat_file?: MulterFile[];
+    },
+  ) {
+    return this.service.createSelfEmployedSeller(dto, files);
   }
 }
