@@ -65,18 +65,128 @@ export class SellerService {
     if (lan) hasUser.lan = lan;
 
     await hasUser.save();
-    const seller = await this.sellerModel.findOneAndUpdate(
-      { user },
-      { passport, business_type },
-      { new: true, upsert: true, setDefaultsOnInsert: true },
-    );
+    const seller = await this.sellerModel
+      .findOneAndUpdate(
+        { user },
+        { passport, business_type },
+        { new: true, upsert: true, setDefaultsOnInsert: true },
+      )
+      .populate({
+        path: 'ytt',
+        populate: [
+          {
+            path: 'passport_file',
+          },
+          {
+            path: 'ytt_certificate_file',
+          },
+          {
+            path: 'vat_file',
+          },
+        ],
+      })
+      .populate({
+        path: 'mchj',
+        populate: [
+          {
+            path: 'ustav_file',
+          },
+          {
+            path: 'mchj_license',
+          },
+          {
+            path: 'director_appointment_file',
+          },
+          {
+            path: 'director_passport_file',
+          },
+          {
+            path: 'legal_address_file',
+          },
+          {
+            path: 'kadastr_file',
+          },
+          {
+            path: 'vat_file',
+          },
+        ],
+      })
+      .populate({
+        path: 'self_employed',
+        populate: [
+          {
+            path: 'passport_file',
+          },
+          {
+            path: 'self_employment_certificate',
+          },
+          {
+            path: 'vat_file',
+          },
+        ],
+      });
     return { user: hasUser, seller };
   }
 
   async findSellerByUser(id: string) {
     const user = await this.userService.findById(id);
     if (!user) throw new BadRequestException('User not found!');
-    return this.sellerModel.findOne({ user: id });
+    return this.sellerModel
+      .findOne({ user: id })
+      .populate({
+        path: 'ytt',
+        populate: [
+          {
+            path: 'passport_file',
+          },
+          {
+            path: 'ytt_certificate_file',
+          },
+          {
+            path: 'vat_file',
+          },
+        ],
+      })
+      .populate({
+        path: 'mchj',
+        populate: [
+          {
+            path: 'ustav_file',
+          },
+          {
+            path: 'mchj_license',
+          },
+          {
+            path: 'director_appointment_file',
+          },
+          {
+            path: 'director_passport_file',
+          },
+          {
+            path: 'legal_address_file',
+          },
+          {
+            path: 'kadastr_file',
+          },
+          {
+            path: 'vat_file',
+          },
+        ],
+      })
+      .populate({
+        path: 'self_employed',
+        populate: [
+          {
+            path: 'passport_file',
+          },
+          {
+            path: 'self_employment_certificate',
+          },
+          {
+            path: 'vat_file',
+          },
+        ],
+      });
   }
 
   async createYttSeller(
@@ -89,6 +199,15 @@ export class SellerService {
   ) {
     const seller = await this.sellerModel.findById(dto.seller);
     if (!seller) throw new NotFoundException('Sotuvchi profili topilmadi');
+
+    if (!files.passport_file)
+      throw new BadRequestException('Pasport faylni yuborishingiz shart!');
+
+    if (!files.ytt_certificate_file)
+      throw new BadRequestException('YTT hujjatini  yuborishingiz shart!');
+
+    if (dto.is_vat_payer && !files.vat_file)
+      throw new BadRequestException('QQS hujjatini  yuborishingiz shart!');
 
     // Use findOneAndUpdate with upsert to create or update the YttSeller document
     const yttSeller = await this.yttSellerModel.findOneAndUpdate(
@@ -112,8 +231,62 @@ export class SellerService {
       FileType.YTT_SELLER,
       files,
     );
-
-    return yttSeller;
+    return this.sellerModel
+      .findById(dto.seller)
+      .populate({
+        path: 'ytt',
+        populate: [
+          {
+            path: 'passport_file',
+          },
+          {
+            path: 'ytt_certificate_file',
+          },
+          {
+            path: 'vat_file',
+          },
+        ],
+      })
+      .populate({
+        path: 'mchj',
+        populate: [
+          {
+            path: 'ustav_file',
+          },
+          {
+            path: 'mchj_license',
+          },
+          {
+            path: 'director_appointment_file',
+          },
+          {
+            path: 'director_passport_file',
+          },
+          {
+            path: 'legal_address_file',
+          },
+          {
+            path: 'kadastr_file',
+          },
+          {
+            path: 'vat_file',
+          },
+        ],
+      })
+      .populate({
+        path: 'self_employed',
+        populate: [
+          {
+            path: 'passport_file',
+          },
+          {
+            path: 'self_employment_certificate',
+          },
+          {
+            path: 'vat_file',
+          },
+        ],
+      });
   }
 
   async createMchjSeller(
@@ -130,6 +303,33 @@ export class SellerService {
   ) {
     const seller = await this.sellerModel.findById(dto.seller);
     if (!seller) throw new NotFoundException('Sotuvchi profili topilmadi');
+
+    if (!files.ustav_file)
+      throw new BadRequestException('Ustav faylni yuborishingiz shart!');
+
+    if (!files.mchj_license)
+      throw new BadRequestException('Litsenziya faylni yuborishingiz shart!');
+
+    if (!files.director_appointment_file)
+      throw new BadRequestException(
+        'Direktor tayinlanish hujjatini yuborishingiz shart!',
+      );
+
+    if (!files.director_passport_file)
+      throw new BadRequestException(
+        'Direktor pasport faylini yuborishingiz shart!',
+      );
+
+    if (!files.legal_address_file)
+      throw new BadRequestException(
+        'Yuridik manzil hujjatini yuborishingiz shart!',
+      );
+
+    if (!files.kadastr_file)
+      throw new BadRequestException('Kadastr hujjatini yuborishingiz shart!');
+
+    if (dto.is_vat_payer && !files.vat_file)
+      throw new BadRequestException('QQS (VAT) hujjatini yuborishingiz shart!');
 
     const mchjSeller = await this.mchjSellerModel.findOneAndUpdate(
       { seller: new Types.ObjectId(dto.seller) },
@@ -151,7 +351,36 @@ export class SellerService {
       files,
     );
 
-    return mchjSeller;
+    return this.sellerModel
+      .findById(dto.seller)
+      .populate({
+        path: 'ytt',
+        populate: [
+          { path: 'passport_file' },
+          { path: 'ytt_certificate_file' },
+          { path: 'vat_file' },
+        ],
+      })
+      .populate({
+        path: 'mchj',
+        populate: [
+          { path: 'ustav_file' },
+          { path: 'mchj_license' },
+          { path: 'director_appointment_file' },
+          { path: 'director_passport_file' },
+          { path: 'legal_address_file' },
+          { path: 'kadastr_file' },
+          { path: 'vat_file' },
+        ],
+      })
+      .populate({
+        path: 'self_employed',
+        populate: [
+          { path: 'passport_file' },
+          { path: 'self_employment_certificate' },
+          { path: 'vat_file' },
+        ],
+      });
   }
 
   async createSelfEmployedSeller(
@@ -164,6 +393,17 @@ export class SellerService {
   ) {
     const seller = await this.sellerModel.findById(dto.seller);
     if (!seller) throw new NotFoundException('Sotuvchi profili topilmadi');
+
+    if (!files.passport_file)
+      throw new BadRequestException('Pasport faylni yuborishingiz shart!');
+
+    if (!files.self_employment_certificate)
+      throw new BadRequestException(
+        'O‘zini o‘zi bandlik sertifikatini yuborishingiz shart!',
+      );
+
+    if (dto.is_vat_payer && !files.vat_file)
+      throw new BadRequestException('QQS (VAT) hujjatini yuborishingiz shart!');
 
     const selfEmployedSeller =
       await this.selfEmployedSellerModel.findOneAndUpdate(
@@ -186,6 +426,35 @@ export class SellerService {
       files,
     );
 
-    return selfEmployedSeller;
+    return this.sellerModel
+      .findById(dto.seller)
+      .populate({
+        path: 'ytt',
+        populate: [
+          { path: 'passport_file' },
+          { path: 'ytt_certificate_file' },
+          { path: 'vat_file' },
+        ],
+      })
+      .populate({
+        path: 'mchj',
+        populate: [
+          { path: 'ustav_file' },
+          { path: 'mchj_license' },
+          { path: 'director_appointment_file' },
+          { path: 'director_passport_file' },
+          { path: 'legal_address_file' },
+          { path: 'kadastr_file' },
+          { path: 'vat_file' },
+        ],
+      })
+      .populate({
+        path: 'self_employed',
+        populate: [
+          { path: 'passport_file' },
+          { path: 'self_employment_certificate' },
+          { path: 'vat_file' },
+        ],
+      });
   }
 }

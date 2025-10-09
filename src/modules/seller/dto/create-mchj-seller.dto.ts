@@ -1,3 +1,4 @@
+import { Transform } from 'class-transformer';
 import { IsBoolean, IsNotEmpty, IsString } from 'class-validator';
 
 export class CreateMchjSellerDto {
@@ -21,6 +22,7 @@ export class CreateMchjSellerDto {
   @IsNotEmpty()
   registration_address: string; // Biznes ro'yxatdan o'tgan manzili
 
+  @Transform(({ value }) => value === 'true' || value === true)
   @IsBoolean()
   @IsNotEmpty()
   is_vat_payer: boolean; // QQS mavjudmi

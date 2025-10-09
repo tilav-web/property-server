@@ -1,3 +1,4 @@
+import { Transform } from 'class-transformer';
 import {
   IsBoolean,
   IsDateString,
@@ -39,6 +40,7 @@ export class CreateSelfEmployedSellerDto {
   @IsNotEmpty()
   registration_address: string; // Biznes ro'yxatdan o'tgan manzili
 
+  @Transform(({ value }) => value === 'true' || value === true)
   @IsBoolean()
   @IsNotEmpty()
   is_vat_payer: boolean; // QQS mavjudmi
