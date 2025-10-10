@@ -155,7 +155,7 @@ export class FileService {
     return uploadedFiles;
   }
 
-  async uploadSellerFiles(
+  async uploadFiles(
     documentId: string,
     documentType: FileType,
     files: { [fieldname: string]: MulterFile[] },

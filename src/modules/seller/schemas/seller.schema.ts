@@ -22,12 +22,22 @@ export class Seller {
 
   @Prop({ type: Boolean, default: false })
   is_active: boolean;
+
+  @Prop({ type: Boolean, default: false })
+  registration_status: boolean;
 }
 
 export const SellerSchema = SchemaFactory.createForClass(Seller);
 
 SellerSchema.virtual('bank_account', {
   ref: 'BankAccount',
+  localField: '_id',
+  foreignField: 'seller',
+  justOne: true,
+});
+
+SellerSchema.virtual('commissioner', {
+  ref: 'Commissioner',
   localField: '_id',
   foreignField: 'seller',
   justOne: true,

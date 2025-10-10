@@ -35,22 +35,12 @@ export class Commissioner {
   @Prop({
     type: String,
     required: true,
-    default: () => {
-      // Hozirgi sanani YYYY-MM-DD formatda qaytaradi
-      const now = new Date();
-      return now.toISOString().split('T')[0];
-    },
   })
   contract_start_date: string;
 
   @Prop({
     type: String,
     required: true,
-    default: () => {
-      const nextYear = new Date();
-      nextYear.setFullYear(nextYear.getFullYear() + 1);
-      return nextYear.toISOString().split('T')[0];
-    },
   })
   contract_end_date: string;
 }
@@ -62,7 +52,7 @@ CommissionerSchema.virtual('contract_file', {
   localField: '_id',
   foreignField: 'document_id',
   justOne: true,
-  match: { document_type: 'YttSeller', file_name: /contract_file/i },
+  match: { document_type: 'Commissioner', file_name: /contract_file/i },
 });
 
 CommissionerSchema.set('toObject', { virtuals: true });

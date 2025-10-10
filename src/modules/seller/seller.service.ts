@@ -125,6 +125,10 @@ export class SellerService {
           },
         ],
       })
+      .populate({
+        path: 'commissioner',
+        populate: 'contract_file',
+      })
       .populate('bank_account')
       .lean();
     return { user: hasUser, seller };
@@ -189,6 +193,10 @@ export class SellerService {
           },
         ],
       })
+      .populate({
+        path: 'commissioner',
+        populate: 'contract_file',
+      })
       .populate('bank_account')
       .lean();
   }
@@ -230,7 +238,7 @@ export class SellerService {
     );
 
     // Upload the new files
-    await this.fileService.uploadSellerFiles(
+    await this.fileService.uploadFiles(
       yttSeller._id as string,
       FileType.YTT_SELLER,
       files,
@@ -290,6 +298,10 @@ export class SellerService {
             path: 'vat_file',
           },
         ],
+      })
+      .populate({
+        path: 'commissioner',
+        populate: 'contract_file',
       })
       .populate('bank_account')
       .lean();
@@ -351,7 +363,7 @@ export class SellerService {
       FileType.MCHJ_SELLER,
     );
 
-    await this.fileService.uploadSellerFiles(
+    await this.fileService.uploadFiles(
       mchjSeller._id as string,
       FileType.MCHJ_SELLER,
       files,
@@ -426,7 +438,7 @@ export class SellerService {
       FileType.SELF_EMPLOYED_SELLER,
     );
 
-    await this.fileService.uploadSellerFiles(
+    await this.fileService.uploadFiles(
       selfEmployedSeller._id as string,
       FileType.SELF_EMPLOYED_SELLER,
       files,
@@ -462,5 +474,11 @@ export class SellerService {
           { path: 'vat_file' },
         ],
       });
+  }
+
+  async registerDone(id: string) {
+    return this.sellerModel.findByIdAndUpdate(id, {
+      registration_status: true,
+    });
   }
 }
