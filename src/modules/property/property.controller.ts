@@ -28,7 +28,7 @@ export class PropertyController {
     FileFieldsInterceptor([
       { name: 'banner', maxCount: 1 },
       { name: 'photos', maxCount: 5 },
-      { name: 'videos', maxCount: 5 },
+      { name: 'videos', maxCount: 1 },
     ]),
   )
   async create(

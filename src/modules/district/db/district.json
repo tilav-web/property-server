@@ -3,1134 +3,1134 @@
     "name": "Andijon shahri",
     "code": "AN01",
     "region_code": "AN",
-    "location": { "type": "Point", "coordinates": [40.7821, 72.3442] }
+    "location": { "type": "Point", "coordinates": [72.3442, 40.7821] }
   },
   {
     "name": "Asaka",
     "code": "AN02",
     "region_code": "AN",
-    "location": { "type": "Point", "coordinates": [40.64, 72.2383] }
+    "location": { "type": "Point", "coordinates": [72.2383, 40.64] }
   },
   {
     "name": "Baliqchi",
     "code": "AN03",
     "region_code": "AN",
-    "location": { "type": "Point", "coordinates": [40.9333, 71.8667] }
+    "location": { "type": "Point", "coordinates": [71.8667, 40.9333] }
   },
   {
     "name": "Boʻz",
     "code": "AN04",
     "region_code": "AN",
-    "location": { "type": "Point", "coordinates": [40.5667, 71.7667] }
+    "location": { "type": "Point", "coordinates": [71.7667, 40.5667] }
   },
   {
     "name": "Izboskan",
     "code": "AN05",
     "region_code": "AN",
-    "location": { "type": "Point", "coordinates": [40.7667, 72.25] }
+    "location": { "type": "Point", "coordinates": [72.25, 40.7667] }
   },
   {
     "name": "Jalaquduq",
     "code": "AN06",
     "region_code": "AN",
-    "location": { "type": "Point", "coordinates": [40.8333, 72.4333] }
+    "location": { "type": "Point", "coordinates": [72.4333, 40.8333] }
   },
   {
     "name": "Marhamat",
     "code": "AN07",
     "region_code": "AN",
-    "location": { "type": "Point", "coordinates": [40.6333, 72.3167] }
+    "location": { "type": "Point", "coordinates": [72.3167, 40.6333] }
   },
   {
     "name": "Oltinkoʻl",
     "code": "AN08",
     "region_code": "AN",
-    "location": { "type": "Point", "coordinates": [40.95, 72.1] }
+    "location": { "type": "Point", "coordinates": [72.1, 40.95] }
   },
   {
     "name": "Paxtaobod",
     "code": "AN09",
     "region_code": "AN",
-    "location": { "type": "Point", "coordinates": [40.9, 72.4833] }
+    "location": { "type": "Point", "coordinates": [72.4833, 40.9] }
   },
   {
     "name": "Qoʻrgʻontepa",
     "code": "AN10",
     "region_code": "AN",
-    "location": { "type": "Point", "coordinates": [40.7333, 72.7667] }
+    "location": { "type": "Point", "coordinates": [72.7667, 40.7333] }
   },
   {
     "name": "Shahrixon",
     "code": "AN11",
     "region_code": "AN",
-    "location": { "type": "Point", "coordinates": [40.7167, 72.05] }
+    "location": { "type": "Point", "coordinates": [72.05, 40.7167] }
   },
   {
     "name": "Xoʻjaobod",
     "code": "AN12",
     "region_code": "AN",
-    "location": { "type": "Point", "coordinates": [40.6667, 72.5667] }
+    "location": { "type": "Point", "coordinates": [72.5667, 40.6667] }
   },
   {
     "name": "Ulugʻnor",
     "code": "AN13",
     "region_code": "AN",
-    "location": { "type": "Point", "coordinates": [40.8667, 72.0667] }
+    "location": { "type": "Point", "coordinates": [72.0667, 40.8667] }
   },
   {
     "name": "Fargʻona shahri",
     "code": "FA01",
     "region_code": "FA",
-    "location": { "type": "Point", "coordinates": [40.3895, 71.7876] }
+    "location": { "type": "Point", "coordinates": [71.7876, 40.3895] }
   },
   {
     "name": "Qoʻqon shahri",
     "code": "FA02",
     "region_code": "FA",
-    "location": { "type": "Point", "coordinates": [40.5286, 70.9425] }
+    "location": { "type": "Point", "coordinates": [70.9425, 40.5286] }
   },
   {
     "name": "Quvasoy shahri",
     "code": "FA03",
     "region_code": "FA",
-    "location": { "type": "Point", "coordinates": [40.3028, 71.9667] }
+    "location": { "type": "Point", "coordinates": [71.9667, 40.3028] }
   },
   {
     "name": "Oltiariq",
     "code": "FA04",
     "region_code": "FA",
-    "location": { "type": "Point", "coordinates": [40.3917, 71.4783] }
+    "location": { "type": "Point", "coordinates": [71.4783, 40.3917] }
   },
   {
     "name": "Bagʻdod",
     "code": "FA05",
     "region_code": "FA",
-    "location": { "type": "Point", "coordinates": [40.4639, 71.1956] }
+    "location": { "type": "Point", "coordinates": [71.1956, 40.4639] }
   },
   {
     "name": "Beshariq",
     "code": "FA06",
     "region_code": "FA",
-    "location": { "type": "Point", "coordinates": [40.4358, 70.6103] }
+    "location": { "type": "Point", "coordinates": [70.6103, 40.4358] }
   },
   {
     "name": "Buvayda",
     "code": "FA07",
     "region_code": "FA",
-    "location": { "type": "Point", "coordinates": [40.5833, 71.3] }
+    "location": { "type": "Point", "coordinates": [71.3, 40.5833] }
   },
   {
     "name": "Dangʻara",
     "code": "FA08",
     "region_code": "FA",
-    "location": { "type": "Point", "coordinates": [40.5667, 70.9167] }
+    "location": { "type": "Point", "coordinates": [70.9167, 40.5667] }
   },
   {
     "name": "Fargʻona tumani",
     "code": "FA09",
     "region_code": "FA",
-    "location": { "type": "Point", "coordinates": [40.3833, 71.7833] }
+    "location": { "type": "Point", "coordinates": [71.7833, 40.3833] }
   },
   {
     "name": "Furqat",
     "code": "FA10",
     "region_code": "FA",
-    "location": { "type": "Point", "coordinates": [40.6, 71.3333] }
+    "location": { "type": "Point", "coordinates": [71.3333, 40.6] }
   },
   {
     "name": "Qoʻshtepa",
     "code": "FA11",
     "region_code": "FA",
-    "location": { "type": "Point", "coordinates": [40.5667, 71.2] }
+    "location": { "type": "Point", "coordinates": [71.2, 40.5667] }
   },
   {
     "name": "Quva",
     "code": "FA12",
     "region_code": "FA",
-    "location": { "type": "Point", "coordinates": [40.3219, 71.6531] }
+    "location": { "type": "Point", "coordinates": [71.6531, 40.3219] }
   },
   {
     "name": "Rishton",
     "code": "FA13",
     "region_code": "FA",
-    "location": { "type": "Point", "coordinates": [40.3578, 71.2875] }
+    "location": { "type": "Point", "coordinates": [71.2875, 40.3578] }
   },
   {
     "name": "Soʻx",
     "code": "FA14",
     "region_code": "FA",
-    "location": { "type": "Point", "coordinates": [39.9789, 71.0933] }
+    "location": { "type": "Point", "coordinates": [71.0933, 39.9789] }
   },
   {
     "name": "Toshloq",
     "code": "FA15",
     "region_code": "FA",
-    "location": { "type": "Point", "coordinates": [40.4833, 71.7667] }
+    "location": { "type": "Point", "coordinates": [71.7667, 40.4833] }
   },
   {
     "name": "Uchkoʻprik",
     "code": "FA16",
     "region_code": "FA",
-    "location": { "type": "Point", "coordinates": [40.6333, 71.05] }
+    "location": { "type": "Point", "coordinates": [71.05, 40.6333] }
   },
   {
     "name": "Oʻzbekiston",
     "code": "FA17",
     "region_code": "FA",
-    "location": { "type": "Point", "coordinates": [40.55, 70.95] }
+    "location": { "type": "Point", "coordinates": [70.95, 40.55] }
   },
   {
     "name": "Yozyovon",
     "code": "FA18",
     "region_code": "FA",
-    "location": { "type": "Point", "coordinates": [40.65, 71.75] }
+    "location": { "type": "Point", "coordinates": [71.75, 40.65] }
   },
   {
     "name": "Namangan shahri",
     "code": "NA01",
     "region_code": "NA",
-    "location": { "type": "Point", "coordinates": [40.9983, 71.6726] }
+    "location": { "type": "Point", "coordinates": [71.6726, 40.9983] }
   },
   {
     "name": "Chortoq",
     "code": "NA02",
     "region_code": "NA",
-    "location": { "type": "Point", "coordinates": [41.0667, 71.8] }
+    "location": { "type": "Point", "coordinates": [71.8, 41.0667] }
   },
   {
     "name": "Chust",
     "code": "NA03",
     "region_code": "NA",
-    "location": { "type": "Point", "coordinates": [41.0, 71.2333] }
+    "location": { "type": "Point", "coordinates": [71.2333, 41.0] }
   },
   {
     "name": "Kosonsoy",
     "code": "NA04",
     "region_code": "NA",
-    "location": { "type": "Point", "coordinates": [41.25, 71.55] }
+    "location": { "type": "Point", "coordinates": [71.55, 41.25] }
   },
   {
     "name": "Mingbuloq",
     "code": "NA05",
     "region_code": "NA",
-    "location": { "type": "Point", "coordinates": [40.8333, 71.4167] }
+    "location": { "type": "Point", "coordinates": [71.4167, 40.8333] }
   },
   {
     "name": "Namangan tumani",
     "code": "NA06",
     "region_code": "NA",
-    "location": { "type": "Point", "coordinates": [41.0167, 71.6667] }
+    "location": { "type": "Point", "coordinates": [71.6667, 41.0167] }
   },
   {
     "name": "Norin",
     "code": "NA07",
     "region_code": "NA",
-    "location": { "type": "Point", "coordinates": [40.9333, 71.8] }
+    "location": { "type": "Point", "coordinates": [71.8, 40.9333] }
   },
   {
     "name": "Pop",
     "code": "NA08",
     "region_code": "NA",
-    "location": { "type": "Point", "coordinates": [41.0167, 71.1167] }
+    "location": { "type": "Point", "coordinates": [71.1167, 41.0167] }
   },
   {
-    "name": "To‘raqo‘rg‘on",
+    "name": "To'raqo'rg'on",
     "code": "NA09",
     "region_code": "NA",
-    "location": { "type": "Point", "coordinates": [41.0, 71.5] }
+    "location": { "type": "Point", "coordinates": [71.5, 41.0] }
   },
   {
-    "name": "Uchqo‘rg‘on",
+    "name": "Uchqo'rg'on",
     "code": "NA10",
     "region_code": "NA",
-    "location": { "type": "Point", "coordinates": [41.1167, 71.9167] }
+    "location": { "type": "Point", "coordinates": [71.9167, 41.1167] }
   },
   {
     "name": "Uychi",
     "code": "NA11",
     "region_code": "NA",
-    "location": { "type": "Point", "coordinates": [41.0833, 71.7333] }
+    "location": { "type": "Point", "coordinates": [71.7333, 41.0833] }
   },
   {
-    "name": "Yangiqo‘rg‘on",
+    "name": "Yangiqo'rg'on",
     "code": "NA12",
     "region_code": "NA",
-    "location": { "type": "Point", "coordinates": [41.2, 71.7167] }
+    "location": { "type": "Point", "coordinates": [71.7167, 41.2] }
   },
   {
     "name": "Bektemir",
-    "code": "TS01",
+    "code": "TO01",
     "region_code": "TO",
-    "location": { "type": "Point", "coordinates": [41.2167, 69.3333] }
+    "location": { "type": "Point", "coordinates": [69.3333, 41.2167] }
   },
   {
     "name": "Chilonzor",
-    "code": "TS02",
+    "code": "TO02",
     "region_code": "TO",
-    "location": { "type": "Point", "coordinates": [41.2833, 69.2167] }
+    "location": { "type": "Point", "coordinates": [69.2167, 41.2833] }
   },
   {
     "name": "Mirobod",
-    "code": "TS03",
+    "code": "TO03",
     "region_code": "TO",
-    "location": { "type": "Point", "coordinates": [41.3, 69.2667] }
+    "location": { "type": "Point", "coordinates": [69.2667, 41.3] }
   },
   {
-    "name": "Mirzo Ulug‘bek",
-    "code": "TS04",
+    "name": "Mirzo Ulug'bek",
+    "code": "TO04",
     "region_code": "TO",
-    "location": { "type": "Point", "coordinates": [41.3167, 69.3333] }
+    "location": { "type": "Point", "coordinates": [69.3333, 41.3167] }
   },
   {
     "name": "Olmazor",
-    "code": "TS05",
+    "code": "TO05",
     "region_code": "TO",
-    "location": { "type": "Point", "coordinates": [41.35, 69.1833] }
+    "location": { "type": "Point", "coordinates": [69.1833, 41.35] }
   },
   {
     "name": "Sergeli",
-    "code": "TS06",
+    "code": "TO06",
     "region_code": "TO",
-    "location": { "type": "Point", "coordinates": [41.25, 69.2167] }
+    "location": { "type": "Point", "coordinates": [69.2167, 41.25] }
   },
   {
     "name": "Shayxontohur",
-    "code": "TS07",
+    "code": "TO07",
     "region_code": "TO",
-    "location": { "type": "Point", "coordinates": [41.3167, 69.25] }
+    "location": { "type": "Point", "coordinates": [69.25, 41.3167] }
   },
   {
     "name": "Uchtepa",
-    "code": "TS08",
+    "code": "TO08",
     "region_code": "TO",
-    "location": { "type": "Point", "coordinates": [41.3, 69.1833] }
+    "location": { "type": "Point", "coordinates": [69.1833, 41.3] }
   },
   {
     "name": "Yakkasaroy",
-    "code": "TS09",
+    "code": "TO09",
     "region_code": "TO",
-    "location": { "type": "Point", "coordinates": [41.2833, 69.2833] }
+    "location": { "type": "Point", "coordinates": [69.2833, 41.2833] }
   },
   {
     "name": "Yashnobod",
-    "code": "TS10",
+    "code": "TO10",
     "region_code": "TO",
-    "location": { "type": "Point", "coordinates": [41.3333, 69.3167] }
+    "location": { "type": "Point", "coordinates": [69.3167, 41.3333] }
   },
   {
     "name": "Yunusobod",
-    "code": "TS11",
+    "code": "TO11",
     "region_code": "TO",
-    "location": { "type": "Point", "coordinates": [41.3667, 69.2667] }
+    "location": { "type": "Point", "coordinates": [69.2667, 41.3667] }
   },
   {
     "name": "Bekobod tumani",
-    "code": "TV01",
+    "code": "TO12",
     "region_code": "TO",
-    "location": { "type": "Point", "coordinates": [40.2167, 69.2667] }
+    "location": { "type": "Point", "coordinates": [69.2667, 40.2167] }
   },
   {
     "name": "Boʻka",
-    "code": "TV02",
+    "code": "TO13",
     "region_code": "TO",
-    "location": { "type": "Point", "coordinates": [40.8333, 69.2] }
+    "location": { "type": "Point", "coordinates": [69.2, 40.8333] }
   },
   {
     "name": "Boʻstonliq",
-    "code": "TV03",
+    "code": "TO14",
     "region_code": "TO",
-    "location": { "type": "Point", "coordinates": [41.4667, 69.9167] }
+    "location": { "type": "Point", "coordinates": [69.9167, 41.4667] }
   },
   {
     "name": "Chinoz",
-    "code": "TV04",
+    "code": "TO15",
     "region_code": "TO",
-    "location": { "type": "Point", "coordinates": [40.9667, 68.7667] }
+    "location": { "type": "Point", "coordinates": [68.7667, 40.9667] }
   },
   {
     "name": "Qibray",
-    "code": "TV05",
+    "code": "TO16",
     "region_code": "TO",
-    "location": { "type": "Point", "coordinates": [41.3833, 69.4667] }
+    "location": { "type": "Point", "coordinates": [69.4667, 41.3833] }
   },
   {
     "name": "Ohangaron",
-    "code": "TV06",
+    "code": "TO17",
     "region_code": "TO",
-    "location": { "type": "Point", "coordinates": [40.9, 69.6333] }
+    "location": { "type": "Point", "coordinates": [69.6333, 40.9] }
   },
   {
     "name": "Oqqoʻrgʻon",
-    "code": "TV07",
+    "code": "TO18",
     "region_code": "TO",
-    "location": { "type": "Point", "coordinates": [40.8833, 69.0] }
+    "location": { "type": "Point", "coordinates": [69.0, 40.8833] }
   },
   {
     "name": "Parkent",
-    "code": "TV08",
+    "code": "TO19",
     "region_code": "TO",
-    "location": { "type": "Point", "coordinates": [41.3, 69.6833] }
+    "location": { "type": "Point", "coordinates": [69.6833, 41.3] }
   },
   {
     "name": "Piskent",
-    "code": "TV09",
+    "code": "TO20",
     "region_code": "TO",
-    "location": { "type": "Point", "coordinates": [40.8833, 68.8667] }
+    "location": { "type": "Point", "coordinates": [68.8667, 40.8833] }
   },
   {
     "name": "Quyi Chirchiq",
-    "code": "TV10",
+    "code": "TO21",
     "region_code": "TO",
-    "location": { "type": "Point", "coordinates": [40.7667, 69.0] }
+    "location": { "type": "Point", "coordinates": [69.0, 40.7667] }
   },
   {
     "name": "Yangiyoʻl",
-    "code": "TV11",
+    "code": "TO22",
     "region_code": "TO",
-    "location": { "type": "Point", "coordinates": [41.1167, 69.05] }
+    "location": { "type": "Point", "coordinates": [69.05, 41.1167] }
   },
   {
     "name": "Yuqori Chirchiq",
-    "code": "TV12",
+    "code": "TO23",
     "region_code": "TO",
-    "location": { "type": "Point", "coordinates": [41.4667, 69.3833] }
+    "location": { "type": "Point", "coordinates": [69.3833, 41.4667] }
   },
   {
     "name": "Zangiota",
-    "code": "TV13",
+    "code": "TO24",
     "region_code": "TO",
-    "location": { "type": "Point", "coordinates": [41.2333, 69.2] }
+    "location": { "type": "Point", "coordinates": [69.2, 41.2333] }
   },
   {
     "name": "Angren shahri",
-    "code": "TV14",
+    "code": "TO25",
     "region_code": "TO",
-    "location": { "type": "Point", "coordinates": [41.0167, 70.1433] }
+    "location": { "type": "Point", "coordinates": [70.1433, 41.0167] }
   },
   {
     "name": "Bekobod shahri",
-    "code": "TV15",
+    "code": "TO26",
     "region_code": "TO",
-    "location": { "type": "Point", "coordinates": [40.2167, 69.2667] }
+    "location": { "type": "Point", "coordinates": [69.2667, 40.2167] }
   },
   {
     "name": "Chirchiq shahri",
-    "code": "TV16",
+    "code": "TO27",
     "region_code": "TO",
-    "location": { "type": "Point", "coordinates": [41.4667, 69.5833] }
+    "location": { "type": "Point", "coordinates": [69.5833, 41.4667] }
   },
   {
     "name": "Olmaliq shahri",
-    "code": "TV17",
+    "code": "TO28",
     "region_code": "TO",
-    "location": { "type": "Point", "coordinates": [40.85, 69.6] }
+    "location": { "type": "Point", "coordinates": [69.6, 40.85] }
   },
   {
     "name": "Ohangaron shahri",
-    "code": "TV18",
+    "code": "TO29",
     "region_code": "TO",
-    "location": { "type": "Point", "coordinates": [40.9064, 69.6389] }
+    "location": { "type": "Point", "coordinates": [69.6389, 40.9064] }
   },
   {
     "name": "Yangiyoʻl shahri",
-    "code": "TV19",
+    "code": "TO30",
     "region_code": "TO",
-    "location": { "type": "Point", "coordinates": [41.1167, 69.05] }
+    "location": { "type": "Point", "coordinates": [69.05, 41.1167] }
   },
   {
     "name": "Bulungʻur",
-    "code": "BU",
+    "code": "SA01",
     "region_code": "SA",
-    "location": { "type": "Point", "coordinates": [39.7646, 67.2746] }
+    "location": { "type": "Point", "coordinates": [67.2746, 39.7646] }
   },
   {
     "name": "Ishtixon",
-    "code": "IS",
+    "code": "SA02",
     "region_code": "SA",
-    "location": { "type": "Point", "coordinates": [39.9608, 66.4869] }
+    "location": { "type": "Point", "coordinates": [66.4869, 39.9608] }
   },
   {
     "name": "Jomboy",
-    "code": "JO",
+    "code": "SA03",
     "region_code": "SA",
-    "location": { "type": "Point", "coordinates": [39.6983, 67.0978] }
+    "location": { "type": "Point", "coordinates": [67.0978, 39.6983] }
   },
   {
     "name": "Kattaqoʻrgʻon",
-    "code": "KK",
+    "code": "SA04",
     "region_code": "SA",
-    "location": { "type": "Point", "coordinates": [39.8989, 66.2661] }
+    "location": { "type": "Point", "coordinates": [66.2661, 39.8989] }
   },
   {
     "name": "Narpay",
-    "code": "NA",
+    "code": "SA05",
     "region_code": "SA",
-    "location": { "type": "Point", "coordinates": [39.7653, 66.8203] }
+    "location": { "type": "Point", "coordinates": [66.8203, 39.7653] }
   },
   {
     "name": "Nurobod",
-    "code": "NU",
+    "code": "SA06",
     "region_code": "SA",
-    "location": { "type": "Point", "coordinates": [39.6031, 65.6842] }
+    "location": { "type": "Point", "coordinates": [65.6842, 39.6031] }
   },
   {
     "name": "Oqdaryo",
-    "code": "OQ",
+    "code": "SA07",
     "region_code": "SA",
-    "location": { "type": "Point", "coordinates": [39.7597, 67.1647] }
+    "location": { "type": "Point", "coordinates": [67.1647, 39.7597] }
   },
   {
     "name": "Payariq",
-    "code": "PA",
+    "code": "SA08",
     "region_code": "SA",
-    "location": { "type": "Point", "coordinates": [39.9781, 67.25] }
+    "location": { "type": "Point", "coordinates": [67.25, 39.9781] }
   },
   {
     "name": "Pastdargʻom",
-    "code": "PD",
+    "code": "SA09",
     "region_code": "SA",
-    "location": { "type": "Point", "coordinates": [39.6242, 66.8856] }
+    "location": { "type": "Point", "coordinates": [66.8856, 39.6242] }
   },
   {
     "name": "Paxtachi",
-    "code": "PX",
+    "code": "SA10",
     "region_code": "SA",
-    "location": { "type": "Point", "coordinates": [39.8275, 65.8906] }
+    "location": { "type": "Point", "coordinates": [65.8906, 39.8275] }
   },
   {
     "name": "Qoʻshrabot",
-    "code": "QR",
+    "code": "SA11",
     "region_code": "SA",
-    "location": { "type": "Point", "coordinates": [39.3225, 66.6856] }
+    "location": { "type": "Point", "coordinates": [66.6856, 39.3225] }
   },
   {
     "name": "Samarqand shahri",
-    "code": "SM",
+    "code": "SA12",
     "region_code": "SA",
-    "location": { "type": "Point", "coordinates": [39.6542, 66.9597] }
+    "location": { "type": "Point", "coordinates": [66.9597, 39.6542] }
   },
   {
-    "name": "Samarqand tuman",
-    "code": "ST",
+    "name": "Samarqand tumani",
+    "code": "SA13",
     "region_code": "SA",
-    "location": { "type": "Point", "coordinates": [39.6542, 66.9597] }
+    "location": { "type": "Point", "coordinates": [66.9597, 39.6542] }
   },
   {
     "name": "Toyloq",
-    "code": "TO",
+    "code": "SA14",
     "region_code": "SA",
-    "location": { "type": "Point", "coordinates": [39.5369, 67.1792] }
+    "location": { "type": "Point", "coordinates": [67.1792, 39.5369] }
   },
   {
     "name": "Urgut",
-    "code": "UR",
+    "code": "SA15",
     "region_code": "SA",
-    "location": { "type": "Point", "coordinates": [39.4014, 67.2431] }
+    "location": { "type": "Point", "coordinates": [67.2431, 39.4014] }
   },
   {
     "name": "Buxoro shahri",
-    "code": "BS",
+    "code": "BU01",
     "region_code": "BU",
-    "location": { "type": "Point", "coordinates": [39.7747, 64.4286] }
+    "location": { "type": "Point", "coordinates": [64.4286, 39.7747] }
   },
   {
-    "name": "Buxoro tuman",
-    "code": "BT",
+    "name": "Buxoro tumani",
+    "code": "BU02",
     "region_code": "BU",
-    "location": { "type": "Point", "coordinates": [39.7747, 64.4286] }
+    "location": { "type": "Point", "coordinates": [64.4286, 39.7747] }
   },
   {
     "name": "Vobkent",
-    "code": "VO",
+    "code": "BU03",
     "region_code": "BU",
-    "location": { "type": "Point", "coordinates": [40.0, 64.5] }
+    "location": { "type": "Point", "coordinates": [64.5, 40.0] }
   },
   {
     "name": "Gʻijduvon",
-    "code": "GI",
+    "code": "BU04",
     "region_code": "BU",
-    "location": { "type": "Point", "coordinates": [40.1, 64.6833] }
+    "location": { "type": "Point", "coordinates": [64.6833, 40.1] }
   },
   {
     "name": "Jondor",
-    "code": "JO",
+    "code": "BU05",
     "region_code": "BU",
-    "location": { "type": "Point", "coordinates": [39.75, 64.0833] }
+    "location": { "type": "Point", "coordinates": [64.0833, 39.75] }
   },
   {
     "name": "Kogon shahri",
-    "code": "KS",
+    "code": "BU06",
     "region_code": "BU",
-    "location": { "type": "Point", "coordinates": [39.7219, 64.5458] }
+    "location": { "type": "Point", "coordinates": [64.5458, 39.7219] }
   },
   {
-    "name": "Kogon tuman",
-    "code": "KT",
+    "name": "Kogon tumani",
+    "code": "BU07",
     "region_code": "BU",
-    "location": { "type": "Point", "coordinates": [39.7219, 64.5458] }
+    "location": { "type": "Point", "coordinates": [64.5458, 39.7219] }
   },
   {
     "name": "Olot",
-    "code": "OL",
+    "code": "BU08",
     "region_code": "BU",
-    "location": { "type": "Point", "coordinates": [39.4167, 63.8] }
+    "location": { "type": "Point", "coordinates": [63.8, 39.4167] }
   },
   {
     "name": "Peshku",
-    "code": "PE",
+    "code": "BU09",
     "region_code": "BU",
-    "location": { "type": "Point", "coordinates": [40.25, 63.7] }
+    "location": { "type": "Point", "coordinates": [63.7, 40.25] }
   },
   {
     "name": "Qorakoʻl",
-    "code": "QK",
+    "code": "BU10",
     "region_code": "BU",
-    "location": { "type": "Point", "coordinates": [39.5, 63.8333] }
+    "location": { "type": "Point", "coordinates": [63.8333, 39.5] }
   },
   {
     "name": "Qorovulbozor",
-    "code": "QB",
+    "code": "BU11",
     "region_code": "BU",
-    "location": { "type": "Point", "coordinates": [39.4833, 64.7833] }
+    "location": { "type": "Point", "coordinates": [64.7833, 39.4833] }
   },
   {
     "name": "Romitan",
-    "code": "RO",
+    "code": "BU12",
     "region_code": "BU",
-    "location": { "type": "Point", "coordinates": [39.9333, 64.3833] }
+    "location": { "type": "Point", "coordinates": [64.3833, 39.9333] }
   },
   {
     "name": "Shofirkon",
-    "code": "SH",
+    "code": "BU13",
     "region_code": "BU",
-    "location": { "type": "Point", "coordinates": [40.1167, 64.5] }
+    "location": { "type": "Point", "coordinates": [64.5, 40.1167] }
   },
   {
     "name": "Urganch shahri",
-    "code": "US",
+    "code": "XO01",
     "region_code": "XO",
-    "location": { "type": "Point", "coordinates": [41.5533, 60.6239] }
+    "location": { "type": "Point", "coordinates": [60.6239, 41.5533] }
   },
   {
-    "name": "Urganch tuman",
-    "code": "UT",
+    "name": "Urganch tumani",
+    "code": "XO02",
     "region_code": "XO",
-    "location": { "type": "Point", "coordinates": [41.5533, 60.6239] }
+    "location": { "type": "Point", "coordinates": [60.6239, 41.5533] }
   },
   {
     "name": "Bogʻot",
-    "code": "BO",
+    "code": "XO03",
     "region_code": "XO",
-    "location": { "type": "Point", "coordinates": [41.3333, 60.8333] }
+    "location": { "type": "Point", "coordinates": [60.8333, 41.3333] }
   },
   {
     "name": "Gurlan",
-    "code": "GU",
+    "code": "XO04",
     "region_code": "XO",
-    "location": { "type": "Point", "coordinates": [41.8447, 60.3914] }
+    "location": { "type": "Point", "coordinates": [60.3914, 41.8447] }
   },
   {
     "name": "Xiva",
-    "code": "XI",
+    "code": "XO05",
     "region_code": "XO",
-    "location": { "type": "Point", "coordinates": [41.3794, 60.3636] }
+    "location": { "type": "Point", "coordinates": [60.3636, 41.3794] }
   },
   {
     "name": "Xazarasp",
-    "code": "XZ",
+    "code": "XO06",
     "region_code": "XO",
-    "location": { "type": "Point", "coordinates": [41.45, 61.0833] }
+    "location": { "type": "Point", "coordinates": [61.0833, 41.45] }
   },
   {
     "name": "Xonqa",
-    "code": "XQ",
+    "code": "XO07",
     "region_code": "XO",
-    "location": { "type": "Point", "coordinates": [41.4167, 60.75] }
+    "location": { "type": "Point", "coordinates": [60.75, 41.4167] }
   },
   {
     "name": "Qoʻshkoʻpir",
-    "code": "QK",
+    "code": "XO08",
     "region_code": "XO",
-    "location": { "type": "Point", "coordinates": [41.5333, 60.35] }
+    "location": { "type": "Point", "coordinates": [60.35, 41.5333] }
   },
   {
     "name": "Shovot",
-    "code": "SH",
+    "code": "XO09",
     "region_code": "XO",
-    "location": { "type": "Point", "coordinates": [41.65, 60.3] }
+    "location": { "type": "Point", "coordinates": [60.3, 41.65] }
   },
   {
     "name": "Yangiariq",
-    "code": "YA",
+    "code": "XO10",
     "region_code": "XO",
-    "location": { "type": "Point", "coordinates": [41.3833, 61.05] }
+    "location": { "type": "Point", "coordinates": [61.05, 41.3833] }
   },
   {
     "name": "Yangibozor",
-    "code": "YB",
+    "code": "XO11",
     "region_code": "XO",
-    "location": { "type": "Point", "coordinates": [41.7333, 60.8] }
+    "location": { "type": "Point", "coordinates": [60.8, 41.7333] }
   },
   {
     "name": "Navoiy shahri",
-    "code": "NS",
+    "code": "NV01",
     "region_code": "NV",
-    "location": { "type": "Point", "coordinates": [40.0844, 65.3792] }
+    "location": { "type": "Point", "coordinates": [65.3792, 40.0844] }
   },
   {
     "name": "Karmana",
-    "code": "KA",
+    "code": "NV02",
     "region_code": "NV",
-    "location": { "type": "Point", "coordinates": [40.1167, 65.375] }
+    "location": { "type": "Point", "coordinates": [65.375, 40.1167] }
   },
   {
     "name": "Konimex",
-    "code": "KO",
+    "code": "NV03",
     "region_code": "NV",
-    "location": { "type": "Point", "coordinates": [40.2833, 64.8167] }
+    "location": { "type": "Point", "coordinates": [64.8167, 40.2833] }
   },
   {
     "name": "Navbahor",
-    "code": "NB",
+    "code": "NV04",
     "region_code": "NV",
-    "location": { "type": "Point", "coordinates": [40.0, 65.25] }
+    "location": { "type": "Point", "coordinates": [65.25, 40.0] }
   },
   {
     "name": "Nurota",
-    "code": "NU",
+    "code": "NV05",
     "region_code": "NV",
-    "location": { "type": "Point", "coordinates": [40.5667, 65.6833] }
+    "location": { "type": "Point", "coordinates": [65.6833, 40.5667] }
   },
   {
     "name": "Qiziltepa",
-    "code": "QZ",
+    "code": "NV06",
     "region_code": "NV",
-    "location": { "type": "Point", "coordinates": [39.9833, 64.8667] }
+    "location": { "type": "Point", "coordinates": [64.8667, 39.9833] }
   },
   {
     "name": "Tomdi",
-    "code": "TO",
+    "code": "NV07",
     "region_code": "NV",
-    "location": { "type": "Point", "coordinates": [41.75, 63.9833] }
+    "location": { "type": "Point", "coordinates": [63.9833, 41.75] }
   },
   {
     "name": "Uchquduq",
-    "code": "UQ",
+    "code": "NV08",
     "region_code": "NV",
-    "location": { "type": "Point", "coordinates": [42.15, 63.5667] }
+    "location": { "type": "Point", "coordinates": [63.5667, 42.15] }
   },
   {
     "name": "Xatirchi",
-    "code": "XA",
+    "code": "NV09",
     "region_code": "NV",
-    "location": { "type": "Point", "coordinates": [40.0833, 66.0333] }
+    "location": { "type": "Point", "coordinates": [66.0333, 40.0833] }
   },
   {
     "name": "Zarafshon shahri",
-    "code": "ZA",
+    "code": "NV10",
     "region_code": "NV",
-    "location": { "type": "Point", "coordinates": [41.5833, 64.2167] }
+    "location": { "type": "Point", "coordinates": [64.2167, 41.5833] }
   },
   {
     "name": "Qarshi shahri",
-    "code": "QS",
+    "code": "QA01",
     "region_code": "QA",
-    "location": { "type": "Point", "coordinates": [38.8606, 65.7891] }
+    "location": { "type": "Point", "coordinates": [65.7891, 38.8606] }
   },
   {
-    "name": "Qarshi tuman",
-    "code": "QT",
+    "name": "Qarshi tumani",
+    "code": "QA02",
     "region_code": "QA",
-    "location": { "type": "Point", "coordinates": [38.8606, 65.7891] }
+    "location": { "type": "Point", "coordinates": [65.7891, 38.8606] }
   },
   {
     "name": "Chiroqchi",
-    "code": "CH",
+    "code": "QA03",
     "region_code": "QA",
-    "location": { "type": "Point", "coordinates": [39.0333, 66.5833] }
+    "location": { "type": "Point", "coordinates": [66.5833, 39.0333] }
   },
   {
     "name": "Dehqonobod",
-    "code": "DE",
+    "code": "QA04",
     "region_code": "QA",
-    "location": { "type": "Point", "coordinates": [38.2833, 66.7333] }
+    "location": { "type": "Point", "coordinates": [66.7333, 38.2833] }
   },
   {
     "name": "Gʻuzor",
-    "code": "GU",
+    "code": "QA05",
     "region_code": "QA",
-    "location": { "type": "Point", "coordinates": [38.6167, 66.25] }
+    "location": { "type": "Point", "coordinates": [66.25, 38.6167] }
   },
   {
     "name": "Kasbi",
-    "code": "KA",
+    "code": "QA06",
     "region_code": "QA",
-    "location": { "type": "Point", "coordinates": [39.1833, 65.6] }
+    "location": { "type": "Point", "coordinates": [65.6, 39.1833] }
   },
   {
     "name": "Kitob",
-    "code": "KI",
+    "code": "QA07",
     "region_code": "QA",
-    "location": { "type": "Point", "coordinates": [39.1236, 66.8853] }
+    "location": { "type": "Point", "coordinates": [66.8853, 39.1236] }
   },
   {
     "name": "Koson",
-    "code": "KO",
+    "code": "QA08",
     "region_code": "QA",
-    "location": { "type": "Point", "coordinates": [39.0333, 65.5833] }
+    "location": { "type": "Point", "coordinates": [65.5833, 39.0333] }
   },
   {
     "name": "Mirishkor",
-    "code": "MI",
+    "code": "QA09",
     "region_code": "QA",
-    "location": { "type": "Point", "coordinates": [38.65, 65.25] }
+    "location": { "type": "Point", "coordinates": [65.25, 38.65] }
   },
   {
     "name": "Muborak",
-    "code": "MU",
+    "code": "QA10",
     "region_code": "QA",
-    "location": { "type": "Point", "coordinates": [39.255, 65.15] }
+    "location": { "type": "Point", "coordinates": [65.15, 39.255] }
   },
   {
     "name": "Nishon",
-    "code": "NI",
+    "code": "QA11",
     "region_code": "QA",
-    "location": { "type": "Point", "coordinates": [38.8333, 65.6] }
+    "location": { "type": "Point", "coordinates": [65.6, 38.8333] }
   },
   {
     "name": "Shahrisabz",
-    "code": "SH",
+    "code": "QA12",
     "region_code": "QA",
-    "location": { "type": "Point", "coordinates": [39.0578, 66.8347] }
+    "location": { "type": "Point", "coordinates": [66.8347, 39.0578] }
   },
   {
     "name": "Yakkabogʻ",
-    "code": "YA",
+    "code": "QA13",
     "region_code": "QA",
-    "location": { "type": "Point", "coordinates": [38.95, 66.6667] }
+    "location": { "type": "Point", "coordinates": [66.6667, 38.95] }
   },
   {
     "name": "Qamashi",
-    "code": "QM",
+    "code": "QA14",
     "region_code": "QA",
-    "location": { "type": "Point", "coordinates": [38.8, 66.45] }
+    "location": { "type": "Point", "coordinates": [66.45, 38.8] }
   },
   {
     "name": "Termiz shahri",
-    "code": "TS",
+    "code": "SU01",
     "region_code": "SU",
-    "location": { "type": "Point", "coordinates": [37.2242, 67.2783] }
+    "location": { "type": "Point", "coordinates": [67.2783, 37.2242] }
   },
   {
     "name": "Angor",
-    "code": "AN",
+    "code": "SU02",
     "region_code": "SU",
-    "location": { "type": "Point", "coordinates": [37.4, 67.7667] }
+    "location": { "type": "Point", "coordinates": [67.7667, 37.4] }
   },
   {
     "name": "Bandixon",
-    "code": "BA",
+    "code": "SU03",
     "region_code": "SU",
-    "location": { "type": "Point", "coordinates": [38.1333, 67.35] }
+    "location": { "type": "Point", "coordinates": [67.35, 38.1333] }
   },
   {
     "name": "Boysun",
-    "code": "BO",
+    "code": "SU04",
     "region_code": "SU",
-    "location": { "type": "Point", "coordinates": [38.2, 67.2] }
+    "location": { "type": "Point", "coordinates": [67.2, 38.2] }
   },
   {
     "name": "Denov",
-    "code": "DE",
+    "code": "SU05",
     "region_code": "SU",
-    "location": { "type": "Point", "coordinates": [38.2667, 67.9] }
+    "location": { "type": "Point", "coordinates": [67.9, 38.2667] }
   },
   {
     "name": "Jarqoʻrgʻon",
-    "code": "JA",
+    "code": "SU06",
     "region_code": "SU",
-    "location": { "type": "Point", "coordinates": [37.8333, 67.4] }
+    "location": { "type": "Point", "coordinates": [67.4, 37.8333] }
   },
   {
     "name": "Muzrabot",
-    "code": "MU",
+    "code": "SU07",
     "region_code": "SU",
-    "location": { "type": "Point", "coordinates": [37.6667, 67.5] }
+    "location": { "type": "Point", "coordinates": [67.5, 37.6667] }
   },
   {
     "name": "Oltinsoy",
-    "code": "OL",
+    "code": "SU08",
     "region_code": "SU",
-    "location": { "type": "Point", "coordinates": [38.1333, 67.6667] }
+    "location": { "type": "Point", "coordinates": [67.6667, 38.1333] }
   },
   {
     "name": "Qiziriq",
-    "code": "QI",
+    "code": "SU09",
     "region_code": "SU",
-    "location": { "type": "Point", "coordinates": [37.8667, 67.7667] }
+    "location": { "type": "Point", "coordinates": [67.7667, 37.8667] }
   },
   {
     "name": "Qumqoʻrgʻon",
-    "code": "QQ",
+    "code": "SU10",
     "region_code": "SU",
-    "location": { "type": "Point", "coordinates": [37.7167, 67.6] }
+    "location": { "type": "Point", "coordinates": [67.6, 37.7167] }
   },
   {
     "name": "Sariosiyo",
-    "code": "SA",
+    "code": "SU11",
     "region_code": "SU",
-    "location": { "type": "Point", "coordinates": [38.4333, 67.9667] }
+    "location": { "type": "Point", "coordinates": [67.9667, 38.4333] }
   },
   {
     "name": "Sherobod",
-    "code": "SH",
+    "code": "SU12",
     "region_code": "SU",
-    "location": { "type": "Point", "coordinates": [37.6667, 67.0] }
+    "location": { "type": "Point", "coordinates": [67.0, 37.6667] }
   },
   {
     "name": "Shoʻrchi",
-    "code": "SO",
+    "code": "SU13",
     "region_code": "SU",
-    "location": { "type": "Point", "coordinates": [38.0, 67.8] }
+    "location": { "type": "Point", "coordinates": [67.8, 38.0] }
   },
   {
-    "name": "Termiz tuman",
-    "code": "TT",
+    "name": "Termiz tumani",
+    "code": "SU14",
     "region_code": "SU",
-    "location": { "type": "Point", "coordinates": [37.2242, 67.2783] }
+    "location": { "type": "Point", "coordinates": [67.2783, 37.2242] }
   },
   {
     "name": "Uzun",
-    "code": "UZ",
+    "code": "SU15",
     "region_code": "SU",
-    "location": { "type": "Point", "coordinates": [38.2667, 68.2] }
+    "location": { "type": "Point", "coordinates": [68.2, 38.2667] }
   },
   {
     "name": "Guliston shahri",
-    "code": "GS",
+    "code": "SI01",
     "region_code": "SI",
-    "location": { "type": "Point", "coordinates": [40.4897, 68.7842] }
+    "location": { "type": "Point", "coordinates": [68.7842, 40.4897] }
   },
   {
     "name": "Boyovut",
-    "code": "BO",
+    "code": "SI02",
     "region_code": "SI",
-    "location": { "type": "Point", "coordinates": [40.3667, 68.6667] }
+    "location": { "type": "Point", "coordinates": [68.6667, 40.3667] }
   },
   {
-    "name": "Guliston tuman",
-    "code": "GT",
+    "name": "Guliston tumani",
+    "code": "SI03",
     "region_code": "SI",
-    "location": { "type": "Point", "coordinates": [40.4897, 68.7842] }
+    "location": { "type": "Point", "coordinates": [68.7842, 40.4897] }
   },
   {
     "name": "Mirzaobod",
-    "code": "MI",
+    "code": "SI04",
     "region_code": "SI",
-    "location": { "type": "Point", "coordinates": [40.4333, 68.6333] }
+    "location": { "type": "Point", "coordinates": [68.6333, 40.4333] }
   },
   {
     "name": "Oqoltin",
-    "code": "OQ",
+    "code": "SI05",
     "region_code": "SI",
-    "location": { "type": "Point", "coordinates": [40.5833, 68.9833] }
+    "location": { "type": "Point", "coordinates": [68.9833, 40.5833] }
   },
   {
     "name": "Sardoba",
-    "code": "SA",
+    "code": "SI06",
     "region_code": "SI",
-    "location": { "type": "Point", "coordinates": [40.5, 68.6667] }
+    "location": { "type": "Point", "coordinates": [68.6667, 40.5] }
   },
   {
     "name": "Sayxunobod",
-    "code": "SY",
+    "code": "SI07",
     "region_code": "SI",
-    "location": { "type": "Point", "coordinates": [40.4333, 68.9333] }
+    "location": { "type": "Point", "coordinates": [68.9333, 40.4333] }
   },
   {
-    "name": "Sirdaryo tuman",
-    "code": "ST",
+    "name": "Sirdaryo tumani",
+    "code": "SI08",
     "region_code": "SI",
-    "location": { "type": "Point", "coordinates": [40.85, 68.6667] }
+    "location": { "type": "Point", "coordinates": [68.6667, 40.85] }
   },
   {
     "name": "Xovos",
-    "code": "XO",
+    "code": "SI09",
     "region_code": "SI",
-    "location": { "type": "Point", "coordinates": [40.0167, 68.7833] }
+    "location": { "type": "Point", "coordinates": [68.7833, 40.0167] }
   },
   {
-    "code": "JZ-01",
     "name": "Arnasoy tumani",
-    "region_code": "JZ",
-    "location": { "type": "Point", "coordinates": [40.6333, 67.9667] }
+    "code": "JI01",
+    "region_code": "JI",
+    "location": { "type": "Point", "coordinates": [67.9667, 40.6333] }
   },
   {
-    "code": "JZ-02",
     "name": "Baxmal tumani",
-    "region_code": "JZ",
-    "location": { "type": "Point", "coordinates": [39.7333, 68.2167] }
+    "code": "JI02",
+    "region_code": "JI",
+    "location": { "type": "Point", "coordinates": [68.2167, 39.7333] }
   },
   {
-    "code": "JZ-03",
     "name": "Doʻstlik tumani",
-    "region_code": "JZ",
-    "location": { "type": "Point", "coordinates": [40.5167, 68.6667] }
+    "code": "JI03",
+    "region_code": "JI",
+    "location": { "type": "Point", "coordinates": [68.6667, 40.5167] }
   },
   {
-    "code": "JZ-04",
     "name": "Forish tumani",
-    "region_code": "JZ",
-    "location": { "type": "Point", "coordinates": [40.5833, 67.3] }
+    "code": "JI04",
+    "region_code": "JI",
+    "location": { "type": "Point", "coordinates": [67.3, 40.5833] }
   },
   {
-    "code": "JZ-05",
     "name": "Gʻallaorol tumani",
-    "region_code": "JZ",
-    "location": { "type": "Point", "coordinates": [40.0333, 67.8333] }
+    "code": "JI05",
+    "region_code": "JI",
+    "location": { "type": "Point", "coordinates": [67.8333, 40.0333] }
   },
   {
-    "code": "JZ-06",
     "name": "Jizzax shahri",
-    "region_code": "JZ",
-    "location": { "type": "Point", "coordinates": [40.1167, 67.85] }
+    "code": "JI06",
+    "region_code": "JI",
+    "location": { "type": "Point", "coordinates": [67.85, 40.1167] }
   },
   {
-    "code": "JZ-07",
     "name": "Jizzax tumani",
-    "region_code": "JZ",
-    "location": { "type": "Point", "coordinates": [40.1667, 67.9167] }
+    "code": "JI07",
+    "region_code": "JI",
+    "location": { "type": "Point", "coordinates": [67.9167, 40.1667] }
   },
   {
-    "code": "JZ-08",
     "name": "Mirzachoʻl tumani",
-    "region_code": "JZ",
-    "location": { "type": "Point", "coordinates": [40.45, 68.6] }
+    "code": "JI08",
+    "region_code": "JI",
+    "location": { "type": "Point", "coordinates": [68.6, 40.45] }
   },
   {
-    "code": "JZ-09",
     "name": "Paxtakor tumani",
-    "region_code": "JZ",
-    "location": { "type": "Point", "coordinates": [40.3, 67.9667] }
+    "code": "JI09",
+    "region_code": "JI",
+    "location": { "type": "Point", "coordinates": [67.9667, 40.3] }
   },
   {
-    "code": "JZ-10",
     "name": "Yangiobod tumani",
-    "region_code": "JZ",
-    "location": { "type": "Point", "coordinates": [40.0, 70.0] }
+    "code": "JI10",
+    "region_code": "JI",
+    "location": { "type": "Point", "coordinates": [70.0, 40.0] }
   },
   {
-    "code": "JZ-11",
     "name": "Zafarobod tumani",
-    "region_code": "JZ",
-    "location": { "type": "Point", "coordinates": [40.3667, 68.8667] }
+    "code": "JI11",
+    "region_code": "JI",
+    "location": { "type": "Point", "coordinates": [68.8667, 40.3667] }
   },
   {
-    "code": "JZ-12",
     "name": "Zarbdor tumani",
-    "region_code": "JZ",
-    "location": { "type": "Point", "coordinates": [40.0, 68.9167] }
+    "code": "JI12",
+    "region_code": "JI",
+    "location": { "type": "Point", "coordinates": [68.9167, 40.0] }
   },
   {
-    "code": "JZ-13",
     "name": "Sharof Rashidov tumani",
-    "region_code": "JZ",
-    "location": { "type": "Point", "coordinates": [40.2, 67.75] }
+    "code": "JI13",
+    "region_code": "JI",
+    "location": { "type": "Point", "coordinates": [67.75, 40.2] }
   },
   {
-    "code": "QR-01",
     "name": "Amudaryo tumani",
+    "code": "QR01",
     "region_code": "QR",
-    "location": { "type": "Point", "coordinates": [42.0833, 59.6333] }
+    "location": { "type": "Point", "coordinates": [59.6333, 42.0833] }
   },
   {
-    "code": "QR-02",
     "name": "Beruniy tumani",
+    "code": "QR02",
     "region_code": "QR",
-    "location": { "type": "Point", "coordinates": [41.7, 60.75] }
+    "location": { "type": "Point", "coordinates": [60.75, 41.7] }
   },
   {
-    "code": "QR-03",
     "name": "Chimboy tumani",
+    "code": "QR03",
     "region_code": "QR",
-    "location": { "type": "Point", "coordinates": [42.9333, 59.8333] }
+    "location": { "type": "Point", "coordinates": [59.8333, 42.9333] }
   },
   {
-    "code": "QR-04",
     "name": "Ellikqalʼa tumani",
+    "code": "QR04",
     "region_code": "QR",
-    "location": { "type": "Point", "coordinates": [41.55, 61.0] }
+    "location": { "type": "Point", "coordinates": [61.0, 41.55] }
   },
   {
-    "code": "QR-05",
     "name": "Kegeyli tumani",
+    "code": "QR05",
     "region_code": "QR",
-    "location": { "type": "Point", "coordinates": [42.7667, 59.6] }
+    "location": { "type": "Point", "coordinates": [59.6, 42.7667] }
   },
   {
-    "code": "QR-06",
     "name": "Moʻynoq tumani",
+    "code": "QR06",
     "region_code": "QR",
-    "location": { "type": "Point", "coordinates": [43.7667, 59.0167] }
+    "location": { "type": "Point", "coordinates": [59.0167, 43.7667] }
   },
   {
-    "code": "QR-07",
     "name": "Nukus shahri",
+    "code": "QR07",
     "region_code": "QR",
-    "location": { "type": "Point", "coordinates": [42.4667, 59.6] }
+    "location": { "type": "Point", "coordinates": [59.6, 42.4667] }
   },
   {
-    "code": "QR-08",
     "name": "Nukus tumani",
+    "code": "QR08",
     "region_code": "QR",
-    "location": { "type": "Point", "coordinates": [42.5333, 59.9333] }
+    "location": { "type": "Point", "coordinates": [59.9333, 42.5333] }
   },
   {
-    "code": "QR-09",
     "name": "Qoʻngʻirot tumani",
+    "code": "QR09",
     "region_code": "QR",
-    "location": { "type": "Point", "coordinates": [43.0333, 58.9] }
+    "location": { "type": "Point", "coordinates": [58.9, 43.0333] }
   },
   {
-    "code": "QR-10",
     "name": "Qoraoʻzak tumani",
+    "code": "QR10",
     "region_code": "QR",
-    "location": { "type": "Point", "coordinates": [43.0, 59.5] }
+    "location": { "type": "Point", "coordinates": [59.5, 43.0] }
   },
   {
-    "code": "QR-11",
     "name": "Qanlikoʻl tumani",
+    "code": "QR11",
     "region_code": "QR",
-    "location": { "type": "Point", "coordinates": [42.85, 60.75] }
+    "location": { "type": "Point", "coordinates": [60.75, 42.85] }
   },
   {
-    "code": "QR-12",
     "name": "Shumanay tumani",
+    "code": "QR12",
     "region_code": "QR",
-    "location": { "type": "Point", "coordinates": [42.6, 59.65] }
+    "location": { "type": "Point", "coordinates": [59.65, 42.6] }
   },
   {
-    "code": "QR-13",
     "name": "Taxtakoʻpir tumani",
+    "code": "QR13",
     "region_code": "QR",
-    "location": { "type": "Point", "coordinates": [42.7667, 60.5] }
+    "location": { "type": "Point", "coordinates": [60.5, 42.7667] }
   },
   {
-    "code": "QR-14",
     "name": "Toʻrtkoʻl tumani",
+    "code": "QR14",
     "region_code": "QR",
-    "location": { "type": "Point", "coordinates": [41.55, 60.95] }
+    "location": { "type": "Point", "coordinates": [60.95, 41.55] }
   },
   {
-    "code": "QR-15",
     "name": "Xoʻjayli tumani",
+    "code": "QR15",
     "region_code": "QR",
-    "location": { "type": "Point", "coordinates": [42.4, 59.45] }
+    "location": { "type": "Point", "coordinates": [59.45, 42.4] }
   },
   {
-    "code": "QR-16",
     "name": "Qanlikoʻl shaharchasi",
+    "code": "QR16",
     "region_code": "QR",
-    "location": { "type": "Point", "coordinates": [42.9, 60.8] }
+    "location": { "type": "Point", "coordinates": [60.8, 42.9] }
   }
 ]

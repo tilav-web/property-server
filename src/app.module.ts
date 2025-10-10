@@ -36,6 +36,7 @@ import { CommissionerModule } from './modules/commissioner/commissioner.module';
     SellerModule,
     BankAccountModule,
     CommissionerModule,
+    DistrictModule,
   ],
 })
 export class AppModule {}

@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { District, DistrictSchema } from './district.schema';
+import { DistrictController } from './district.controller';
+import { DistrictService } from './district.service';
 
 @Module({
   imports: [
@@ -8,7 +10,7 @@ import { District, DistrictSchema } from './district.schema';
       { name: District.name, schema: DistrictSchema },
     ]),
   ],
-  controllers: [],
-  providers: [],
+  controllers: [DistrictController],
+  providers: [DistrictService],
 })
 export class DistrictModule {}

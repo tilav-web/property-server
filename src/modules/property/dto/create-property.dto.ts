@@ -3,7 +3,6 @@ import {
   IsNotEmpty,
   IsNumber,
   IsOptional,
-  IsBoolean,
   IsArray,
   IsEnum,
   Min,
@@ -109,39 +108,6 @@ export class CreatePropertyDto {
   @IsOptional()
   @Min(0)
   parking_spaces?: number;
-
-  @Type(() => Boolean)
-  @IsBoolean()
-  @IsOptional()
-  is_premium?: boolean;
-
-  @Type(() => Boolean)
-  @IsBoolean()
-  @IsOptional()
-  is_verified?: boolean;
-
-  @Type(() => Boolean)
-  @IsBoolean()
-  @IsOptional()
-  is_new?: boolean;
-
-  @Type(() => Boolean)
-  @IsBoolean()
-  @IsOptional()
-  is_guest_choice?: boolean;
-
-  @Type(() => Number)
-  @IsNumber()
-  @IsOptional()
-  @Min(0)
-  @Max(5)
-  rating?: number;
-
-  @Type(() => Number)
-  @IsNumber()
-  @IsOptional()
-  @Min(0)
-  reviews_count?: number;
 
   @IsString()
   @IsOptional()
