@@ -19,9 +19,19 @@ export class Seller {
     default: EnumSellerBusinessType.YTT,
   })
   business_type: EnumSellerBusinessType;
+
+  @Prop({ type: Boolean, default: false })
+  is_active: boolean;
 }
 
 export const SellerSchema = SchemaFactory.createForClass(Seller);
+
+SellerSchema.virtual('bank_account', {
+  ref: 'BankAccount',
+  localField: '_id',
+  foreignField: 'seller',
+  justOne: true,
+});
 
 SellerSchema.virtual('ytt', {
   ref: 'YttSeller',

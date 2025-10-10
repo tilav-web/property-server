@@ -5,8 +5,8 @@ export type BankAccountDocument = Document & BankAccount;
 
 @Schema({ timestamps: true })
 export class BankAccount {
-  @Prop({ type: Types.ObjectId, ref: 'User', required: true })
-  author: Types.ObjectId;
+  @Prop({ type: Types.ObjectId, ref: 'Seller', required: true })
+  seller: Types.ObjectId;
 
   @Prop({ type: String, required: true, trim: true })
   account_number: string;

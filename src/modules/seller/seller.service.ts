@@ -124,7 +124,9 @@ export class SellerService {
             path: 'vat_file',
           },
         ],
-      });
+      })
+      .populate('bank_account')
+      .lean();
     return { user: hasUser, seller };
   }
 
@@ -186,7 +188,9 @@ export class SellerService {
             path: 'vat_file',
           },
         ],
-      });
+      })
+      .populate('bank_account')
+      .lean();
   }
 
   async createYttSeller(
@@ -286,7 +290,9 @@ export class SellerService {
             path: 'vat_file',
           },
         ],
-      });
+      })
+      .populate('bank_account')
+      .lean();
   }
 
   async createMchjSeller(

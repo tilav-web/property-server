@@ -104,7 +104,23 @@ export class SellerController {
       vat_file?: MulterFile[];
     },
   ) {
-    return this.service.createYttSeller(dto, files);
+    try {
+      return this.service.createYttSeller(dto, files);
+    } catch (error) {
+      console.error('Logout error:', error);
+
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
+      if (error instanceof Error) {
+        throw new InternalServerErrorException(error.message);
+      }
+
+      throw new InternalServerErrorException(
+        "Xatolik ketdi. Birozdan so'ng qayta urinib ko'ring!",
+      );
+    }
   }
 
   @Post('/mchj')
@@ -134,7 +150,23 @@ export class SellerController {
       vat_file?: MulterFile[];
     },
   ) {
-    return this.service.createMchjSeller(dto, files);
+    try {
+      return this.service.createMchjSeller(dto, files);
+    } catch (error) {
+      console.error('Logout error:', error);
+
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
+      if (error instanceof Error) {
+        throw new InternalServerErrorException(error.message);
+      }
+
+      throw new InternalServerErrorException(
+        "Xatolik ketdi. Birozdan so'ng qayta urinib ko'ring!",
+      );
+    }
   }
 
   @Post('/self-employed')
@@ -156,6 +188,22 @@ export class SellerController {
       vat_file?: MulterFile[];
     },
   ) {
-    return this.service.createSelfEmployedSeller(dto, files);
+    try {
+      return this.service.createSelfEmployedSeller(dto, files);
+    } catch (error) {
+      console.error('Logout error:', error);
+
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
+      if (error instanceof Error) {
+        throw new InternalServerErrorException(error.message);
+      }
+
+      throw new InternalServerErrorException(
+        "Xatolik ketdi. Birozdan so'ng qayta urinib ko'ring!",
+      );
+    }
   }
 }
