@@ -1,6 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
 import { EnumSellerBusinessType } from 'src/enums/seller-business-type.enum';
+import { EnumSellerStatus } from 'src/enums/seller-status.enum';
 
 export type SellerDocument = Document & Seller;
 
@@ -20,11 +21,12 @@ export class Seller {
   })
   business_type: EnumSellerBusinessType;
 
-  @Prop({ type: Boolean, default: false })
-  is_active: boolean;
-
-  @Prop({ type: Boolean, default: false })
-  registration_status: boolean;
+  @Prop({
+    type: String,
+    enum: EnumSellerStatus,
+    default: EnumSellerStatus.IN_PROGRESS,
+  })
+  status: EnumSellerStatus;
 }
 
 export const SellerSchema = SchemaFactory.createForClass(Seller);

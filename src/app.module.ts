@@ -9,6 +9,7 @@ import { DistrictModule } from './modules/district/district.module';
 import { MessageModule } from './modules/message/message.module';
 import { SellerModule } from './modules/seller/seller.module';
 import { BankAccountModule } from './modules/bank-account/bank-account.module';
+import { CommissionerModule } from './modules/commissioner/commissioner.module';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { BankAccountModule } from './modules/bank-account/bank-account.module';
     MessageModule,
     SellerModule,
     BankAccountModule,
+    CommissionerModule,
   ],
 })
 export class AppModule {}

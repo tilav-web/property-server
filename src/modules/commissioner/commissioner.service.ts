@@ -12,6 +12,7 @@ import { UserService } from '../user/user.service';
 import { SellerService } from '../seller/seller.service';
 import { FileType } from '../file/file.schema';
 import { FileService } from '../file/file.service';
+import { EnumSellerStatus } from 'src/enums/seller-status.enum';
 
 @Injectable()
 export class CommissionerService {
@@ -59,7 +60,10 @@ export class CommissionerService {
       FileType.COMMISSIONER,
       { contract_file: [dto.contract_file] },
     );
-    await this.sellerService.registerDone(seller._id as string);
+    await this.sellerService.updateSellerStatus({
+      id: seller._id as string,
+      status: EnumSellerStatus.COMPLETED,
+    });
     return this.sellerService.findSellerByUser(dto.user);
   }
 }

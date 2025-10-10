@@ -7,7 +7,7 @@ export enum FileType {
   YTT_SELLER = 'YttSeller',
   MCHJ_SELLER = 'MchjSeller',
   SELF_EMPLOYED_SELLER = 'SelfEmployedSeller',
-  COMMISSIONER = 'commissioner',
+  COMMISSIONER = 'Commissioner',
 }
 
 export type FileDocument = Document & File;

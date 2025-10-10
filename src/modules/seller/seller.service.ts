@@ -21,6 +21,7 @@ import { CreateSelfEmployedSellerDto } from './dto/self-employed-seller.dto';
 import { FileService } from '../file/file.service';
 import { FileType } from '../file/file.schema';
 import { MulterFile } from 'src/interfaces/multer-file.interface';
+import { EnumSellerStatus } from 'src/enums/seller-status.enum';
 
 @Injectable()
 export class SellerService {
@@ -476,9 +477,15 @@ export class SellerService {
       });
   }
 
-  async registerDone(id: string) {
+  async updateSellerStatus({
+    id,
+    status,
+  }: {
+    id: string;
+    status: EnumSellerStatus;
+  }) {
     return this.sellerModel.findByIdAndUpdate(id, {
-      registration_status: true,
+      status,
     });
   }
 }
