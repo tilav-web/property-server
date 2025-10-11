@@ -10,5 +10,6 @@ import { RegionController } from './region.controller';
   ],
   controllers: [RegionController],
   providers: [RegionService],
+  exports: [RegionService],
 })
 export class RegionModule {}

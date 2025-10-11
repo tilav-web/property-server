@@ -16,6 +16,7 @@ import { EnumAmenities } from 'src/enums/amenities.enum';
 import { EnumPropertyCategory } from 'src/enums/property-category.enum';
 import { EnumConstructionStatus } from 'src/enums/property-construction-status.enum';
 import { EnumPropertyPriceType } from 'src/enums/property-price-type.enum';
+import { Types } from 'mongoose';
 
 class LocationDto {
   @IsString()
@@ -121,16 +122,12 @@ export class CreatePropertyDto {
   @IsOptional()
   sales_date?: Date;
 
-  @Type(() => Number)
-  @IsNumber()
-  @IsOptional()
-  @Min(0)
-  payment_plans?: number;
-
+  @Type(() => Types.ObjectId)
   @IsMongoId()
   @IsNotEmpty()
   region: string;
 
+  @Type(() => Types.ObjectId)
   @IsMongoId()
   @IsNotEmpty()
   district: string;
