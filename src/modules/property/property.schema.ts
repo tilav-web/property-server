@@ -16,6 +16,16 @@ export class Location {
   coordinates: [number, number];
 }
 
+@Schema({ _id: false })
+export class Language {
+  @Prop({ type: String, required: true })
+  uz: string;
+  @Prop({ type: String, required: true })
+  ru: string;
+  @Prop({ type: String, required: true })
+  en: string;
+}
+
 export const LocationSchema = SchemaFactory.createForClass(Location);
 
 @Schema({ timestamps: true })
@@ -23,11 +33,11 @@ export class Property {
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
   author: Types.ObjectId;
 
-  @Prop({ type: String, required: true, minlength: 10, maxlength: 40 })
-  title: string;
+  @Prop({ type: Language, required: true })
+  title: Language;
 
-  @Prop({ type: String, required: true, minlength: 40, maxlength: 140 })
-  description: string;
+  @Prop({ type: Language, required: true })
+  description: Language;
 
   @Prop({
     type: String,
@@ -40,8 +50,8 @@ export class Property {
   @Prop({ type: Location, required: true })
   location: Location;
 
-  @Prop({ type: String, required: true, minlength: 20 })
-  address: string;
+  @Prop({ type: Language, required: true })
+  address: Language;
 
   @Prop({ type: Number, required: true, default: 0 })
   price: number;
@@ -65,17 +75,17 @@ export class Property {
   @Prop({ type: Number, required: true, min: 0 })
   area: number;
 
-  @Prop({ type: Number, required: true, min: 0, default: 0 })
+  @Prop({ type: Number, min: 0, default: 0 })
   bedrooms: number; // Yotoqxona soni
 
-  @Prop({ type: Number, required: true, min: 0, default: 0 })
+  @Prop({ type: Number, min: 0, default: 0 })
   bathrooms: number; // Hammom soni
 
   @Prop({ type: Number, min: 0, default: 0 })
   floor_level: number; // Qavat raqami
 
-  @Prop({ type: [String], default: [] })
-  amenities: EnumAmenities[];
+  @Prop({ type: [String], enum: EnumAmenities, default: [] })
+  amenities: string[];
 
   @Prop({
     type: String,

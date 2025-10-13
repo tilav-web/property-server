@@ -113,6 +113,7 @@ export class PropertyController {
         category: query.category,
         search: query.search,
         price_type: query.price_type,
+        property_type: query.property_type,
         construction_status: query.construction_status,
         is_premium: query.is_premium,
         is_verified: query.is_verified,

@@ -5,35 +5,46 @@ import {
   IsOptional,
   IsEnum,
   Min,
-  Length,
   IsMongoId,
+  IsArray,
+  ValidateNested,
+  Max,
+  IsObject,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { EnumPropertyCategory } from 'src/enums/property-category.enum';
 import { EnumConstructionStatus } from 'src/enums/property-construction-status.enum';
 import { EnumPropertyPriceType } from 'src/enums/property-price-type.enum';
+import { EnumPropertyType } from 'src/enums/property-type';
+import { EnumAmenities } from 'src/enums/amenities.enum';
 import { Types } from 'mongoose';
 
-// class LocationDto {
-//   @IsString()
-//   @IsNotEmpty()
-//   type: string;
+class LanguageDto {
+  @IsString()
+  @IsNotEmpty()
+  uz: string;
 
-//   @Min(-180, { each: true })
-//   @Max(180, { each: true })
-//   coordinates: [number, number];
-// }
+  @IsString()
+  @IsNotEmpty()
+  ru: string;
+
+  @IsString()
+  @IsNotEmpty()
+  en: string;
+}
 
 export class CreatePropertyDto {
-  @IsString()
+  @IsObject()
+  @ValidateNested()
+  @Type(() => LanguageDto)
   @IsNotEmpty()
-  @Length(10, 40)
-  title: string;
+  title: LanguageDto;
 
-  @IsString()
+  @IsObject()
+  @ValidateNested()
+  @Type(() => LanguageDto)
   @IsNotEmpty()
-  @Length(40, 140)
-  description: string;
+  description: LanguageDto;
 
   @IsEnum(EnumPropertyCategory)
   @IsNotEmpty()
@@ -43,10 +54,11 @@ export class CreatePropertyDto {
   @IsString()
   location: string;
 
-  @IsString()
+  @IsObject()
+  @ValidateNested()
+  @Type(() => LanguageDto)
   @IsNotEmpty()
-  @Length(20)
-  address: string;
+  address: LanguageDto;
 
   @Type(() => Number)
   @IsNumber()
@@ -57,6 +69,10 @@ export class CreatePropertyDto {
   @IsEnum(EnumPropertyPriceType)
   @IsNotEmpty()
   price_type: EnumPropertyPriceType;
+
+  @IsEnum(EnumPropertyType)
+  @IsNotEmpty()
+  property_type: EnumPropertyType;
 
   @Type(() => Number)
   @IsNumber()
@@ -82,9 +98,10 @@ export class CreatePropertyDto {
   @Min(0)
   floor_level?: number;
 
+  @IsArray()
+  @IsEnum(EnumAmenities, { each: true })
   @IsOptional()
-  @IsString()
-  amenities?: string;
+  amenities?: EnumAmenities[];
 
   @IsEnum(EnumConstructionStatus)
   @IsOptional()
@@ -102,6 +119,21 @@ export class CreatePropertyDto {
   @Min(0)
   parking_spaces?: number;
 
+  @Type(() => Boolean)
+  @IsOptional()
+  is_premium?: boolean;
+
+  @Type(() => Boolean)
+  @IsOptional()
+  is_verified?: boolean;
+
+  @Type(() => Number)
+  @IsNumber()
+  @IsOptional()
+  @Min(0)
+  @Max(5)
+  rating?: number;
+
   @IsString()
   @IsOptional()
   logo?: string;
@@ -114,13 +146,19 @@ export class CreatePropertyDto {
   @IsOptional()
   sales_date?: Date;
 
-  @Type(() => Types.ObjectId)
-  @IsMongoId()
-  @IsNotEmpty()
-  region: string;
+  @Type(() => Number)
+  @IsNumber()
+  @IsOptional()
+  @Min(0)
+  payment_plans?: number;
 
   @Type(() => Types.ObjectId)
   @IsMongoId()
   @IsNotEmpty()
-  district: string;
+  region: Types.ObjectId;
+
+  @Type(() => Types.ObjectId)
+  @IsMongoId()
+  @IsNotEmpty()
+  district: Types.ObjectId;
 }

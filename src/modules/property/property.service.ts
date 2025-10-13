@@ -7,6 +7,7 @@ import { FileService } from '../file/file.service';
 import { EnumPropertyCategory } from 'src/enums/property-category.enum';
 import { EnumPropertyPriceType } from 'src/enums/property-price-type.enum';
 import { EnumConstructionStatus } from 'src/enums/property-construction-status.enum';
+import { EnumPropertyType } from 'src/enums/property-type';
 
 // Define interfaces for better type safety
 interface Location {
@@ -32,6 +33,7 @@ export interface FindAllParams {
   coordinates?: [number, number];
   category?: EnumPropertyCategory;
   search?: string;
+  property_type: EnumPropertyType;
   price_type?: EnumPropertyPriceType;
   construction_status?: EnumConstructionStatus;
   is_premium?: boolean;
@@ -54,7 +56,6 @@ export class PropertyService {
     const { files, author, ...propertyData } = dto;
 
     let parsedLocation: Location | undefined = undefined;
-    let parsedAmenities: string[] | undefined = undefined;
 
     // Lokatsiyani validatsiya qilish
     if (propertyData.location) {
@@ -80,8 +81,7 @@ export class PropertyService {
     // Amenities validatsiyasi
     if (propertyData.amenities) {
       try {
-        parsedAmenities = JSON.parse(propertyData.amenities) as string[];
-        if (!Array.isArray(parsedAmenities)) {
+        if (!Array.isArray(propertyData.amenities)) {
           throw new BadRequestException(
             'Invalid amenities data: must be an array',
           );
@@ -95,7 +95,6 @@ export class PropertyService {
     const dataToCreate = {
       ...propertyData,
       location: parsedLocation,
-      amenities: parsedAmenities,
       author,
     };
 
@@ -136,6 +135,7 @@ export class PropertyService {
     category,
     search,
     price_type,
+    property_type,
     construction_status,
     is_premium,
     is_verified,
@@ -163,6 +163,7 @@ export class PropertyService {
     if (district) filter.district = district;
     if (category) filter.category = category;
     if (price_type) filter.price_type = price_type;
+    if (property_type) filter.property_type = property_type;
     if (construction_status) filter.construction_status = construction_status;
     if (is_premium !== undefined) filter.is_premium = is_premium;
     if (is_verified !== undefined) filter.is_verified = is_verified;
