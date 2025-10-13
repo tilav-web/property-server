@@ -4,6 +4,7 @@ import { EnumAmenities } from 'src/enums/amenities.enum';
 import { EnumPropertyCategory } from 'src/enums/property-category.enum';
 import { EnumConstructionStatus } from 'src/enums/property-construction-status.enum';
 import { EnumPropertyPriceType } from 'src/enums/property-price-type.enum';
+import { EnumPropertyType } from 'src/enums/property-type';
 
 export type PropertyDocument = Document & Property;
 
@@ -53,6 +54,14 @@ export class Property {
   })
   price_type: string;
 
+  @Prop({
+    type: String,
+    enum: EnumPropertyType,
+    required: true,
+    default: EnumPropertyType.RENT,
+  })
+  property_type: string;
+
   @Prop({ type: Number, required: true, min: 0 })
   area: number;
 
@@ -87,17 +96,8 @@ export class Property {
   @Prop({ type: Boolean, default: false })
   is_verified: boolean;
 
-  @Prop({ type: Boolean, default: true }) // *****************************************8
-  is_new: boolean; // Yangi e'lon statusi
-
-  @Prop({ type: Boolean, default: false }) // *********************************************8
-  is_guest_choice: boolean; // Mehmon tanlovi statusi
-
   @Prop({ type: Number, default: 0, max: 5 })
   rating: number;
-
-  @Prop({ type: Number, default: 0 })
-  reviews_count: number;
 
   @Prop({ type: String, default: null })
   logo: string;
