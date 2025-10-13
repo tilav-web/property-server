@@ -147,8 +147,6 @@ export class PropertyController {
   async findMyProperties(@Req() req: IRequestCustom) {
     try {
       const user = req.user;
-      console.log(req.user);
-
       const result = await this.service.findMyProperties(user?._id as string);
       return result;
     } catch (error) {
