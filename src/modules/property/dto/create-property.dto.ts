@@ -3,33 +3,26 @@ import {
   IsNotEmpty,
   IsNumber,
   IsOptional,
-  IsArray,
   IsEnum,
   Min,
-  Max,
-  ValidateNested,
   Length,
   IsMongoId,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { EnumAmenities } from 'src/enums/amenities.enum';
 import { EnumPropertyCategory } from 'src/enums/property-category.enum';
 import { EnumConstructionStatus } from 'src/enums/property-construction-status.enum';
 import { EnumPropertyPriceType } from 'src/enums/property-price-type.enum';
 import { Types } from 'mongoose';
 
-class LocationDto {
-  @IsString()
-  @IsNotEmpty()
-  type: string;
+// class LocationDto {
+//   @IsString()
+//   @IsNotEmpty()
+//   type: string;
 
-  @IsArray()
-  @Type(() => Number)
-  @IsNumber({}, { each: true })
-  @Min(-180, { each: true })
-  @Max(180, { each: true })
-  coordinates: [number, number];
-}
+//   @Min(-180, { each: true })
+//   @Max(180, { each: true })
+//   coordinates: [number, number];
+// }
 
 export class CreatePropertyDto {
   @IsString()
@@ -46,9 +39,9 @@ export class CreatePropertyDto {
   @IsNotEmpty()
   category: EnumPropertyCategory;
 
-  @ValidateNested()
-  @Type(() => LocationDto)
-  location: LocationDto;
+  @IsOptional()
+  @IsString()
+  location: string;
 
   @IsString()
   @IsNotEmpty()
@@ -89,10 +82,9 @@ export class CreatePropertyDto {
   @Min(0)
   floor_level?: number;
 
-  @IsArray()
-  @IsEnum(EnumAmenities, { each: true })
   @IsOptional()
-  amenities?: EnumAmenities[];
+  @IsString()
+  amenities?: string;
 
   @IsEnum(EnumConstructionStatus)
   @IsOptional()

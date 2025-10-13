@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { FilterQuery, Model } from 'mongoose';
 import { Property, PropertyDocument } from './property.schema';
@@ -7,6 +7,12 @@ import { FileService } from '../file/file.service';
 import { EnumPropertyCategory } from 'src/enums/property-category.enum';
 import { EnumPropertyPriceType } from 'src/enums/property-price-type.enum';
 import { EnumConstructionStatus } from 'src/enums/property-construction-status.enum';
+
+// Define interfaces for better type safety
+interface Location {
+  type: 'Point';
+  coordinates: [number, number];
+}
 
 interface CreatePropertyWithFilesDto extends CreatePropertyDto {
   author: string;
@@ -44,27 +50,80 @@ export class PropertyService {
     private readonly fileService: FileService,
   ) {}
 
-  async createProperty(dto: CreatePropertyWithFilesDto) {
+  async createProperty(dto: CreatePropertyWithFilesDto): Promise<Property> {
     const { files, author, ...propertyData } = dto;
 
-    const newProperty = await this.model.create({
-      ...propertyData,
-      author,
-    });
+    let parsedLocation: Location | undefined = undefined;
+    let parsedAmenities: string[] | undefined = undefined;
 
+    // Lokatsiyani validatsiya qilish
+    if (propertyData.location) {
+      try {
+        parsedLocation = JSON.parse(propertyData.location) as Location;
+
+        if (
+          !parsedLocation ||
+          parsedLocation.type !== 'Point' ||
+          !Array.isArray(parsedLocation.coordinates) ||
+          parsedLocation.coordinates.length !== 2 ||
+          typeof parsedLocation.coordinates[0] !== 'number' ||
+          typeof parsedLocation.coordinates[1] !== 'number'
+        ) {
+          throw new BadRequestException('Invalid location data');
+        }
+      } catch (error) {
+        console.error(error);
+        throw new BadRequestException('Invalid location JSON string');
+      }
+    }
+
+    // Amenities validatsiyasi
+    if (propertyData.amenities) {
+      try {
+        parsedAmenities = JSON.parse(propertyData.amenities) as string[];
+        if (!Array.isArray(parsedAmenities)) {
+          throw new BadRequestException(
+            'Invalid amenities data: must be an array',
+          );
+        }
+      } catch (error) {
+        console.error(error);
+        throw new BadRequestException('Invalid amenities JSON string');
+      }
+    }
+
+    const dataToCreate = {
+      ...propertyData,
+      location: parsedLocation,
+      amenities: parsedAmenities,
+      author,
+    };
+
+    // Yangi mulk yaratish
+    const newProperty = await this.model.create(dataToCreate);
+
+    // Fayllarni yuklash
     if (files) {
       await this.fileService.uploadPropertyFiles(
         newProperty._id as string,
         files,
       );
     }
+
+    // Yaratilgan mulkni qaytarish
     const property = await this.model
       .findById(newProperty._id)
       .populate('videos')
       .populate('photos')
       .populate('region')
       .populate('district')
-      .lean();
+      .lean()
+      .exec();
+
+    if (!property) {
+      throw new BadRequestException('Property not found');
+    }
+
     return property;
   }
 
@@ -190,6 +249,18 @@ export class PropertyService {
   async findById(id: string) {
     return this.model
       .findById(id)
+      .populate('author', '-password')
+      .populate('region')
+      .populate('district')
+      .populate('photos')
+      .populate('videos')
+      .lean()
+      .exec();
+  }
+
+  async findMyProperties(author: string) {
+    return this.model
+      .find({ author })
       .populate('author', '-password')
       .populate('region')
       .populate('district')

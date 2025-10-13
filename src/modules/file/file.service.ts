@@ -85,7 +85,7 @@ export class FileService {
     files: {
       banner?: MulterFile[];
       photos?: MulterFile[];
-      videos?: MulterFile[];
+      video?: MulterFile[];
     },
   ): Promise<FileDocument[]> {
     if (!Types.ObjectId.isValid(documentId)) {
@@ -95,26 +95,26 @@ export class FileService {
     const uploadedFiles: FileDocument[] = [];
 
     // Handle banner (max 1)
-    if (files.banner && files.banner.length > 0) {
-      if (files.banner.length > 1) {
+    if (files?.banner && files?.banner.length > 0) {
+      if (files?.banner.length > 1) {
         throw new BadRequestException(
           'Faqat bitta banner rasmi yuklanishi mumkin.',
         );
       }
       const bannerFile = await this.processAndSaveFile(
         documentId,
-        files.banner[0],
+        files?.banner[0],
         'banner',
         FileType.PROPERTY,
         this.propertyUploadFolder,
         this.allowedImageMimeTypes,
       );
-      uploadedFiles.push(bannerFile);
+      uploadedFiles?.push(bannerFile);
     }
 
     // Handle photos (max 5)
-    if (files.photos && files.photos.length > 0) {
-      if (files.photos.length > 5) {
+    if (files?.photos && files?.photos.length > 0) {
+      if (files?.photos.length > 5) {
         throw new BadRequestException(
           "Ko'pi bilan 5 ta rasm yuklanishi mumkin.",
         );
@@ -128,18 +128,18 @@ export class FileService {
           this.propertyUploadFolder,
           this.allowedImageMimeTypes,
         );
-        uploadedFiles.push(photoFile);
+        uploadedFiles?.push(photoFile);
       }
     }
 
     // Handle videos (max 5)
-    if (files.videos && files.videos.length > 0) {
-      if (files.videos.length > 5) {
+    if (files?.video && files?.video?.length > 0) {
+      if (files?.video?.length > 5) {
         throw new BadRequestException(
           "Ko'pi bilan 5 ta video yuklanishi mumkin.",
         );
       }
-      for (const video of files.videos) {
+      for (const video of files.video) {
         const videoFile = await this.processAndSaveFile(
           documentId,
           video,
@@ -148,7 +148,7 @@ export class FileService {
           this.propertyUploadFolder,
           this.allowedVideoMimeTypes,
         );
-        uploadedFiles.push(videoFile);
+        uploadedFiles?.push(videoFile);
       }
     }
 
@@ -181,7 +181,7 @@ export class FileService {
           this.sellerUploadFolder,
           allowedMimeTypes,
         );
-        uploadedFiles.push(savedFile);
+        uploadedFiles?.push(savedFile);
       }
     }
 

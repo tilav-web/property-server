@@ -17,6 +17,8 @@ import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { CreatePropertyDto } from './dto/create-property.dto';
 import { AuthGuard } from '@nestjs/passport';
 import { type IRequestCustom } from 'src/interfaces/custom-request.interface';
+import { AuthRoleGuard } from '../user/guards/role.guard';
+import { Roles } from '../user/decorators/roles.decorator';
 
 @Controller('properties')
 export class PropertyController {
@@ -28,7 +30,7 @@ export class PropertyController {
     FileFieldsInterceptor([
       { name: 'banner', maxCount: 1 },
       { name: 'photos', maxCount: 5 },
-      { name: 'videos', maxCount: 1 },
+      { name: 'video', maxCount: 1 },
     ]),
   )
   async create(
@@ -36,7 +38,7 @@ export class PropertyController {
     files: {
       banner?: Express.Multer.File[];
       photos?: Express.Multer.File[];
-      videos?: Express.Multer.File[];
+      video?: Express.Multer.File[];
     },
     @Body() dto: CreatePropertyDto,
     @Req() req: IRequestCustom,
@@ -121,6 +123,32 @@ export class PropertyController {
         sample: query.sample,
       });
 
+      return result;
+    } catch (error) {
+      console.error(error);
+
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
+      if (error instanceof Error) {
+        throw new InternalServerErrorException(error.message);
+      }
+      throw new InternalServerErrorException(
+        "Tizimga kirishda xatolik ketdi. Iltimos birozdan so'ng qayta urinib ko'ring!",
+      );
+    }
+  }
+
+  @Get('/my')
+  @Roles('seller')
+  @UseGuards(AuthGuard('jwt'), AuthRoleGuard)
+  async findMyProperties(@Req() req: IRequestCustom) {
+    try {
+      const user = req.user;
+      console.log(req.user);
+
+      const result = await this.service.findMyProperties(user?._id as string);
       return result;
     } catch (error) {
       console.error(error);
