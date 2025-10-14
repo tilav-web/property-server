@@ -15,9 +15,11 @@ import { Type } from 'class-transformer';
 import { EnumPropertyCategory } from 'src/enums/property-category.enum';
 import { EnumConstructionStatus } from 'src/enums/property-construction-status.enum';
 import { EnumPropertyPriceType } from 'src/enums/property-price-type.enum';
-import { EnumPropertyType } from 'src/enums/property-type';
+import { EnumPropertyType } from 'src/enums/property-type.enum';
 import { EnumAmenities } from 'src/enums/amenities.enum';
 import { Types } from 'mongoose';
+import { EnumPropertyPurpose } from 'src/enums/property-purpose.enum';
+import { EnumPropertyCurrency } from 'src/enums/property-currency.enum';
 
 class LanguageDto {
   @IsString()
@@ -74,6 +76,14 @@ export class CreatePropertyDto {
   @IsNotEmpty()
   property_type: EnumPropertyType;
 
+  @IsEnum(EnumPropertyPurpose)
+  @IsNotEmpty()
+  purpose: EnumPropertyPurpose;
+
+  @IsEnum(EnumPropertyCurrency)
+  @IsNotEmpty()
+  currency: EnumPropertyCurrency;
+
   @Type(() => Number)
   @IsNumber()
   @IsNotEmpty()
@@ -122,10 +132,6 @@ export class CreatePropertyDto {
   @Type(() => Boolean)
   @IsOptional()
   is_premium?: boolean;
-
-  @Type(() => Boolean)
-  @IsOptional()
-  is_verified?: boolean;
 
   @Type(() => Number)
   @IsNumber()

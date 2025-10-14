@@ -7,7 +7,7 @@ import { FileService } from '../file/file.service';
 import { EnumPropertyCategory } from 'src/enums/property-category.enum';
 import { EnumPropertyPriceType } from 'src/enums/property-price-type.enum';
 import { EnumConstructionStatus } from 'src/enums/property-construction-status.enum';
-import { EnumPropertyType } from 'src/enums/property-type';
+import { EnumPropertyType } from 'src/enums/property-type.enum';
 
 // Define interfaces for better type safety
 interface Location {

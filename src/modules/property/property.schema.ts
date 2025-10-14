@@ -4,7 +4,9 @@ import { EnumAmenities } from 'src/enums/amenities.enum';
 import { EnumPropertyCategory } from 'src/enums/property-category.enum';
 import { EnumConstructionStatus } from 'src/enums/property-construction-status.enum';
 import { EnumPropertyPriceType } from 'src/enums/property-price-type.enum';
-import { EnumPropertyType } from 'src/enums/property-type';
+import { EnumPropertyType } from 'src/enums/property-type.enum';
+import { EnumPropertyPurpose } from 'src/enums/property-purpose.enum'; // YANGI
+import { EnumPropertyCurrency } from 'src/enums/property-currency.enum'; // YANGI
 
 export type PropertyDocument = Document & Property;
 
@@ -56,6 +58,25 @@ export class Property {
   @Prop({ type: Number, required: true, default: 0 })
   price: number;
 
+  // YANGI: Asosiy maqsad (sotuv/ijara)
+  @Prop({
+    type: String,
+    required: true,
+    enum: EnumPropertyPurpose,
+    default: EnumPropertyPurpose.FOR_RENT,
+  })
+  purpose: string;
+
+  // YANGI: Valyuta
+  @Prop({
+    type: String,
+    required: true,
+    enum: EnumPropertyCurrency,
+    default: EnumPropertyCurrency.USD,
+  })
+  currency: string;
+
+  // ESKI: Narx turi (qanday hisoblanadi)
   @Prop({
     type: String,
     required: true,
@@ -64,11 +85,12 @@ export class Property {
   })
   price_type: string;
 
+  // ESKI: Fizik turi (kvartira/uy/ofis)
   @Prop({
     type: String,
     enum: EnumPropertyType,
     required: true,
-    default: EnumPropertyType.RENT,
+    default: EnumPropertyType.APARTMENT,
   })
   property_type: string;
 
@@ -76,13 +98,13 @@ export class Property {
   area: number;
 
   @Prop({ type: Number, min: 0, default: 0 })
-  bedrooms: number; // Yotoqxona soni
+  bedrooms: number;
 
   @Prop({ type: Number, min: 0, default: 0 })
-  bathrooms: number; // Hammom soni
+  bathrooms: number;
 
   @Prop({ type: Number, min: 0, default: 0 })
-  floor_level: number; // Qavat raqami
+  floor_level: number;
 
   @Prop({ type: [String], enum: EnumAmenities, default: [] })
   amenities: string[];
@@ -92,13 +114,13 @@ export class Property {
     enum: EnumConstructionStatus,
     default: EnumConstructionStatus.READY,
   })
-  construction_status: string; // Qurilish holati
+  construction_status: string;
 
   @Prop({ type: Number, min: 1900 })
-  year_built?: number; // Qurilgan yil (ixtiyoriy)
+  year_built?: number;
 
   @Prop({ type: Number, min: 0, default: 0 })
-  parking_spaces: number; // Mashina joyi soni
+  parking_spaces: number;
 
   @Prop({ type: Boolean, default: false })
   is_premium: boolean;
@@ -112,14 +134,14 @@ export class Property {
   @Prop({ type: String, default: null })
   logo: string;
 
-  @Prop({ type: Date }) // Yangi
-  delivery_date?: Date; // Topshirish sanasi
+  @Prop({ type: Date })
+  delivery_date?: Date;
 
-  @Prop({ type: Date }) // Yangi
-  sales_date?: Date; // Sotuv boshlanish sanasi
+  @Prop({ type: Date })
+  sales_date?: Date;
 
-  @Prop({ type: Number, min: 0, default: 0 }) // Yangi
-  payment_plans: number; // To'lov rejalari soni
+  @Prop({ type: Number, min: 0, default: 0 })
+  payment_plans: number;
 
   @Prop({ type: Types.ObjectId, ref: 'Region', required: true })
   region: Types.ObjectId;
@@ -130,6 +152,7 @@ export class Property {
 
 export const PropertySchema = SchemaFactory.createForClass(Property);
 
+// Virtual fieldlar o'zgarmaydi
 PropertySchema.virtual('photos', {
   ref: 'File',
   localField: '_id',
