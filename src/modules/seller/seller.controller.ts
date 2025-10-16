@@ -90,7 +90,7 @@ export class SellerController {
 
   @Throttle({ default: { limit: 3, ttl: 10000 } })
   @Post('/ytt')
-  @Roles('seller')
+  @Roles('legal')
   @UseGuards(AuthGuard('jwt'), AuthRoleGuard)
   @UseInterceptors(
     FileFieldsInterceptor([
@@ -129,7 +129,7 @@ export class SellerController {
 
   @Throttle({ default: { limit: 3, ttl: 10000 } })
   @Post('/mchj')
-  @Roles('seller')
+  @Roles('legal')
   @UseGuards(AuthGuard('jwt'), AuthRoleGuard)
   @UseInterceptors(
     FileFieldsInterceptor([
@@ -176,7 +176,7 @@ export class SellerController {
 
   @Throttle({ default: { limit: 3, ttl: 10000 } })
   @Post('/self-employed')
-  @Roles('seller')
+  @Roles('legal')
   @UseGuards(AuthGuard('jwt'), AuthRoleGuard)
   @UseInterceptors(
     FileFieldsInterceptor([

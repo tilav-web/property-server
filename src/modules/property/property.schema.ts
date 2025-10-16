@@ -148,6 +148,14 @@ PropertySchema.virtual('photos', {
   match: { mime_type: { $regex: '^image/' }, document_type: { $ne: 'User' } },
 });
 
+PropertySchema.virtual('contract_file', {
+  ref: 'File',
+  localField: '_id',
+  foreignField: 'document_id',
+  justOne: false,
+  match: { document_type: 'Property', file_name: /contract_file/i },
+});
+
 PropertySchema.virtual('videos', {
   ref: 'File',
   localField: '_id',

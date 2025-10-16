@@ -86,6 +86,7 @@ export class FileService {
       banner?: MulterFile[];
       photos?: MulterFile[];
       video?: MulterFile[];
+      contract_file?: MulterFile[];
     },
   ): Promise<FileDocument[]> {
     if (!Types.ObjectId.isValid(documentId)) {

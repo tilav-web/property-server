@@ -21,7 +21,7 @@ export class BankAccountController {
 
   @Throttle({ default: { limit: 3, ttl: 10000 } })
   @Post('/')
-  @Roles('seller')
+  @Roles('legal')
   @UseGuards(AuthGuard('jwt'), AuthRoleGuard)
   async create(@Body() dto: CreateBankAccountDto, @Req() req: IRequestCustom) {
     try {

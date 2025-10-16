@@ -30,9 +30,13 @@ export class PropertyController {
   @UseGuards(AuthGuard('jwt'))
   @UseInterceptors(
     FileFieldsInterceptor([
-      { name: 'banner', maxCount: 1 },
-      { name: 'photos', maxCount: 5 },
+      { name: 'banner' },
+      { name: 'photos' },
       { name: 'video', maxCount: 1 },
+      {
+        name: 'contract_file',
+        maxCount: 1,
+      },
     ]),
   )
   async create(
@@ -41,6 +45,7 @@ export class PropertyController {
       banner?: Express.Multer.File[];
       photos?: Express.Multer.File[];
       video?: Express.Multer.File[];
+      contract_file?: Express.Multer.File[];
     },
     @Body() dto: CreatePropertyDto,
     @Req() req: IRequestCustom,
@@ -143,7 +148,7 @@ export class PropertyController {
   }
 
   @Get('/my')
-  @Roles('seller')
+  @Roles('legal')
   @UseGuards(AuthGuard('jwt'), AuthRoleGuard)
   async findMyProperties(@Req() req: IRequestCustom) {
     try {

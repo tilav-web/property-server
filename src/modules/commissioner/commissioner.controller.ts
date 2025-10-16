@@ -23,7 +23,7 @@ export class CommissionerController {
 
   @Throttle({ default: { limit: 3, ttl: 10000 } })
   @Post('/')
-  @Roles('seller')
+  @Roles('legal')
   @UseGuards(AuthGuard('jwt'), AuthRoleGuard)
   @UseInterceptors(FileInterceptor('contract_file'))
   async create(
