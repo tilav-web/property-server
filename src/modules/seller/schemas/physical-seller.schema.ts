@@ -22,6 +22,15 @@ export class SelfEmployedSeller {
 
   @Prop({ required: true })
   jshshir: string; // JShShIR
+
+  @Prop({ required: true })
+  registration_number: string; // Ro'yxatdan o'tish raqami
+
+  @Prop({ required: true })
+  registration_address: string; // Biznes ro'yxatdan o'tgan manzili
+
+  @Prop({ required: true })
+  is_vat_payer: boolean; // QQS mavjudmi
 }
 
 export const SelfEmployedSellerSchema =
@@ -44,6 +53,14 @@ SelfEmployedSellerSchema.virtual('self_employment_certificate', {
     document_type: 'SelfEmployedSeller',
     file_name: /self_employment_certificate/i,
   },
+});
+
+SelfEmployedSellerSchema.virtual('vat_file', {
+  ref: 'File',
+  localField: '_id',
+  foreignField: 'document_id',
+  justOne: true,
+  match: { document_type: 'SelfEmployedSeller', file_name: /vat_file/i },
 });
 
 SelfEmployedSellerSchema.set('toObject', { virtuals: true });

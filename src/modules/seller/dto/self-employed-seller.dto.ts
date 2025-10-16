@@ -1,11 +1,4 @@
-import { Transform } from 'class-transformer';
-import {
-  IsBoolean,
-  IsDateString,
-  IsMongoId,
-  IsNotEmpty,
-  IsString,
-} from 'class-validator';
+import { IsDateString, IsMongoId, IsNotEmpty, IsString } from 'class-validator';
 
 export class CreateSelfEmployedSellerDto {
   @IsMongoId()
@@ -31,17 +24,4 @@ export class CreateSelfEmployedSellerDto {
   @IsString()
   @IsNotEmpty()
   jshshir: string; // JShShIR
-
-  @IsString()
-  @IsNotEmpty()
-  registration_number: string; // Ro'yxatdan o'tish raqami
-
-  @IsString()
-  @IsNotEmpty()
-  registration_address: string; // Biznes ro'yxatdan o'tgan manzili
-
-  @Transform(({ value }) => value === 'true' || value === true)
-  @IsBoolean()
-  @IsNotEmpty()
-  is_vat_payer: boolean; // QQS mavjudmi
 }

@@ -374,11 +374,7 @@ export class SellerService {
       .findById(dto.seller)
       .populate({
         path: 'ytt',
-        populate: [
-          { path: 'passport_file' },
-          { path: 'ytt_certificate_file' },
-          { path: 'vat_file' },
-        ],
+        populate: [{ path: 'passport_file' }, { path: 'ytt_certificate_file' }],
       })
       .populate({
         path: 'mchj',
@@ -389,7 +385,6 @@ export class SellerService {
           { path: 'director_passport_file' },
           { path: 'legal_address_file' },
           { path: 'kadastr_file' },
-          { path: 'vat_file' },
         ],
       })
       .populate({
@@ -397,7 +392,6 @@ export class SellerService {
         populate: [
           { path: 'passport_file' },
           { path: 'self_employment_certificate' },
-          { path: 'vat_file' },
         ],
       });
   }
@@ -407,7 +401,6 @@ export class SellerService {
     files: {
       passport_file?: MulterFile[];
       self_employment_certificate?: MulterFile[];
-      vat_file?: MulterFile[];
     },
   ) {
     const seller = await this.sellerModel.findById(dto.seller);
@@ -420,10 +413,6 @@ export class SellerService {
       throw new BadRequestException(
         'O‘zini o‘zi bandlik sertifikatini yuborishingiz shart!',
       );
-
-    if (dto.is_vat_payer && !files.vat_file)
-      throw new BadRequestException('QQS (VAT) hujjatini yuborishingiz shart!');
-
     const selfEmployedSeller =
       await this.selfEmployedSellerModel.findOneAndUpdate(
         { seller: new Types.ObjectId(dto.seller) },
@@ -449,11 +438,7 @@ export class SellerService {
       .findById(dto.seller)
       .populate({
         path: 'ytt',
-        populate: [
-          { path: 'passport_file' },
-          { path: 'ytt_certificate_file' },
-          { path: 'vat_file' },
-        ],
+        populate: [{ path: 'passport_file' }, { path: 'ytt_certificate_file' }],
       })
       .populate({
         path: 'mchj',
@@ -464,7 +449,6 @@ export class SellerService {
           { path: 'director_passport_file' },
           { path: 'legal_address_file' },
           { path: 'kadastr_file' },
-          { path: 'vat_file' },
         ],
       })
       .populate({
@@ -472,7 +456,6 @@ export class SellerService {
         populate: [
           { path: 'passport_file' },
           { path: 'self_employment_certificate' },
-          { path: 'vat_file' },
         ],
       });
   }

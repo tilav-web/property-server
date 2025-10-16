@@ -182,7 +182,6 @@ export class SellerController {
     FileFieldsInterceptor([
       { name: 'passport_file', maxCount: 1 },
       { name: 'self_employment_certificate', maxCount: 1 },
-      { name: 'vat_file', maxCount: 1 },
     ]),
   )
   async createSelfEmployedSeller(
@@ -191,7 +190,6 @@ export class SellerController {
     files: {
       passport_file?: MulterFile[];
       self_employment_certificate?: MulterFile[];
-      vat_file?: MulterFile[];
     },
   ) {
     try {
