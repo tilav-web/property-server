@@ -10,12 +10,20 @@ import { MessageModule } from './modules/message/message.module';
 import { SellerModule } from './modules/seller/seller.module';
 import { BankAccountModule } from './modules/bank-account/bank-account.module';
 import { CommissionerModule } from './modules/commissioner/commissioner.module';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
     }),
+    ThrottlerModule.forRoot([
+      {
+        ttl: 10,
+        limit: 5,
+      },
+    ]),
     MongooseModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -37,6 +45,12 @@ import { CommissionerModule } from './modules/commissioner/commissioner.module';
     BankAccountModule,
     CommissionerModule,
     DistrictModule,
+  ],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard, // 🔹 Global guard sifatida ishlaydi
+    },
   ],
 })
 export class AppModule {}

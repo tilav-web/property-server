@@ -19,11 +19,13 @@ import { AuthGuard } from '@nestjs/passport';
 import { type IRequestCustom } from 'src/interfaces/custom-request.interface';
 import { AuthRoleGuard } from '../user/guards/role.guard';
 import { Roles } from '../user/decorators/roles.decorator';
+import { Throttle } from '@nestjs/throttler';
 
 @Controller('properties')
 export class PropertyController {
   constructor(private readonly service: PropertyService) {}
 
+  @Throttle({ default: { limit: 3, ttl: 10000 } })
   @Post('/')
   @UseGuards(AuthGuard('jwt'))
   @UseInterceptors(

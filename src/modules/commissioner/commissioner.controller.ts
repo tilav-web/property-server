@@ -15,11 +15,13 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { CreateCommissionerDto } from './dto/create-commissioner.dto';
 import type { MulterFile } from 'src/interfaces/multer-file.interface';
 import type { IRequestCustom } from 'src/interfaces/custom-request.interface';
+import { Throttle } from '@nestjs/throttler';
 
 @Controller('commissioners')
 export class CommissionerController {
   constructor(private readonly commissionerService: CommissionerService) {}
 
+  @Throttle({ default: { limit: 3, ttl: 10000 } })
   @Post('/')
   @Roles('seller')
   @UseGuards(AuthGuard('jwt'), AuthRoleGuard)

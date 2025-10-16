@@ -13,11 +13,13 @@ import { AuthRoleGuard } from '../user/guards/role.guard';
 import { Roles } from '../user/decorators/roles.decorator';
 import { CreateBankAccountDto } from './dto/create-bank-account.dto';
 import { type IRequestCustom } from 'src/interfaces/custom-request.interface';
+import { Throttle } from '@nestjs/throttler';
 
 @Controller('bank-accounts')
 export class BankAccountController {
   constructor(private readonly service: BankAccountService) {}
 
+  @Throttle({ default: { limit: 3, ttl: 10000 } })
   @Post('/')
   @Roles('seller')
   @UseGuards(AuthGuard('jwt'), AuthRoleGuard)

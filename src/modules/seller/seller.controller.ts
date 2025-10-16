@@ -21,11 +21,13 @@ import { Roles } from '../user/decorators/roles.decorator';
 import { CreateMchjSellerDto } from './dto/create-mchj-seller.dto';
 import { CreateSelfEmployedSellerDto } from './dto/self-employed-seller.dto';
 import { MulterFile } from 'src/interfaces/multer-file.interface';
+import { Throttle } from '@nestjs/throttler';
 
 @Controller('sellers')
 export class SellerController {
   constructor(private readonly service: SellerService) {}
 
+  @Throttle({ default: { limit: 3, ttl: 10000 } })
   @Post('/')
   @UseGuards(AuthGuard('jwt'))
   async createSeller(
@@ -61,6 +63,7 @@ export class SellerController {
     }
   }
 
+  @Throttle({ default: { limit: 5, ttl: 10000 } })
   @Get('/me')
   @UseGuards(AuthGuard('jwt'))
   async findSellerByUser(@Req() req: IRequestCustom) {
@@ -85,6 +88,7 @@ export class SellerController {
     }
   }
 
+  @Throttle({ default: { limit: 3, ttl: 10000 } })
   @Post('/ytt')
   @Roles('seller')
   @UseGuards(AuthGuard('jwt'), AuthRoleGuard)
@@ -123,6 +127,7 @@ export class SellerController {
     }
   }
 
+  @Throttle({ default: { limit: 3, ttl: 10000 } })
   @Post('/mchj')
   @Roles('seller')
   @UseGuards(AuthGuard('jwt'), AuthRoleGuard)
@@ -169,6 +174,7 @@ export class SellerController {
     }
   }
 
+  @Throttle({ default: { limit: 3, ttl: 10000 } })
   @Post('/self-employed')
   @Roles('seller')
   @UseGuards(AuthGuard('jwt'), AuthRoleGuard)

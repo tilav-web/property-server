@@ -20,11 +20,13 @@ import { type IRequestCustom } from 'src/interfaces/custom-request.interface';
 import { AuthGuard } from '@nestjs/passport';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { Throttle } from '@nestjs/throttler';
 
 @Controller('users')
 export class UserController {
   constructor(private readonly service: UserService) {}
 
+  @Throttle({ default: { limit: 3, ttl: 10000 } })
   @Post('/login')
   async login(
     @Body() dto: { email: string; password: string },
@@ -58,6 +60,7 @@ export class UserController {
     }
   }
 
+  @Throttle({ default: { limit: 3, ttl: 10000 } })
   @Post('/register')
   async register(@Body() dto: CreateUserDto) {
     try {
@@ -79,6 +82,7 @@ export class UserController {
     }
   }
 
+  @Throttle({ default: { limit: 3, ttl: 10000 } })
   @Post('/confirm-otp')
   async confirmOtp(
     @Body() dto: { id: string; code: string },
@@ -111,6 +115,7 @@ export class UserController {
     }
   }
 
+  @Throttle({ default: { limit: 3, ttl: 10000 } })
   @Post('/resend-otp')
   async resendOtp(@Body() { id }: { id: string }) {
     try {
@@ -157,6 +162,7 @@ export class UserController {
     }
   }
 
+  @Throttle({ default: { limit: 5, ttl: 10000 } })
   @Get('/me')
   @UseGuards(AuthGuard('jwt'))
   async findMe(@Req() req: IRequestCustom) {
@@ -241,6 +247,7 @@ export class UserController {
     }
   }
 
+  @Throttle({ default: { limit: 3, ttl: 10000 } })
   @Post('/like/:id')
   @UseGuards(AuthGuard('jwt'))
   async handleLike(@Param('id') id: string, @Req() req: IRequestCustom) {
