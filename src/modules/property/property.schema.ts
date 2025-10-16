@@ -4,7 +4,6 @@ import { EnumAmenities } from 'src/enums/amenities.enum';
 import { EnumPropertyCategory } from 'src/enums/property-category.enum';
 import { EnumConstructionStatus } from 'src/enums/property-construction-status.enum';
 import { EnumPropertyPriceType } from 'src/enums/property-price-type.enum';
-import { EnumPropertyType } from 'src/enums/property-type.enum';
 import { EnumPropertyPurpose } from 'src/enums/property-purpose.enum'; // YANGI
 import { EnumPropertyCurrency } from 'src/enums/property-currency.enum'; // YANGI
 
@@ -58,7 +57,6 @@ export class Property {
   @Prop({ type: Number, required: true, default: 0 })
   price: number;
 
-  // YANGI: Asosiy maqsad (sotuv/ijara)
   @Prop({
     type: String,
     required: true,
@@ -67,7 +65,6 @@ export class Property {
   })
   purpose: string;
 
-  // YANGI: Valyuta
   @Prop({
     type: String,
     required: true,
@@ -76,7 +73,6 @@ export class Property {
   })
   currency: string;
 
-  // ESKI: Narx turi (qanday hisoblanadi)
   @Prop({
     type: String,
     required: true,
@@ -84,15 +80,6 @@ export class Property {
     default: EnumPropertyPriceType.RENT,
   })
   price_type: string;
-
-  // ESKI: Fizik turi (kvartira/uy/ofis)
-  @Prop({
-    type: String,
-    enum: EnumPropertyType,
-    required: true,
-    default: EnumPropertyType.APARTMENT,
-  })
-  property_type: string;
 
   @Prop({ type: Number, required: true, min: 0 })
   area: number;

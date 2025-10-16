@@ -15,7 +15,6 @@ import { Type } from 'class-transformer';
 import { EnumPropertyCategory } from 'src/enums/property-category.enum';
 import { EnumConstructionStatus } from 'src/enums/property-construction-status.enum';
 import { EnumPropertyPriceType } from 'src/enums/property-price-type.enum';
-import { EnumPropertyType } from 'src/enums/property-type.enum';
 import { EnumAmenities } from 'src/enums/amenities.enum';
 import { Types } from 'mongoose';
 import { EnumPropertyPurpose } from 'src/enums/property-purpose.enum';
@@ -71,10 +70,6 @@ export class CreatePropertyDto {
   @IsEnum(EnumPropertyPriceType)
   @IsNotEmpty()
   price_type: EnumPropertyPriceType;
-
-  @IsEnum(EnumPropertyType)
-  @IsNotEmpty()
-  property_type: EnumPropertyType;
 
   @IsEnum(EnumPropertyPurpose)
   @IsNotEmpty()

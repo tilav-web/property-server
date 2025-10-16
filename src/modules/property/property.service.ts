@@ -33,7 +33,6 @@ export interface FindAllParams {
   coordinates?: [number, number];
   category?: EnumPropertyCategory;
   search?: string;
-  property_type: EnumPropertyType;
   price_type?: EnumPropertyPriceType;
   construction_status?: EnumConstructionStatus;
   is_premium?: boolean;
@@ -135,7 +134,6 @@ export class PropertyService {
     category,
     search,
     price_type,
-    property_type,
     construction_status,
     is_premium,
     is_verified,
@@ -163,7 +161,6 @@ export class PropertyService {
     if (district) filter.district = district;
     if (category) filter.category = category;
     if (price_type) filter.price_type = price_type;
-    if (property_type) filter.property_type = property_type;
     if (construction_status) filter.construction_status = construction_status;
     if (is_premium !== undefined) filter.is_premium = is_premium;
     if (is_verified !== undefined) filter.is_verified = is_verified;

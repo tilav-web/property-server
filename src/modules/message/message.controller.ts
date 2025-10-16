@@ -12,6 +12,7 @@ import { MessageService } from './message.service';
 import { AuthGuard } from '@nestjs/passport';
 import { type IRequestCustom } from 'src/interfaces/custom-request.interface';
 
+@UseGuards(AuthGuard('jwt'))
 @Controller('messages')
 export class MessageController {
   constructor(private readonly service: MessageService) {}
