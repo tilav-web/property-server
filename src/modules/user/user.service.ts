@@ -17,7 +17,7 @@ import { OtpService } from '../otp/otp.service';
 import { MailService } from '../mailer/mail.service';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { FileService } from '../file/file.service';
-import { FileDocument } from '../file/file.schema';
+import { FileDocument, FileType } from '../file/file.schema';
 import { Types } from 'mongoose';
 
 @Injectable()
@@ -235,12 +235,21 @@ export class UserService {
     const userData = await this.model.findById(user);
     if (!userData) throw new BadRequestException("Tizimdan ro'yhatdan o'ting");
     if (avatar) {
-      await this.fileService.deleteUserAvatar(user);
-      userAvatar = await this.fileService.updateUserAvatar({
-        userId: user,
-        file: avatar,
-      });
-      userData.avatar = userAvatar.file_path;
+      // Delete old avatars first
+      await this.fileService.deleteFilesByDocument(user, FileType.AVATAR);
+
+      // Upload the new avatar
+      const uploadedFiles = await this.fileService.uploadFiles(
+        user, // documentId
+        FileType.AVATAR, // documentType
+        { avatar: [avatar] }, // files object
+      );
+
+      // Check if upload was successful and get the new avatar
+      if (uploadedFiles && uploadedFiles.length > 0) {
+        userAvatar = uploadedFiles[0];
+        userData.avatar = userAvatar.file_path;
+      }
     }
 
     if (first_name) userData.first_name = first_name;

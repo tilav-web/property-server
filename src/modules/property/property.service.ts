@@ -4,10 +4,10 @@ import { FilterQuery, Model } from 'mongoose';
 import { Property, PropertyDocument } from './property.schema';
 import { CreatePropertyDto } from './dto/create-property.dto';
 import { FileService } from '../file/file.service';
+import { FileType } from '../file/file.schema';
 import { EnumPropertyCategory } from 'src/enums/property-category.enum';
 import { EnumPropertyPriceType } from 'src/enums/property-price-type.enum';
 import { EnumConstructionStatus } from 'src/enums/property-construction-status.enum';
-import { EnumPropertyType } from 'src/enums/property-type.enum';
 
 // Define interfaces for better type safety
 interface Location {
@@ -101,9 +101,10 @@ export class PropertyService {
     const newProperty = await this.model.create(dataToCreate);
 
     // Fayllarni yuklash
-    if (files) {
-      await this.fileService.uploadPropertyFiles(
+    if (files && Object.keys(files).length > 0) {
+      await this.fileService.uploadFiles(
         newProperty._id as string,
+        FileType.PROPERTY, // Pass the correct document type
         files,
       );
     }

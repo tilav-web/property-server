@@ -139,21 +139,40 @@ export class Property {
 
 export const PropertySchema = SchemaFactory.createForClass(Property);
 
-// Virtual fieldlar o'zgarmaydi
+// Virtual fields for populating files
+// Banner (main image)
+PropertySchema.virtual('banner', {
+  ref: 'File',
+  localField: '_id',
+  foreignField: 'document_id',
+  justOne: true, // Only one banner
+  match: {
+    document_type: 'Property',
+    file_name: /^banner/i, // Match files starting with 'banner'
+  },
+});
+
+// Photos (gallery images)
 PropertySchema.virtual('photos', {
   ref: 'File',
   localField: '_id',
   foreignField: 'document_id',
   justOne: false,
-  match: { mime_type: { $regex: '^image/' }, document_type: { $ne: 'User' } },
+  match: {
+    document_type: 'Property',
+    file_name: /^photos/i, // Match files starting with 'photos'
+  },
 });
 
 PropertySchema.virtual('contract_file', {
   ref: 'File',
   localField: '_id',
   foreignField: 'document_id',
-  justOne: false,
-  match: { document_type: 'Property', file_name: /contract_file/i },
+  justOne: false, // Can be multiple contract files
+  match: {
+    document_type: 'Property',
+    file_name: /^contract_file/i, // Match files starting with 'contract_file'
+  },
 });
 
 PropertySchema.virtual('videos', {

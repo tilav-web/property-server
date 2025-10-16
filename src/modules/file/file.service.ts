@@ -34,128 +34,6 @@ export class FileService {
 
   constructor(@InjectModel(File.name) private fileModel: Model<FileDocument>) {}
 
-  async updateUserAvatar({
-    userId,
-    file,
-  }: {
-    userId: string;
-    file: MulterFile;
-  }): Promise<FileDocument> {
-    if (!Types.ObjectId.isValid(userId)) {
-      throw new BadRequestException('Yaroqsiz user ID');
-    }
-
-    try {
-      const oldAvatar = await this.fileModel.findOne({
-        document_id: userId,
-        document_type: FileType.AVATAR,
-      });
-
-      const newAvatar = await this.processAndSaveFile(
-        userId,
-        file,
-        'avatar',
-        FileType.AVATAR,
-        this.avatarUploadFolder,
-        this.allowedImageMimeTypes,
-      );
-
-      if (oldAvatar) {
-        await this.deleteFileRecordAndFs(oldAvatar).catch((error: unknown) => {
-          console.error(
-            `Eski avatar o'chirishda xato: ${
-              error instanceof Error ? error.message : "Noma'lum xato"
-            }`,
-          );
-        });
-      }
-
-      return newAvatar;
-    } catch (error: unknown) {
-      throw new InternalServerErrorException(
-        `Avatar yangilashda xato: ${
-          error instanceof Error ? error.message : "Noma'lum xato"
-        }`,
-      );
-    }
-  }
-
-  async uploadPropertyFiles(
-    documentId: string,
-    files: {
-      banner?: MulterFile[];
-      photos?: MulterFile[];
-      video?: MulterFile[];
-      contract_file?: MulterFile[];
-    },
-  ): Promise<FileDocument[]> {
-    if (!Types.ObjectId.isValid(documentId)) {
-      throw new BadRequestException('Yaroqsiz mulk ID');
-    }
-
-    const uploadedFiles: FileDocument[] = [];
-
-    // Handle banner (max 1)
-    if (files?.banner && files?.banner.length > 0) {
-      if (files?.banner.length > 1) {
-        throw new BadRequestException(
-          'Faqat bitta banner rasmi yuklanishi mumkin.',
-        );
-      }
-      const bannerFile = await this.processAndSaveFile(
-        documentId,
-        files?.banner[0],
-        'banner',
-        FileType.PROPERTY,
-        this.propertyUploadFolder,
-        this.allowedImageMimeTypes,
-      );
-      uploadedFiles?.push(bannerFile);
-    }
-
-    // Handle photos (max 5)
-    if (files?.photos && files?.photos.length > 0) {
-      if (files?.photos.length > 5) {
-        throw new BadRequestException(
-          "Ko'pi bilan 5 ta rasm yuklanishi mumkin.",
-        );
-      }
-      for (const photo of files.photos) {
-        const photoFile = await this.processAndSaveFile(
-          documentId,
-          photo,
-          'photo',
-          FileType.PROPERTY,
-          this.propertyUploadFolder,
-          this.allowedImageMimeTypes,
-        );
-        uploadedFiles?.push(photoFile);
-      }
-    }
-
-    // Handle videos (max 5)
-    if (files?.video && files?.video?.length > 0) {
-      if (files?.video?.length > 5) {
-        throw new BadRequestException(
-          "Ko'pi bilan 5 ta video yuklanishi mumkin.",
-        );
-      }
-      for (const video of files.video) {
-        const videoFile = await this.processAndSaveFile(
-          documentId,
-          video,
-          'video',
-          FileType.PROPERTY,
-          this.propertyUploadFolder,
-          this.allowedVideoMimeTypes,
-        );
-        uploadedFiles?.push(videoFile);
-      }
-    }
-
-    return uploadedFiles;
-  }
-
   async uploadFiles(
     documentId: string,
     documentType: FileType,
@@ -169,7 +47,22 @@ export class FileService {
     const allowedMimeTypes = [
       ...this.allowedImageMimeTypes,
       ...this.allowedDocumentMimeTypes,
+      ...this.allowedVideoMimeTypes, // Allow videos
     ];
+
+    // Determine upload folder based on document type
+    let uploadFolder: string;
+    switch (documentType) {
+      case FileType.AVATAR:
+        uploadFolder = this.avatarUploadFolder;
+        break;
+      case FileType.PROPERTY:
+        uploadFolder = this.propertyUploadFolder;
+        break;
+      default:
+        uploadFolder = this.sellerUploadFolder;
+        break;
+    }
 
     for (const key in files) {
       const fileArray = files[key];
@@ -179,10 +72,10 @@ export class FileService {
           file,
           file.fieldname, // Use the fieldname from multer as the fileKey
           documentType,
-          this.sellerUploadFolder,
+          uploadFolder, // Use the dynamically determined folder
           allowedMimeTypes,
         );
-        uploadedFiles?.push(savedFile);
+        uploadedFiles.push(savedFile);
       }
     }
 
