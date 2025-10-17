@@ -1,10 +1,10 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
 
-export type SelfEmployedSellerDocument = Document & SelfEmployedSeller;
+export type PhysicalSellerDocument = Document & PhysicalSeller;
 
 @Schema({ timestamps: true })
-export class SelfEmployedSeller {
+export class PhysicalSeller {
   @Prop({ type: Types.ObjectId, ref: 'Seller', required: true })
   seller: Types.ObjectId;
 
@@ -22,46 +22,18 @@ export class SelfEmployedSeller {
 
   @Prop({ required: true })
   jshshir: string; // JShShIR
-
-  @Prop({ required: true })
-  registration_number: string; // Ro'yxatdan o'tish raqami
-
-  @Prop({ required: true })
-  registration_address: string; // Biznes ro'yxatdan o'tgan manzili
-
-  @Prop({ required: true })
-  is_vat_payer: boolean; // QQS mavjudmi
 }
 
-export const SelfEmployedSellerSchema =
-  SchemaFactory.createForClass(SelfEmployedSeller);
+export const PhysicalSellerSchema =
+  SchemaFactory.createForClass(PhysicalSeller);
 
-SelfEmployedSellerSchema.virtual('passport_file', {
+PhysicalSellerSchema.virtual('passport_file', {
   ref: 'File',
   localField: '_id',
   foreignField: 'document_id',
   justOne: true,
-  match: { document_type: 'SelfEmployedSeller', file_name: /passport_file/i },
+  match: { document_type: 'PhysicalSeller', file_name: /passport_file/i },
 });
 
-SelfEmployedSellerSchema.virtual('self_employment_certificate', {
-  ref: 'File',
-  localField: '_id',
-  foreignField: 'document_id',
-  justOne: true,
-  match: {
-    document_type: 'SelfEmployedSeller',
-    file_name: /self_employment_certificate/i,
-  },
-});
-
-SelfEmployedSellerSchema.virtual('vat_file', {
-  ref: 'File',
-  localField: '_id',
-  foreignField: 'document_id',
-  justOne: true,
-  match: { document_type: 'SelfEmployedSeller', file_name: /vat_file/i },
-});
-
-SelfEmployedSellerSchema.set('toObject', { virtuals: true });
-SelfEmployedSellerSchema.set('toJSON', { virtuals: true });
+PhysicalSellerSchema.set('toObject', { virtuals: true });
+PhysicalSellerSchema.set('toJSON', { virtuals: true });

@@ -162,7 +162,7 @@ export class UserController {
     }
   }
 
-  @Throttle({ default: { limit: 5, ttl: 10000 } })
+  @Throttle({ default: { limit: 10, ttl: 10000 } })
   @Get('/me')
   @UseGuards(AuthGuard('jwt'))
   async findMe(@Req() req: IRequestCustom) {

@@ -12,6 +12,10 @@ import { SellerController } from './seller.controller';
 import { SellerService } from './seller.service';
 
 import { FileModule } from '../file/file.module';
+import {
+  PhysicalSeller,
+  PhysicalSellerSchema,
+} from './schemas/physical-seller.schema';
 
 @Module({
   imports: [
@@ -20,6 +24,7 @@ import { FileModule } from '../file/file.module';
       { name: YttSeller.name, schema: YttSellerSchema },
       { name: MchjSeller.name, schema: MchjSellerSchema },
       { name: SelfEmployedSeller.name, schema: SelfEmployedSellerSchema },
+      { name: PhysicalSeller.name, schema: PhysicalSellerSchema },
     ]),
     UserModule,
     FileModule,

@@ -22,6 +22,11 @@ import { FileService } from '../file/file.service';
 import { FileType } from '../file/file.schema';
 import { MulterFile } from 'src/interfaces/multer-file.interface';
 import { EnumSellerStatus } from 'src/enums/seller-status.enum';
+import {
+  PhysicalSeller,
+  PhysicalSellerDocument,
+} from './schemas/physical-seller.schema';
+import { CreatePhysicalSellerDto } from './dto/create-physical-seller.dto';
 
 @Injectable()
 export class SellerService {
@@ -33,6 +38,8 @@ export class SellerService {
     private mchjSellerModel: Model<MchjSellerDocument>,
     @InjectModel(SelfEmployedSeller.name)
     private selfEmployedSellerModel: Model<SelfEmployedSellerDocument>,
+    @InjectModel(PhysicalSeller.name)
+    private physicalSellerModel: Model<PhysicalSellerDocument>,
     private readonly userService: UserService,
     private readonly fileService: FileService,
   ) {}
@@ -458,6 +465,41 @@ export class SellerService {
           { path: 'self_employment_certificate' },
         ],
       });
+  }
+
+  async createPhysicalSeller(
+    dto: CreatePhysicalSellerDto,
+    files: {
+      passport_file?: MulterFile[];
+    },
+  ) {
+    const seller = await this.sellerModel.findById(dto.seller);
+    if (!seller) throw new NotFoundException('Sotuvchi profili topilmadi');
+
+    if (!files.passport_file)
+      throw new BadRequestException('Pasport faylni yuborishingiz shart!');
+
+    const physicalSeller = await this.physicalSellerModel.findOneAndUpdate(
+      { seller: new Types.ObjectId(dto.seller) },
+      {
+        ...dto,
+        seller: new Types.ObjectId(dto.seller),
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true },
+    );
+
+    await this.fileService.deleteFilesByDocument(
+      physicalSeller._id as string,
+      FileType.PHYSICAL_SELLER,
+    );
+
+    await this.fileService.uploadFiles(
+      physicalSeller._id as string,
+      FileType.PHYSICAL_SELLER,
+      files,
+    );
+
+    return this.sellerModel.findById(dto.seller).populate('physical');
   }
 
   async updateSellerStatus({

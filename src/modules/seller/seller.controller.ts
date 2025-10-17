@@ -22,6 +22,7 @@ import { CreateMchjSellerDto } from './dto/create-mchj-seller.dto';
 import { CreateSelfEmployedSellerDto } from './dto/self-employed-seller.dto';
 import { MulterFile } from 'src/interfaces/multer-file.interface';
 import { Throttle } from '@nestjs/throttler';
+import { CreatePhysicalSellerDto } from './dto/create-physical-seller.dto';
 
 @Controller('sellers')
 export class SellerController {
@@ -63,7 +64,7 @@ export class SellerController {
     }
   }
 
-  @Throttle({ default: { limit: 5, ttl: 10000 } })
+  @Throttle({ default: { limit: 10, ttl: 10000 } })
   @Get('/me')
   @UseGuards(AuthGuard('jwt'))
   async findSellerByUser(@Req() req: IRequestCustom) {
@@ -194,6 +195,37 @@ export class SellerController {
   ) {
     try {
       return this.service.createSelfEmployedSeller(dto, files);
+    } catch (error) {
+      console.error('Logout error:', error);
+
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
+      if (error instanceof Error) {
+        throw new InternalServerErrorException(error.message);
+      }
+
+      throw new InternalServerErrorException(
+        "Xatolik ketdi. Birozdan so'ng qayta urinib ko'ring!",
+      );
+    }
+  }
+
+  @Throttle({ default: { limit: 3, ttl: 10000 } })
+  @Post('/physical')
+  @Roles('physical')
+  @UseGuards(AuthGuard('jwt'), AuthRoleGuard)
+  @UseInterceptors(FileFieldsInterceptor([{ name: 'passport_file', maxCount: 1 }]))
+  async createPhysicalSeller(
+    @Body() dto: CreatePhysicalSellerDto,
+    @UploadedFiles()
+    files: {
+      passport_file?: MulterFile[];
+    },
+  ) {
+    try {
+      return this.service.createPhysicalSeller(dto, files);
     } catch (error) {
       console.error('Logout error:', error);
 
