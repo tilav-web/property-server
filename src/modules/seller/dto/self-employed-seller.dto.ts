@@ -1,7 +1,7 @@
-import { IsDateString, IsMongoId, IsNotEmpty, IsString } from 'class-validator';
+import { IsDateString, IsNotEmpty, IsString } from 'class-validator';
 
 export class CreateSelfEmployedSellerDto {
-  @IsMongoId()
+  @IsString()
   @IsNotEmpty()
   seller: string; // Seller ID (ObjectId bo‘lishi shart)
 
