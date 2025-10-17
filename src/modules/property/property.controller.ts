@@ -17,8 +17,6 @@ import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { CreatePropertyDto } from './dto/create-property.dto';
 import { AuthGuard } from '@nestjs/passport';
 import { type IRequestCustom } from 'src/interfaces/custom-request.interface';
-import { AuthRoleGuard } from '../user/guards/role.guard';
-import { Roles } from '../user/decorators/roles.decorator';
 import { Throttle } from '@nestjs/throttler';
 
 @Controller('properties')
@@ -148,8 +146,7 @@ export class PropertyController {
   }
 
   @Get('/my')
-  @Roles('legal')
-  @UseGuards(AuthGuard('jwt'), AuthRoleGuard)
+  @UseGuards(AuthGuard('jwt'))
   async findMyProperties(@Req() req: IRequestCustom) {
     try {
       const user = req.user;

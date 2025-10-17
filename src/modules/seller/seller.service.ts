@@ -27,6 +27,7 @@ import {
   PhysicalSellerDocument,
 } from './schemas/physical-seller.schema';
 import { CreatePhysicalSellerDto } from './dto/create-physical-seller.dto';
+import { EnumSellerBusinessType } from 'src/enums/seller-business-type.enum';
 
 @Injectable()
 export class SellerService {
@@ -128,9 +129,6 @@ export class SellerService {
           {
             path: 'self_employment_certificate',
           },
-          {
-            path: 'vat_file',
-          },
         ],
       })
       .populate({
@@ -138,6 +136,14 @@ export class SellerService {
         populate: 'contract_file',
       })
       .populate('bank_account')
+      .populate({
+        path: 'physical',
+        populate: [
+          {
+            path: 'passport_file',
+          },
+        ],
+      })
       .lean();
     return { user: hasUser, seller };
   }
@@ -196,16 +202,20 @@ export class SellerService {
           {
             path: 'self_employment_certificate',
           },
-          {
-            path: 'vat_file',
-          },
         ],
       })
       .populate({
         path: 'commissioner',
         populate: 'contract_file',
       })
-      .populate('bank_account')
+      .populate({
+        path: 'physical',
+        populate: [
+          {
+            path: 'passport_file',
+          },
+        ],
+      })
       .lean();
   }
 
@@ -302,16 +312,20 @@ export class SellerService {
           {
             path: 'self_employment_certificate',
           },
-          {
-            path: 'vat_file',
-          },
         ],
       })
       .populate({
         path: 'commissioner',
         populate: 'contract_file',
       })
-      .populate('bank_account')
+      .populate({
+        path: 'physical',
+        populate: [
+          {
+            path: 'passport_file',
+          },
+        ],
+      })
       .lean();
   }
 
@@ -400,7 +414,16 @@ export class SellerService {
           { path: 'passport_file' },
           { path: 'self_employment_certificate' },
         ],
-      });
+      })
+      .populate({
+        path: 'physical',
+        populate: [
+          {
+            path: 'passport_file',
+          },
+        ],
+      })
+      .lean();
   }
 
   async createSelfEmployedSeller(
@@ -409,9 +432,14 @@ export class SellerService {
       passport_file?: MulterFile[];
       self_employment_certificate?: MulterFile[];
     },
+    user: string,
   ) {
-    const seller = await this.sellerModel.findById(dto.seller);
-    if (!seller) throw new NotFoundException('Sotuvchi profili topilmadi');
+    const { passport, ...selfEmployedDto } = dto;
+    const { seller } = await this.createSeller({
+      passport,
+      user,
+      business_type: EnumSellerBusinessType.SELF_EMPLOYED,
+    });
 
     if (!files.passport_file)
       throw new BadRequestException('Pasport faylni yuborishingiz shart!');
@@ -422,10 +450,10 @@ export class SellerService {
       );
     const selfEmployedSeller =
       await this.selfEmployedSellerModel.findOneAndUpdate(
-        { seller: new Types.ObjectId(dto.seller) },
+        { seller: new Types.ObjectId(seller._id as string) },
         {
-          ...dto,
-          seller: new Types.ObjectId(dto.seller),
+          ...selfEmployedDto,
+          seller: new Types.ObjectId(seller._id as string),
         },
         { upsert: true, new: true, setDefaultsOnInsert: true },
       );
@@ -441,8 +469,13 @@ export class SellerService {
       files,
     );
 
+    await this.updateSellerStatus({
+      id: seller._id as string,
+      status: EnumSellerStatus.COMPLETED,
+    });
+
     return this.sellerModel
-      .findById(dto.seller)
+      .findById(seller._id)
       .populate({
         path: 'ytt',
         populate: [{ path: 'passport_file' }, { path: 'ytt_certificate_file' }],
@@ -464,7 +497,16 @@ export class SellerService {
           { path: 'passport_file' },
           { path: 'self_employment_certificate' },
         ],
-      });
+      })
+      .populate({
+        path: 'physical',
+        populate: [
+          {
+            path: 'passport_file',
+          },
+        ],
+      })
+      .lean();
   }
 
   async createPhysicalSeller(
@@ -472,18 +514,23 @@ export class SellerService {
     files: {
       passport_file?: MulterFile[];
     },
+    user: string,
   ) {
-    const seller = await this.sellerModel.findById(dto.seller);
-    if (!seller) throw new NotFoundException('Sotuvchi profili topilmadi');
+    const { passport, ...physicalDto } = dto;
+    const { seller } = await this.createSeller({
+      passport,
+      user,
+      business_type: EnumSellerBusinessType.PHYSICAL,
+    });
 
     if (!files.passport_file)
       throw new BadRequestException('Pasport faylni yuborishingiz shart!');
 
     const physicalSeller = await this.physicalSellerModel.findOneAndUpdate(
-      { seller: new Types.ObjectId(dto.seller) },
+      { seller: new Types.ObjectId(seller._id as string) },
       {
-        ...dto,
-        seller: new Types.ObjectId(dto.seller),
+        ...physicalDto,
+        seller: new Types.ObjectId(seller._id as string),
       },
       { upsert: true, new: true, setDefaultsOnInsert: true },
     );
@@ -499,7 +546,19 @@ export class SellerService {
       files,
     );
 
-    return this.sellerModel.findById(dto.seller).populate('physical');
+    await this.updateSellerStatus({
+      id: seller._id as string,
+      status: EnumSellerStatus.COMPLETED,
+    });
+
+    return this.sellerModel.findById(seller._id).populate({
+      path: 'physical',
+      populate: [
+        {
+          path: 'passport_file',
+        },
+      ],
+    });
   }
 
   async updateSellerStatus({

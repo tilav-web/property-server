@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Get,
@@ -177,7 +178,7 @@ export class SellerController {
 
   @Throttle({ default: { limit: 3, ttl: 10000 } })
   @Post('/self-employed')
-  @Roles('legal')
+  @Roles('physical')
   @UseGuards(AuthGuard('jwt'), AuthRoleGuard)
   @UseInterceptors(
     FileFieldsInterceptor([
@@ -192,9 +193,13 @@ export class SellerController {
       passport_file?: MulterFile[];
       self_employment_certificate?: MulterFile[];
     },
+    @Req() req: IRequestCustom,
   ) {
     try {
-      return this.service.createSelfEmployedSeller(dto, files);
+      if (!req.user?._id) {
+        throw new BadRequestException('User not found');
+      }
+      return this.service.createSelfEmployedSeller(dto, files, req.user._id);
     } catch (error) {
       console.error('Logout error:', error);
 
@@ -216,16 +221,22 @@ export class SellerController {
   @Post('/physical')
   @Roles('physical')
   @UseGuards(AuthGuard('jwt'), AuthRoleGuard)
-  @UseInterceptors(FileFieldsInterceptor([{ name: 'passport_file', maxCount: 1 }]))
+  @UseInterceptors(
+    FileFieldsInterceptor([{ name: 'passport_file', maxCount: 1 }]),
+  )
   async createPhysicalSeller(
     @Body() dto: CreatePhysicalSellerDto,
     @UploadedFiles()
     files: {
       passport_file?: MulterFile[];
     },
+    @Req() req: IRequestCustom,
   ) {
     try {
-      return this.service.createPhysicalSeller(dto, files);
+      if (!req.user?._id) {
+        throw new BadRequestException('User not found');
+      }
+      return this.service.createPhysicalSeller(dto, files, req.user._id);
     } catch (error) {
       console.error('Logout error:', error);
 

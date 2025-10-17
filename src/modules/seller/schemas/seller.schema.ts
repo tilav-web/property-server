@@ -66,5 +66,12 @@ SellerSchema.virtual('self_employed', {
   justOne: true,
 });
 
+SellerSchema.virtual('physical', {
+  ref: 'PhysicalSeller',
+  localField: '_id',
+  foreignField: 'seller',
+  justOne: true,
+});
+
 SellerSchema.set('toObject', { virtuals: true });
 SellerSchema.set('toJSON', { virtuals: true });
