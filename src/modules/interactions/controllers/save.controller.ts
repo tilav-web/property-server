@@ -12,9 +12,9 @@ export class SaveController {
   async saveProperty(
     @Param('propertyId') propertyId: string,
     @Req() req: IRequestCustom,
-  ): Promise<void> {
+  ) {
     const userId = req.user?._id as string;
-    await this.saveService.saveProperty(userId, propertyId);
+    return this.saveService.saveProperty(userId, propertyId);
   }
 
   @Get('/')

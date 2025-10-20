@@ -191,15 +191,19 @@ export class PropertyService {
         },
       };
     }
-
     const processProperties = async (properties: PropertyDocument[]) => {
       if (userId) {
         const liked = await this.likeModel.find({ user: userId });
         const saved = await this.saveModel.find({ user: userId });
+
         return properties.map((p: PropertyDocument) => ({
           ...p,
-          liked: liked.some((l) => l.property.toString() === (p._id as string)),
-          saved: saved.some((s) => s.property.toString() === (p._id as string)),
+          liked: liked.some(
+            (l) => l.property.toString() === (p._id as string).toString(),
+          ),
+          saved: saved.some(
+            (s) => s.property.toString() === (p._id as string).toString(),
+          ),
         }));
       }
       return properties.map((p: PropertyDocument) => ({

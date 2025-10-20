@@ -15,7 +15,7 @@ export class SaveService {
     private readonly propertyModel: Model<PropertyDocument>,
   ) {}
 
-  async saveProperty(userId: string, propertyId: string): Promise<Property> {
+  async saveProperty(userId: string, propertyId: string) {
     const save = await this.saveModel.findOne({
       user: userId,
       property: propertyId,
@@ -23,26 +23,34 @@ export class SaveService {
 
     if (save) {
       await this.saveModel.findByIdAndDelete(save._id);
-      await this.propertyModel.findByIdAndUpdate(propertyId, {
+      const property = await this.propertyModel.findByIdAndUpdate(propertyId, {
         $inc: { save: -1 },
       });
+      return property;
     } else {
       await this.saveModel.create({ user: userId, property: propertyId });
-      await this.propertyModel.findByIdAndUpdate(propertyId, {
+      const property = await this.propertyModel.findByIdAndUpdate(propertyId, {
         $inc: { save: 1 },
       });
+      return property;
     }
-
-    return this.propertyModel
-      .findById(propertyId)
-      .lean()
-      .exec() as Promise<Property>;
   }
 
   async getSavedProperties(userId: string): Promise<Property[]> {
     const saves = await this.saveModel
       .find({ user: userId })
-      .populate('property');
+      .populate({
+        path: 'property',
+        populate: [
+          { path: 'author', select: '-password' },
+          { path: 'region' },
+          { path: 'district' },
+          { path: 'photos' },
+          { path: 'videos' },
+        ],
+      })
+      .lean()
+      .exec();
     return saves.map((save) => save.property as unknown as Property);
   }
 }
