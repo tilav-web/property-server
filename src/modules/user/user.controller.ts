@@ -247,55 +247,5 @@ export class UserController {
     }
   }
 
-  @Throttle({ default: { limit: 3, ttl: 10000 } })
-  @Post('/like/:id')
-  @UseGuards(AuthGuard('jwt'))
-  async handleLike(@Param('id') id: string, @Req() req: IRequestCustom) {
-    try {
-      const user = req.user;
-      const result = await this.service.handleLike({
-        property: id,
-        user: user?._id as string,
-      });
-      return result;
-    } catch (error) {
-      console.error('Logout error:', error);
 
-      if (error instanceof HttpException) {
-        throw error;
-      }
-
-      if (error instanceof Error) {
-        throw new InternalServerErrorException(error.message);
-      }
-
-      throw new InternalServerErrorException(
-        "Xatolik ketdi. Birozdan so'ng qayta urinib ko'ring!",
-      );
-    }
-  }
-
-  @Get('/likes')
-  @UseGuards(AuthGuard('jwt'))
-  async findLike(@Req() req: IRequestCustom) {
-    try {
-      const user = req.user;
-      const result = await this.service.findLikes(user?._id as string);
-      return result;
-    } catch (error) {
-      console.error('Logout error:', error);
-
-      if (error instanceof HttpException) {
-        throw error;
-      }
-
-      if (error instanceof Error) {
-        throw new InternalServerErrorException(error.message);
-      }
-
-      throw new InternalServerErrorException(
-        "Xatolik ketdi. Birozdan so'ng qayta urinib ko'ring!",
-      );
-    }
-  }
 }

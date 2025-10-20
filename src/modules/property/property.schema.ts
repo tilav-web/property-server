@@ -135,6 +135,12 @@ export class Property {
 
   @Prop({ type: Types.ObjectId, ref: 'District', required: true })
   district: Types.ObjectId;
+
+  @Prop({ type: Number, default: 0 })
+  like: number;
+
+  @Prop({ type: Number, default: 0 })
+  save: number;
 }
 
 export const PropertySchema = SchemaFactory.createForClass(Property);

@@ -12,6 +12,8 @@ import { BankAccountModule } from './modules/bank-account/bank-account.module';
 import { CommissionerModule } from './modules/commissioner/commissioner.module';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
+import { InteractionsModule } from './modules/interactions/interactions.module';
+
 
 @Module({
   imports: [
@@ -40,6 +42,7 @@ import { APP_GUARD } from '@nestjs/core';
     PropertyModule,
     RegionModule,
     DistrictModule,
+    InteractionsModule,
     MessageModule,
     SellerModule,
     BankAccountModule,

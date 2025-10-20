@@ -267,58 +267,5 @@ export class UserService {
     return saveUser;
   }
 
-  async handleLike({ user, property }: { user: string; property: string }) {
-    if (!user || !property) {
-      throw new BadRequestException('Amaliyot bajarilmadi!');
-    }
 
-    const oldUser = await this.model.findById(user);
-    if (!oldUser) {
-      throw new NotFoundException("Foydalanuvchi ro'yxatdan o'tmagan");
-    }
-    const propertyId = new Types.ObjectId(property);
-    oldUser.likes = oldUser.likes ?? [];
-    const index = oldUser.likes.findIndex((id) => id.equals(propertyId));
-    if (index > -1) {
-      oldUser.likes.splice(index, 1);
-    } else {
-      oldUser.likes.push(propertyId);
-    }
-    await oldUser.save();
-    return oldUser;
-  }
-
-  async findLikes(id: string) {
-    if (!id) {
-      throw new BadRequestException("Foydalanuvchi ID ko'rsatilmagan!");
-    }
-
-    const user = await this.model.findById(id).populate({
-      path: 'likes',
-      populate: [
-        {
-          path: 'photos',
-        },
-        {
-          path: 'videos',
-        },
-        {
-          path: 'district',
-        },
-        {
-          path: 'region',
-        },
-        {
-          path: 'author',
-          select: '-password',
-        },
-      ],
-    });
-
-    if (!user) {
-      throw new NotFoundException('Foydalanuvchi topilmadi!');
-    }
-
-    return user.likes;
-  }
 }

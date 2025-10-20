@@ -11,6 +11,7 @@ import {
   InternalServerErrorException,
   HttpException,
   Param,
+  Res,
 } from '@nestjs/common';
 import { PropertyService, type FindAllParams } from './property.service';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
@@ -18,6 +19,9 @@ import { CreatePropertyDto } from './dto/create-property.dto';
 import { AuthGuard } from '@nestjs/passport';
 import { type IRequestCustom } from 'src/interfaces/custom-request.interface';
 import { Throttle } from '@nestjs/throttler';
+import type { Response } from 'express';
+import { Property } from './property.schema';
+import { File } from '../file/file.schema';
 
 @Controller('properties')
 export class PropertyController {
@@ -73,7 +77,8 @@ export class PropertyController {
   }
 
   @Get()
-  async findAll(@Query() query: FindAllParams) {
+  @UseGuards(AuthGuard('jwt'))
+  async findAll(@Query() query: FindAllParams, @Req() req: IRequestCustom) {
     try {
       let coordinates: [number, number] | undefined;
       if (query.coordinates) {
@@ -126,9 +131,56 @@ export class PropertyController {
         rating,
         radius,
         sample: query.sample,
+        userId: req.user?._id as string,
       });
 
       return result;
+    } catch (error) {
+      console.error(error);
+
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
+      if (error instanceof Error) {
+        throw new InternalServerErrorException(error.message);
+      }
+      throw new InternalServerErrorException(
+        "Tizimga kirishda xatolik ketdi. Iltimos birozdan so'ng qayta urinib ko'ring!",
+      );
+    }
+  }
+
+  @Get('/share/:id')
+  async share(@Param('id') id: string, @Res() res: Response) {
+    try {
+      const property = (await this.service.findById(id)) as Property & {
+        photos?: File[];
+      };
+
+      const image = property?.photos?.[0]?.file_path || '';
+
+      const html = `
+    <!DOCTYPE html>
+    <html lang="uz">
+    <head>
+      <meta charset="UTF-8" />
+      <meta property="og:title" content="${property?.title.uz}" />
+      <meta property="og:description" content="${property?.description.uz}" />
+      <meta property="og:image" content="${image}" />
+      <meta property="og:url" content="https://yourdomain.com/properties/${id}" />
+      <meta name="twitter:card" content="summary_large_image" />
+      <title>${property?.title.uz}</title>
+      <script>
+        window.location.href = "https://yourdomain.com/properties/${id}";
+      </script>
+    </head>
+    <body>
+      Redirecting...
+    </body>
+    </html>
+  `;
+      return res.send(html);
     } catch (error) {
       console.error(error);
 

@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { FilterQuery, Model } from 'mongoose';
 import { Property, PropertyDocument } from './property.schema';
@@ -8,6 +8,8 @@ import { FileType } from '../file/file.schema';
 import { EnumPropertyCategory } from 'src/enums/property-category.enum';
 import { EnumPropertyPriceType } from 'src/enums/property-price-type.enum';
 import { EnumConstructionStatus } from 'src/enums/property-construction-status.enum';
+import { Like, LikeDocument } from '../interactions/schemas/like.schema';
+import { Save, SaveDocument } from '../interactions/schemas/save.schema';
 
 // Define interfaces for better type safety
 interface Location {
@@ -42,12 +44,14 @@ export interface FindAllParams {
   rating?: number;
   radius?: number;
   sample?: boolean;
+  userId?: string;
 }
 
-@Injectable()
 export class PropertyService {
   constructor(
     @InjectModel(Property.name) private model: Model<PropertyDocument>,
+    @InjectModel(Like.name) private likeModel: Model<LikeDocument>,
+    @InjectModel(Save.name) private saveModel: Model<SaveDocument>,
     private readonly fileService: FileService,
   ) {}
 
@@ -143,7 +147,8 @@ export class PropertyService {
     rating,
     radius = 10000,
     sample = false,
-  }: FindAllParams & { sample?: boolean }) {
+    userId,
+  }: FindAllParams & { sample?: boolean; userId?: string }) {
     limit = Math.min(limit, 100);
     const skip = (page - 1) * limit;
 
@@ -152,9 +157,15 @@ export class PropertyService {
 
     if (search) {
       filter.$or = [
-        { title: { $regex: search, $options: 'i' } },
-        { description: { $regex: search, $options: 'i' } },
-        { address: { $regex: search, $options: 'i' } },
+        { 'title.uz': { $regex: search, $options: 'i' } },
+        { 'title.ru': { $regex: search, $options: 'i' } },
+        { 'title.en': { $regex: search, $options: 'i' } },
+        { 'description.uz': { $regex: search, $options: 'i' } },
+        { 'description.ru': { $regex: search, $options: 'i' } },
+        { 'description.en': { $regex: search, $options: 'i' } },
+        { 'address.uz': { $regex: search, $options: 'i' } },
+        { 'address.ru': { $regex: search, $options: 'i' } },
+        { 'address.en': { $regex: search, $options: 'i' } },
       ];
     }
 
@@ -170,22 +181,40 @@ export class PropertyService {
     if (rating !== undefined) filter.rating = { $gte: rating };
 
     if (coordinates && coordinates.length === 2) {
-      filter['location.coordinates'] = {
+      filter.location = {
         $near: {
-          $geometry: { type: 'Point', coordinates },
+          $geometry: {
+            type: 'Point',
+            coordinates: [coordinates[0], coordinates[1]],
+          },
           $maxDistance: radius,
         },
       };
     }
 
+    const processProperties = async (properties: PropertyDocument[]) => {
+      if (userId) {
+        const liked = await this.likeModel.find({ user: userId });
+        const saved = await this.saveModel.find({ user: userId });
+        return properties.map((p: PropertyDocument) => ({
+          ...p,
+          liked: liked.some((l) => l.property.toString() === (p._id as string)),
+          saved: saved.some((s) => s.property.toString() === (p._id as string)),
+        }));
+      }
+      return properties.map((p: PropertyDocument) => ({
+        ...p,
+        liked: false,
+        saved: false,
+      }));
+    };
+
     if (sample) {
-      // Hujjatlar sonini olish
       const total = await this.model.countDocuments(filter).exec();
       const sampleSize = Math.min(limit, total);
       let properties: PropertyDocument[] = [];
 
       if (sampleSize > 0) {
-        // Random sample olish
         const randomSkip = Math.max(
           0,
           Math.floor(Math.random() * (total - sampleSize)),
@@ -204,7 +233,7 @@ export class PropertyService {
       }
 
       return {
-        properties,
+        properties: await processProperties(properties),
         pagination: null,
       };
     } else {
@@ -232,7 +261,7 @@ export class PropertyService {
       const totalPages = Math.ceil(total / limit);
 
       return {
-        properties,
+        properties: await processProperties(properties),
         pagination: {
           currentPage: page,
           totalPages,
