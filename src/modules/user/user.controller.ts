@@ -4,7 +4,6 @@ import {
   Get,
   HttpException,
   InternalServerErrorException,
-  Param,
   Post,
   Put,
   Req,
@@ -186,6 +185,7 @@ export class UserController {
     }
   }
 
+  @Throttle({ default: { limit: 3, ttl: 10000 } })
   @Put('/')
   @UseGuards(AuthGuard('jwt'))
   @UseInterceptors(FileInterceptor('avatar'))
@@ -246,6 +246,4 @@ export class UserController {
       );
     }
   }
-
-
 }

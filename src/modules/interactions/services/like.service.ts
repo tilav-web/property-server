@@ -16,27 +16,66 @@ export class LikeService {
   ) {}
 
   async likeProperty(userId: string, propertyId: string) {
-    const like = await this.likeModel.findOne({
+    const existingLike = await this.likeModel.findOne({
       user: userId,
       property: propertyId,
     });
 
-    if (like) {
-      await this.likeModel.findByIdAndDelete(like._id);
-      const property = await this.propertyModel.findByIdAndUpdate(propertyId, {
+    if (existingLike) {
+      // 🔻 Unlike bo‘lsa
+      const unLike = await this.likeModel.findByIdAndDelete(existingLike._id);
+
+      await this.propertyModel.findByIdAndUpdate(propertyId, {
         $inc: { like: -1 },
       });
-      return property;
+
+      // populate qilingan property
+      const populatedProperty = await this.propertyModel
+        .findById(propertyId)
+        .populate('author', '-password')
+        .populate('region')
+        .populate('district')
+        .populate('photos')
+        .populate('videos')
+        .lean();
+
+      return {
+        _id: unLike?._id,
+        user: unLike?.user,
+        property: populatedProperty,
+        action: 'unlike',
+      };
     } else {
-      await this.likeModel.create({ user: userId, property: propertyId });
-      const property = await this.propertyModel.findByIdAndUpdate(propertyId, {
+      // 🔺 Like bo‘lsa
+      const newLike = await this.likeModel.create({
+        user: userId,
+        property: propertyId,
+      });
+
+      await this.propertyModel.findByIdAndUpdate(propertyId, {
         $inc: { like: 1 },
       });
-      return property;
+
+      // populate qilingan property
+      const populatedProperty = await this.propertyModel
+        .findById(propertyId)
+        .populate('author', '-password')
+        .populate('region')
+        .populate('district')
+        .populate('photos')
+        .populate('videos')
+        .lean();
+
+      return {
+        _id: newLike._id,
+        user: newLike.user,
+        property: populatedProperty,
+        action: 'like',
+      };
     }
   }
 
-  async findMyLikes(userId: string): Promise<Property[]> {
+  async findMyLikes(userId: string) {
     const likes = await this.likeModel
       .find({ user: userId })
       .populate({
@@ -51,6 +90,6 @@ export class LikeService {
       })
       .lean()
       .exec();
-    return likes.map((like) => like.property as unknown as Property);
+    return likes;
   }
 }

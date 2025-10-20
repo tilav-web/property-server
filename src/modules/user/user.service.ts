@@ -18,7 +18,6 @@ import { MailService } from '../mailer/mail.service';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { FileService } from '../file/file.service';
 import { FileDocument, FileType } from '../file/file.schema';
-import { Types } from 'mongoose';
 
 @Injectable()
 export class UserService {
@@ -266,6 +265,4 @@ export class UserService {
 
     return saveUser;
   }
-
-
 }

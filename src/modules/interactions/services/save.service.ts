@@ -36,7 +36,7 @@ export class SaveService {
     }
   }
 
-  async getSavedProperties(userId: string): Promise<Property[]> {
+  async getSavedProperties(userId: string) {
     const saves = await this.saveModel
       .find({ user: userId })
       .populate({
@@ -51,6 +51,6 @@ export class SaveService {
       })
       .lean()
       .exec();
-    return saves.map((save) => save.property as unknown as Property);
+    return saves;
   }
 }
