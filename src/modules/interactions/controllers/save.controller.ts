@@ -19,8 +19,8 @@ export class SaveController {
 
   @Get('/')
   @UseGuards(AuthGuard('jwt'))
-  async getSavedProperties(@Req() req: IRequestCustom) {
+  async findMySaves(@Req() req: IRequestCustom) {
     const userId = req.user?._id as string;
-    return this.saveService.getSavedProperties(userId);
+    return this.saveService.findMySaves(userId);
   }
 }

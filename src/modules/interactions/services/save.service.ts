@@ -16,27 +16,66 @@ export class SaveService {
   ) {}
 
   async saveProperty(userId: string, propertyId: string) {
-    const save = await this.saveModel.findOne({
+    const existingSave = await this.saveModel.findOne({
       user: userId,
       property: propertyId,
     });
 
-    if (save) {
-      await this.saveModel.findByIdAndDelete(save._id);
-      const property = await this.propertyModel.findByIdAndUpdate(propertyId, {
+    if (existingSave) {
+      // 🔻 Unsave bo‘lsa
+      const unSave = await this.saveModel.findByIdAndDelete(existingSave._id);
+
+      await this.propertyModel.findByIdAndUpdate(propertyId, {
         $inc: { save: -1 },
       });
-      return property;
+
+      // populate qilingan property
+      const populatedProperty = await this.propertyModel
+        .findById(propertyId)
+        .populate('author', '-password')
+        .populate('region')
+        .populate('district')
+        .populate('photos')
+        .populate('videos')
+        .lean();
+
+      return {
+        _id: unSave?._id,
+        user: unSave?.user,
+        property: populatedProperty,
+        action: 'unsave',
+      };
     } else {
-      await this.saveModel.create({ user: userId, property: propertyId });
-      const property = await this.propertyModel.findByIdAndUpdate(propertyId, {
+      // 🔺 Save bo‘lsa
+      const newSave = await this.saveModel.create({
+        user: userId,
+        property: propertyId,
+      });
+
+      await this.propertyModel.findByIdAndUpdate(propertyId, {
         $inc: { save: 1 },
       });
-      return property;
+
+      // populate qilingan property
+      const populatedProperty = await this.propertyModel
+        .findById(propertyId)
+        .populate('author', '-password')
+        .populate('region')
+        .populate('district')
+        .populate('photos')
+        .populate('videos')
+        .lean();
+
+      return {
+        _id: newSave._id,
+        user: newSave.user,
+        property: populatedProperty,
+        action: 'save',
+      };
     }
   }
 
-  async getSavedProperties(userId: string) {
+  async findMySaves(userId: string) {
     const saves = await this.saveModel
       .find({ user: userId })
       .populate({
