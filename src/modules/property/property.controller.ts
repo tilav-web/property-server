@@ -22,6 +22,7 @@ import { Throttle } from '@nestjs/throttler';
 import type { Response } from 'express';
 import { Property } from './property.schema';
 import { File } from '../file/file.schema';
+import { CreateMessageDto } from '../message/dto/create-message.dto';
 
 @Controller('properties')
 export class PropertyController {
@@ -71,7 +72,7 @@ export class PropertyController {
         throw new InternalServerErrorException(error.message);
       }
       throw new InternalServerErrorException(
-        "Tizimga kirishda xatolik ketdi. Iltimos birozdan so'ng qayta urinib ko'ring!",
+        "Tizimda xatolik ketdi. Iltimos birozdan so'ng qayta urinib ko'ring!",
       );
     }
   }
@@ -146,7 +147,7 @@ export class PropertyController {
         throw new InternalServerErrorException(error.message);
       }
       throw new InternalServerErrorException(
-        "Tizimga kirishda xatolik ketdi. Iltimos birozdan so'ng qayta urinib ko'ring!",
+        "Tizimda xatolik ketdi. Iltimos birozdan so'ng qayta urinib ko'ring!",
       );
     }
   }
@@ -192,7 +193,7 @@ export class PropertyController {
         throw new InternalServerErrorException(error.message);
       }
       throw new InternalServerErrorException(
-        "Tizimga kirishda xatolik ketdi. Iltimos birozdan so'ng qayta urinib ko'ring!",
+        "Tizimda xatolik ketdi. Iltimos birozdan so'ng qayta urinib ko'ring!",
       );
     }
   }
@@ -215,7 +216,7 @@ export class PropertyController {
         throw new InternalServerErrorException(error.message);
       }
       throw new InternalServerErrorException(
-        "Tizimga kirishda xatolik ketdi. Iltimos birozdan so'ng qayta urinib ko'ring!",
+        "Tizimda xatolik ketdi. Iltimos birozdan so'ng qayta urinib ko'ring!",
       );
     }
   }
@@ -236,7 +237,36 @@ export class PropertyController {
         throw new InternalServerErrorException(error.message);
       }
       throw new InternalServerErrorException(
-        "Tizimga kirishda xatolik ketdi. Iltimos birozdan so'ng qayta urinib ko'ring!",
+        "Tizimda xatolik ketdi. Iltimos birozdan so'ng qayta urinib ko'ring!",
+      );
+    }
+  }
+
+  @Post('/message')
+  @UseGuards(AuthGuard('jwt'))
+  async createMessage(
+    @Body() dto: CreateMessageDto,
+    @Req() req: IRequestCustom,
+  ) {
+    try {
+      const user = req.user;
+      const result = await this.service.createMessage({
+        ...dto,
+        user: user?._id as string,
+      });
+      return result;
+    } catch (error) {
+      console.error(error);
+
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
+      if (error instanceof Error) {
+        throw new InternalServerErrorException(error.message);
+      }
+      throw new InternalServerErrorException(
+        "Tizimda xatolik ketdi. Iltimos birozdan so'ng qayta urinib ko'ring!",
       );
     }
   }

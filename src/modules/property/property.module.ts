@@ -7,6 +7,7 @@ import { FileModule } from '../file/file.module';
 
 import { Like, LikeSchema } from '../interactions/schemas/like.schema';
 import { Save, SaveSchema } from '../interactions/schemas/save.schema';
+import { MessageModule } from '../message/message.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { Save, SaveSchema } from '../interactions/schemas/save.schema';
       { name: Save.name, schema: SaveSchema },
     ]),
     FileModule,
+    MessageModule,
   ],
   providers: [PropertyService],
   controllers: [PropertyController],

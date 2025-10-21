@@ -1,10 +1,12 @@
 import {
+  Body,
   Controller,
   Delete,
   Get,
   HttpException,
   InternalServerErrorException,
   Param,
+  Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
@@ -33,7 +35,7 @@ export class MessageController {
         throw new InternalServerErrorException(error.message);
       }
       throw new InternalServerErrorException(
-        "Tizimga kirishda xatolik ketdi. Iltimos birozdan so'ng qayta urinib ko'ring!",
+        "Tizimda xatolik ketdi. Iltimos birozdan so'ng qayta urinib ko'ring!",
       );
     }
   }
@@ -56,7 +58,7 @@ export class MessageController {
         throw new InternalServerErrorException(error.message);
       }
       throw new InternalServerErrorException(
-        "Tizimga kirishda xatolik ketdi. Iltimos birozdan so'ng qayta urinib ko'ring!",
+        "Tizimda xatolik ketdi. Iltimos birozdan so'ng qayta urinib ko'ring!",
       );
     }
   }
@@ -77,7 +79,7 @@ export class MessageController {
         throw new InternalServerErrorException(error.message);
       }
       throw new InternalServerErrorException(
-        "Tizimga kirishda xatolik ketdi. Iltimos birozdan so'ng qayta urinib ko'ring!",
+        "Tizimda xatolik ketdi. Iltimos birozdan so'ng qayta urinib ko'ring!",
       );
     }
   }
@@ -102,7 +104,36 @@ export class MessageController {
         throw new InternalServerErrorException(error.message);
       }
       throw new InternalServerErrorException(
-        "Tizimga kirishda xatolik ketdi. Iltimos birozdan so'ng qayta urinib ko'ring!",
+        "Tizimda xatolik ketdi. Iltimos birozdan so'ng qayta urinib ko'ring!",
+      );
+    }
+  }
+
+  @Get('/status')
+  @UseGuards(AuthGuard('jwt'))
+  async findMessageStatusBySeller(
+    @Query('is_read') is_read: boolean,
+    @Req() req: IRequestCustom,
+  ) {
+    try {
+      const user = req.user;
+      const result = await this.service.findMessageStatusBySeller({
+        seller: user?._id as string,
+        is_read,
+      });
+      return result;
+    } catch (error) {
+      console.error(error);
+
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
+      if (error instanceof Error) {
+        throw new InternalServerErrorException(error.message);
+      }
+      throw new InternalServerErrorException(
+        "Tizimda xatolik ketdi. Iltimos birozdan so'ng qayta urinib ko'ring!",
       );
     }
   }

@@ -27,7 +27,7 @@ export class DistrictController {
         throw new InternalServerErrorException(error.message);
       }
       throw new InternalServerErrorException(
-        "Tizimga kirishda xatolik ketdi. Iltimos birozdan so'ng qayta urinib ko'ring!",
+        "Tizimda xatolik ketdi. Iltimos birozdan so'ng qayta urinib ko'ring!",
       );
     }
   }
@@ -48,7 +48,7 @@ export class DistrictController {
         throw new InternalServerErrorException(error.message);
       }
       throw new InternalServerErrorException(
-        "Tizimga kirishda xatolik ketdi. Iltimos birozdan so'ng qayta urinib ko'ring!",
+        "Tizimda xatolik ketdi. Iltimos birozdan so'ng qayta urinib ko'ring!",
       );
     }
   }
@@ -69,7 +69,7 @@ export class DistrictController {
         throw new InternalServerErrorException(error.message);
       }
       throw new InternalServerErrorException(
-        "Tizimga kirishda xatolik ketdi. Iltimos birozdan so'ng qayta urinib ko'ring!",
+        "Tizimda xatolik ketdi. Iltimos birozdan so'ng qayta urinib ko'ring!",
       );
     }
   }

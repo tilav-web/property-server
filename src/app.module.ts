@@ -14,7 +14,6 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { InteractionsModule } from './modules/interactions/interactions.module';
 
-
 @Module({
   imports: [
     ConfigModule.forRoot({

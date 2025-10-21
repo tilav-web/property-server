@@ -137,10 +137,10 @@ export class Property {
   district: Types.ObjectId;
 
   @Prop({ type: Number, default: 0 })
-  like: number;
+  liked: number;
 
   @Prop({ type: Number, default: 0 })
-  save: number;
+  saved: number;
 }
 
 export const PropertySchema = SchemaFactory.createForClass(Property);

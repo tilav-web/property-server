@@ -15,7 +15,7 @@ export class CreateMessageDto {
 
   @IsString()
   @IsNotEmpty()
-  text: string;
+  comment: string;
 
   @Type(() => Number)
   @IsNumber()

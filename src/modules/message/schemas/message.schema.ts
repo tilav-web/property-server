@@ -12,7 +12,7 @@ export class Message {
   property: Types.ObjectId;
 
   @Prop({ type: String, required: true, minlength: 5, maxlength: 500 })
-  text: string;
+  comment: string;
 
   @Prop({ type: Number, required: true, default: 1, min: 1, max: 5 })
   rating: number;

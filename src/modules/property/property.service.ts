@@ -10,6 +10,9 @@ import { EnumPropertyPriceType } from 'src/enums/property-price-type.enum';
 import { EnumConstructionStatus } from 'src/enums/property-construction-status.enum';
 import { Like, LikeDocument } from '../interactions/schemas/like.schema';
 import { Save, SaveDocument } from '../interactions/schemas/save.schema';
+import { MessageService } from '../message/message.service';
+import { CreateMessageDto } from '../message/dto/create-message.dto';
+import { NotFoundError } from 'rxjs';
 
 // Define interfaces for better type safety
 interface Location {
@@ -53,6 +56,7 @@ export class PropertyService {
     @InjectModel(Like.name) private likeModel: Model<LikeDocument>,
     @InjectModel(Save.name) private saveModel: Model<SaveDocument>,
     private readonly fileService: FileService,
+    private readonly messageService: MessageService,
   ) {}
 
   async createProperty(dto: CreatePropertyWithFilesDto): Promise<Property> {
@@ -277,5 +281,23 @@ export class PropertyService {
       .populate('videos')
       .lean()
       .exec();
+  }
+
+  async createMessage(dto: CreateMessageDto & { user: string }) {
+    const property = await this.model.findById(dto.property);
+    if (!property) throw new NotFoundError('Property not found');
+    const message = await this.messageService.create(dto);
+    const allMessages = await this.messageService.findByProperty(dto.property);
+    const avgRating =
+      allMessages.reduce((sum, m) => sum + (m.rating || 0), 0) /
+      allMessages.length;
+    property.rating = avgRating;
+    await property.save();
+
+    await this.messageService.createMessageStatus({
+      message: message?._id as string,
+      seller: property?.author.toString(),
+    });
+    return message;
   }
 }
