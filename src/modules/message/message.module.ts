@@ -7,12 +7,17 @@ import {
   MessageStatus,
   MessageStatusSchema,
 } from './schemas/message-status.schema';
+import { Property, PropertySchema } from '../property/property.schema';
 
 @Module({
   imports: [
     MongooseModule.forFeature([
       { name: Message.name, schema: MessageSchema },
       { name: MessageStatus.name, schema: MessageStatusSchema },
+      {
+        name: Property.name,
+        schema: PropertySchema,
+      },
     ]),
   ],
   controllers: [MessageController],

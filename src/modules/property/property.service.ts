@@ -286,6 +286,12 @@ export class PropertyService {
   async createMessage(dto: CreateMessageDto & { user: string }) {
     const property = await this.model.findById(dto.property);
     if (!property) throw new NotFoundError('Property not found');
+
+    if (property.author.toString() === dto?.user?.toString())
+      throw new BadRequestException(
+        "O'zingizga tegishli mulkka habar yubora olmaysiz!",
+      );
+
     const message = await this.messageService.create(dto);
     const allMessages = await this.messageService.findByProperty(dto.property);
     const avgRating =

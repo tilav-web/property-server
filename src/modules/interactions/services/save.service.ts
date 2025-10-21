@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import {
@@ -20,6 +20,13 @@ export class SaveService {
       user: userId,
       property: propertyId,
     });
+
+    const property = await this.propertyModel.findById(propertyId);
+
+    if (userId.toString() === property?.author.toString())
+      throw new BadRequestException(
+        "Siz o'zingaizga tegishlik property ni saqlay olmaysiz!",
+      );
 
     if (existingSave) {
       // 🔻 Unsave bo‘lsa

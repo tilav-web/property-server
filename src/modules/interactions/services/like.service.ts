@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Like, LikeDocument } from '../schemas/like.schema';
@@ -20,6 +20,12 @@ export class LikeService {
       user: userId,
       property: propertyId,
     });
+    const property = await this.propertyModel.findById(propertyId);
+
+    if (userId.toString() === property?.author.toString())
+      throw new BadRequestException(
+        "Siz o'zingaizga tegishlik property ga like bosolmaysiz!",
+      );
 
     if (existingLike) {
       // 🔻 Unlike bo‘lsa

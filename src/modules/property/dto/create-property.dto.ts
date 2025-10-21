@@ -18,7 +18,6 @@ import { EnumPropertyPriceType } from 'src/enums/property-price-type.enum';
 import { EnumAmenities } from 'src/enums/amenities.enum';
 import { Types } from 'mongoose';
 import { EnumPropertyPurpose } from 'src/enums/property-purpose.enum';
-import { EnumPropertyCurrency } from 'src/enums/property-currency.enum';
 
 class LanguageDto {
   @IsString()
@@ -74,10 +73,6 @@ export class CreatePropertyDto {
   @IsEnum(EnumPropertyPurpose)
   @IsNotEmpty()
   purpose: EnumPropertyPurpose;
-
-  @IsEnum(EnumPropertyCurrency)
-  @IsNotEmpty()
-  currency: EnumPropertyCurrency;
 
   @Type(() => Number)
   @IsNumber()

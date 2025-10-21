@@ -12,6 +12,7 @@ import {
   MessageStatus,
   MessageStatusDocument,
 } from './schemas/message-status.schema';
+import { NotFoundError } from 'rxjs';
 
 @Injectable()
 export class MessageService {
@@ -41,7 +42,7 @@ export class MessageService {
 
   async create(dto: CreateMessageDto & { user: string }) {
     if (!dto.user) {
-      throw new BadRequestException("Ro'yhatdan o'tish kerak!");
+      throw new NotFoundError('User not found!');
     }
     const message = await this.messageModel.create({
       ...dto,

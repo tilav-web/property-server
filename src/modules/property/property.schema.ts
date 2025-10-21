@@ -68,8 +68,7 @@ export class Property {
   @Prop({
     type: String,
     required: true,
-    enum: EnumPropertyCurrency,
-    default: EnumPropertyCurrency.USD,
+    default: EnumPropertyCurrency.UZS,
   })
   currency: string;
 
