@@ -6,7 +6,6 @@ import {
   HttpException,
   InternalServerErrorException,
   Param,
-  Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
@@ -111,16 +110,106 @@ export class MessageController {
 
   @Get('/status')
   @UseGuards(AuthGuard('jwt'))
-  async findMessageStatusBySeller(
-    @Query('is_read') is_read: boolean,
-    @Req() req: IRequestCustom,
-  ) {
+  async findMessageStatusBySeller(@Req() req: IRequestCustom) {
     try {
       const user = req.user;
       const result = await this.service.findMessageStatusBySeller({
         seller: user?._id as string,
-        is_read,
       });
+      return result;
+    } catch (error) {
+      console.error(error);
+
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
+      if (error instanceof Error) {
+        throw new InternalServerErrorException(error.message);
+      }
+      throw new InternalServerErrorException(
+        "Tizimda xatolik ketdi. Iltimos birozdan so'ng qayta urinib ko'ring!",
+      );
+    }
+  }
+
+  @Delete('/status/all')
+  @UseGuards(AuthGuard('jwt'))
+  async deleteStatusMessageAll(@Req() req: IRequestCustom) {
+    try {
+      const user = req.user;
+      const result = await this.service.deleteStatusMessageAll(
+        user?._id as string,
+      );
+      return result;
+    } catch (error) {
+      console.error(error);
+
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
+      if (error instanceof Error) {
+        throw new InternalServerErrorException(error.message);
+      }
+      throw new InternalServerErrorException(
+        "Tizimda xatolik ketdi. Iltimos birozdan so'ng qayta urinib ko'ring!",
+      );
+    }
+  }
+
+  @Delete('/status/:id')
+  @UseGuards(AuthGuard('jwt'))
+  async deleteStatusMessageById(@Param('id') id: string) {
+    try {
+      const result = await this.service.deleteStatusMessageById(id);
+      return result;
+    } catch (error) {
+      console.error(error);
+
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
+      if (error instanceof Error) {
+        throw new InternalServerErrorException(error.message);
+      }
+      throw new InternalServerErrorException(
+        "Tizimda xatolik ketdi. Iltimos birozdan so'ng qayta urinib ko'ring!",
+      );
+    }
+  }
+
+  @Get('/status/read/:id')
+  @UseGuards(AuthGuard('jwt'))
+  async readMessageStatus(@Param('id') id: string) {
+    try {
+      const result = await this.service.readMessageStatus(id);
+      return result;
+    } catch (error) {
+      console.error(error);
+
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
+      if (error instanceof Error) {
+        throw new InternalServerErrorException(error.message);
+      }
+      throw new InternalServerErrorException(
+        "Tizimda xatolik ketdi. Iltimos birozdan so'ng qayta urinib ko'ring!",
+      );
+    }
+  }
+
+  @Get('/status/read-all')
+  @UseGuards(AuthGuard('jwt'))
+  async readMessageStatusAll(@Req() req: IRequestCustom) {
+    try {
+      const user = req.user;
+      const result = await this.service.readMessageStatusAll(
+        user?._id as string,
+      );
       return result;
     } catch (error) {
       console.error(error);

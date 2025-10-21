@@ -40,8 +40,6 @@ export class MessageService {
   }
 
   async create(dto: CreateMessageDto & { user: string }) {
-    console.log(dto);
-
     if (!dto.user) {
       throw new BadRequestException("Ro'yhatdan o'tish kerak!");
     }
@@ -60,15 +58,9 @@ export class MessageService {
     return this.messageStatusModel.create(dto);
   }
 
-  async findMessageStatusBySeller({
-    seller,
-    is_read,
-  }: {
-    seller: string;
-    is_read: boolean;
-  }) {
+  async findMessageStatusBySeller({ seller }: { seller: string }) {
     return this.messageStatusModel
-      .find({ is_read, seller: seller.toString() })
+      .find({ seller: seller.toString() })
       .populate({
         path: 'message',
         populate: [
@@ -81,6 +73,7 @@ export class MessageService {
         ],
       })
       .populate('seller')
+      .sort({ createdAt: -1 })
       .lean();
   }
 
@@ -98,5 +91,24 @@ export class MessageService {
     }
 
     return deleted;
+  }
+
+  async deleteStatusMessageById(id: string) {
+    return this.messageStatusModel.findByIdAndDelete(id);
+  }
+
+  async deleteStatusMessageAll(seller: string) {
+    return this.messageStatusModel.deleteMany({ seller: seller.toString() });
+  }
+
+  async readMessageStatus(id: string) {
+    return this.messageStatusModel.findByIdAndUpdate(id, { is_read: true });
+  }
+
+  async readMessageStatusAll(seller: string) {
+    return this.messageStatusModel.updateMany(
+      { seller: seller.toString() },
+      { is_read: true },
+    );
   }
 }
