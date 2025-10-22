@@ -65,8 +65,8 @@ export class Inquiry {
   rental_period?: RentalPeriod;
 
   // 🗒️ Qo‘shimcha izoh
-  @Prop({ type: String, required: false, maxlength: 1000 })
-  comment?: string;
+  @Prop({ type: String, required: true, maxlength: 1000 })
+  comment: string;
 
   // 🔄 Inquiry holati
   @Prop({
