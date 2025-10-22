@@ -44,6 +44,15 @@ export class MessageService {
     if (!dto.user) {
       throw new NotFoundError('User not found!');
     }
+
+    const hasMessage = await this.messageModel.findOne({
+      property: dto.property.toString(),
+      user: dto.user.toString(),
+    });
+
+    if (hasMessage)
+      throw new BadRequestException('Bu property uchun fikr bildirgansiz!');
+
     const message = await this.messageModel.create({
       ...dto,
       property: dto.property.toString(),
@@ -63,7 +72,11 @@ export class MessageService {
     seller,
     page,
     limit,
-  }: { seller: string; page: number; limit: number }): Promise<{
+  }: {
+    seller: string;
+    page: number;
+    limit: number;
+  }): Promise<{
     messages: MessageStatusDocument[];
     total: number;
   }> {

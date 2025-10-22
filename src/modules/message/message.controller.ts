@@ -6,6 +6,7 @@ import {
   HttpException,
   InternalServerErrorException,
   Param,
+  Query,
   Req,
   UseGuards,
 } from '@nestjs/common';

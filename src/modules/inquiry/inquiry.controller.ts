@@ -1,4 +1,3 @@
-
 import {
   Controller,
   Post,
@@ -8,6 +7,7 @@ import {
   HttpException,
   InternalServerErrorException,
   Get,
+  Query,
 } from '@nestjs/common';
 import { InquiryService } from './inquiry.service';
 import { CreateInquiryDto } from './dto/create-inquiry.dto';
@@ -20,10 +20,18 @@ export class InquiryController {
 
   @UseGuards(AuthGuard('jwt'))
   @Get()
-  findAll(@Req() req: IRequestCustom, @Query('page') page: string = '1', @Query('limit') limit: string = '10') {
+  findAll(
+    @Req() req: IRequestCustom,
+    @Query('page') page: string = '1',
+    @Query('limit') limit: string = '10',
+  ) {
     try {
       const user = req.user;
-      return this.inquiryService.findAllForSeller(user?._id as string, +page, +limit);
+      return this.inquiryService.findAllForSeller(
+        user?._id as string,
+        +page,
+        +limit,
+      );
     } catch (error) {
       console.error(error);
       if (error instanceof HttpException) {
@@ -57,4 +65,3 @@ export class InquiryController {
     }
   }
 }
-

@@ -1,4 +1,3 @@
-
 import {
   Injectable,
   NotFoundException,
@@ -26,17 +25,25 @@ export class InquiryService {
 
     // Check if the user is the owner of the property
     if (property.author.toString() === dto.user.toString()) {
-      throw new ForbiddenException('Siz o\'zingizning mulkingizga so\'rov yubora olmaysiz');
+      throw new ForbiddenException(
+        "Siz o'zingizning mulkingizga so'rov yubora olmaysiz",
+      );
     }
 
     const inquiry = new this.inquiryModel(dto);
     return inquiry.save();
   }
 
-  async findAllForSeller(userId: string, page: number, limit: number): Promise<{ inquiries: Inquiry[], total: number }> {
+  async findAllForSeller(
+    userId: string,
+    page: number,
+    limit: number,
+  ): Promise<{ inquiries: Inquiry[]; total: number }> {
     // Find all properties belonging to the seller
-    const sellerProperties = await this.propertyModel.find({ author: userId }).select('_id');
-    const propertyIds = sellerProperties.map(p => p._id);
+    const sellerProperties = await this.propertyModel
+      .find({ author: userId })
+      .select('_id');
+    const propertyIds = sellerProperties.map((p) => p._id);
 
     const query = { property: { $in: propertyIds } };
 
@@ -55,4 +62,3 @@ export class InquiryService {
     return { inquiries, total };
   }
 }
-

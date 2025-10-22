@@ -78,7 +78,6 @@ export class PropertyController {
   }
 
   @Get()
-  @UseGuards(AuthGuard('jwt'))
   async findAll(@Query() query: FindAllParams, @Req() req: IRequestCustom) {
     try {
       let coordinates: [number, number] | undefined;
