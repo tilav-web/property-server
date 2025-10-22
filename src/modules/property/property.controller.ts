@@ -168,11 +168,11 @@ export class PropertyController {
       <meta property="og:title" content="${property?.title.uz}" />
       <meta property="og:description" content="${property?.description.uz}" />
       <meta property="og:image" content="${image}" />
-      <meta property="og:url" content="https://yourdomain.com/properties/${id}" />
+      <meta property="og:url" content="${process.env.CLIENT_URL}/property/${id}" />
       <meta name="twitter:card" content="summary_large_image" />
       <title>${property?.title.uz}</title>
       <script>
-        window.location.href = "https://yourdomain.com/properties/${id}";
+        window.location.href = "${process.env.CLIENT_URL}/property/${id}";
       </script>
     </head>
     <body>
