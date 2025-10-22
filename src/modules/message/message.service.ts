@@ -59,9 +59,18 @@ export class MessageService {
     return this.messageStatusModel.create(dto);
   }
 
-  async findMessageStatusBySeller({ seller }: { seller: string }) {
-    return this.messageStatusModel
-      .find({ seller: seller.toString() })
+  async findMessageStatusBySeller({
+    seller,
+    page,
+    limit,
+  }: { seller: string; page: number; limit: number }): Promise<{
+    messages: MessageStatusDocument[];
+    total: number;
+  }> {
+    const query = { seller: seller.toString() };
+
+    const messages = await this.messageStatusModel
+      .find(query)
       .populate({
         path: 'message',
         populate: [
@@ -75,7 +84,13 @@ export class MessageService {
       })
       .populate('seller')
       .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(limit)
       .lean();
+
+    const total = await this.messageStatusModel.countDocuments(query);
+
+    return { messages, total };
   }
 
   async delete({ id, user }: { id: string; user: string }) {

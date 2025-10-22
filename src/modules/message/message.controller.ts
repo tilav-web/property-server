@@ -110,11 +110,17 @@ export class MessageController {
 
   @Get('/status')
   @UseGuards(AuthGuard('jwt'))
-  async findMessageStatusBySeller(@Req() req: IRequestCustom) {
+  async findMessageStatusBySeller(
+    @Req() req: IRequestCustom,
+    @Query('page') page: string = '1',
+    @Query('limit') limit: string = '10',
+  ) {
     try {
       const user = req.user;
       const result = await this.service.findMessageStatusBySeller({
         seller: user?._id as string,
+        page: +page,
+        limit: +limit,
       });
       return result;
     } catch (error) {

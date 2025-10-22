@@ -13,6 +13,7 @@ import { CommissionerModule } from './modules/commissioner/commissioner.module';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { InteractionsModule } from './modules/interactions/interactions.module';
+import { InquiryModule } from './modules/inquiry/inquiry.module';
 
 @Module({
   imports: [
@@ -47,6 +48,7 @@ import { InteractionsModule } from './modules/interactions/interactions.module';
     BankAccountModule,
     CommissionerModule,
     DistrictModule,
+    InquiryModule,
   ],
   providers: [
     {
