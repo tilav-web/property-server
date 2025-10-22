@@ -39,11 +39,8 @@ export class InquiryService {
     const sellerProperties = await this.propertyModel
       .find({ author: userId })
       .select('_id');
-    const propertyIds = sellerProperties.map((p) => p._id);
-
+    const propertyIds = sellerProperties.map((p) => p._id?.toString());
     const query = { property: { $in: propertyIds } };
-
-    // Find all inquiries for those properties and populate related data
     const inquiries = await this.inquiryModel
       .find(query)
       .populate('user', 'first_name last_name email avatar')
