@@ -34,11 +34,7 @@ export class InquiryService {
     return inquiry.save();
   }
 
-  async findAllForSeller(
-    userId: string,
-    page: number,
-    limit: number,
-  ): Promise<{ inquiries: Inquiry[]; total: number }> {
+  async findAllForSeller(userId: string) {
     // Find all properties belonging to the seller
     const sellerProperties = await this.propertyModel
       .find({ author: userId })
@@ -53,12 +49,8 @@ export class InquiryService {
       .populate('user', 'first_name last_name email avatar')
       .populate('property', 'title')
       .sort({ createdAt: -1 })
-      .skip((page - 1) * limit)
-      .limit(limit)
       .exec();
 
-    const total = await this.inquiryModel.countDocuments(query);
-
-    return { inquiries, total };
+    return inquiries;
   }
 }

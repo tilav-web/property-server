@@ -6,7 +6,6 @@ import {
   HttpException,
   InternalServerErrorException,
   Param,
-  Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
@@ -111,18 +110,12 @@ export class MessageController {
 
   @Get('/status')
   @UseGuards(AuthGuard('jwt'))
-  async findMessageStatusBySeller(
-    @Req() req: IRequestCustom,
-    @Query('page') page: string = '1',
-    @Query('limit') limit: string = '10',
-  ) {
+  async findMessageStatusBySeller(@Req() req: IRequestCustom) {
     try {
       const user = req.user;
-      const result = await this.service.findMessageStatusBySeller({
-        seller: user?._id as string,
-        page: +page,
-        limit: +limit,
-      });
+      const result = await this.service.findMessageStatusBySeller(
+        user?._id as string,
+      );
       return result;
     } catch (error) {
       console.error(error);
@@ -217,6 +210,29 @@ export class MessageController {
       const result = await this.service.readMessageStatusAll(
         user?._id as string,
       );
+      return result;
+    } catch (error) {
+      console.error(error);
+
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
+      if (error instanceof Error) {
+        throw new InternalServerErrorException(error.message);
+      }
+      throw new InternalServerErrorException(
+        "Tizimda xatolik ketdi. Iltimos birozdan so'ng qayta urinib ko'ring!",
+      );
+    }
+  }
+
+  @Get('/status/unread-count')
+  @UseGuards(AuthGuard('jwt'))
+  async findMessageUnread(@Req() req: IRequestCustom) {
+    try {
+      const user = req.user;
+      const result = this.service.findMessageUnread(user?._id as string);
       return result;
     } catch (error) {
       console.error(error);
