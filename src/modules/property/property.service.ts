@@ -8,8 +8,6 @@ import { FileType } from '../file/file.schema';
 import { EnumPropertyCategory } from 'src/enums/property-category.enum';
 import { EnumPropertyPriceType } from 'src/enums/property-price-type.enum';
 import { EnumConstructionStatus } from 'src/enums/property-construction-status.enum';
-import { Like, LikeDocument } from '../interactions/schemas/like.schema';
-import { Save, SaveDocument } from '../interactions/schemas/save.schema';
 import { MessageService } from '../message/message.service';
 import { CreateMessageDto } from '../message/dto/create-message.dto';
 import { NotFoundError } from 'rxjs';
@@ -23,7 +21,6 @@ interface Location {
 interface CreatePropertyWithFilesDto extends CreatePropertyDto {
   author: string;
   files: {
-    banner?: Express.Multer.File[];
     photos?: Express.Multer.File[];
     videos?: Express.Multer.File[];
   };
@@ -53,8 +50,6 @@ export interface FindAllParams {
 export class PropertyService {
   constructor(
     @InjectModel(Property.name) private model: Model<PropertyDocument>,
-    @InjectModel(Like.name) private likeModel: Model<LikeDocument>,
-    @InjectModel(Save.name) private saveModel: Model<SaveDocument>,
     private readonly fileService: FileService,
     private readonly messageService: MessageService,
   ) {}
@@ -112,7 +107,7 @@ export class PropertyService {
     if (files && Object.keys(files).length > 0) {
       await this.fileService.uploadFiles(
         newProperty._id as string,
-        FileType.PROPERTY, // Pass the correct document type
+        FileType.PROPERTY,
         files,
       );
     }

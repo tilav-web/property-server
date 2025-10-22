@@ -144,19 +144,6 @@ export class Property {
 
 export const PropertySchema = SchemaFactory.createForClass(Property);
 
-// Virtual fields for populating files
-// Banner (main image)
-PropertySchema.virtual('banner', {
-  ref: 'File',
-  localField: '_id',
-  foreignField: 'document_id',
-  justOne: true, // Only one banner
-  match: {
-    document_type: 'Property',
-    file_name: /^banner/i, // Match files starting with 'banner'
-  },
-});
-
 // Photos (gallery images)
 PropertySchema.virtual('photos', {
   ref: 'File',

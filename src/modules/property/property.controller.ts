@@ -33,7 +33,6 @@ export class PropertyController {
   @UseGuards(AuthGuard('jwt'))
   @UseInterceptors(
     FileFieldsInterceptor([
-      { name: 'banner' },
       { name: 'photos' },
       { name: 'video', maxCount: 1 },
       {
@@ -45,7 +44,6 @@ export class PropertyController {
   async create(
     @UploadedFiles()
     files: {
-      banner?: Express.Multer.File[];
       photos?: Express.Multer.File[];
       video?: Express.Multer.File[];
       contract_file?: Express.Multer.File[];
