@@ -11,6 +11,7 @@ import { EnumConstructionStatus } from 'src/enums/property-construction-status.e
 import { MessageService } from '../message/message.service';
 import { CreateMessageDto } from '../message/dto/create-message.dto';
 import { NotFoundError } from 'rxjs';
+import { EnumPropertyPurpose } from 'src/enums/property-purpose.enum';
 
 // Define interfaces for better type safety
 interface Location {
@@ -34,6 +35,7 @@ export interface FindAllParams {
   district?: string;
   coordinates?: [number, number];
   category?: EnumPropertyCategory;
+  purpose?: EnumPropertyPurpose;
   search?: string;
   price_type?: EnumPropertyPriceType;
   construction_status?: EnumConstructionStatus;
@@ -136,6 +138,7 @@ export class PropertyService {
     district,
     coordinates,
     category,
+    purpose,
     search,
     price_type,
     construction_status,
@@ -169,6 +172,7 @@ export class PropertyService {
     if (region) filter.region = region;
     if (district) filter.district = district;
     if (category) filter.category = category;
+    if (purpose) filter.purpose = purpose;
     if (price_type) filter.price_type = price_type;
     if (construction_status) filter.construction_status = construction_status;
     if (is_premium !== undefined) filter.is_premium = is_premium;

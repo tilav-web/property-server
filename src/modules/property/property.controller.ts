@@ -119,6 +119,7 @@ export class PropertyController {
         district: query.district,
         coordinates,
         category: query.category,
+        purpose: query.purpose,
         search: query.search,
         price_type: query.price_type,
         construction_status: query.construction_status,
