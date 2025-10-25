@@ -119,6 +119,7 @@ export class PropertyService {
       .findById(newProperty._id)
       .populate('videos')
       .populate('photos')
+      .populate('contract_file')
       .populate('region')
       .populate('district')
       .lean()
@@ -212,6 +213,7 @@ export class PropertyService {
           .populate('district')
           .populate('photos')
           .populate('videos')
+          .populate('contract_file')
           .lean()
           .exec();
       }
@@ -238,6 +240,7 @@ export class PropertyService {
         .populate('district')
         .populate('photos')
         .populate('videos')
+        .populate('contract_file')
         .lean()
         .exec();
 
@@ -266,6 +269,7 @@ export class PropertyService {
       .populate('district')
       .populate('photos')
       .populate('videos')
+      .populate('contract_file')
       .lean()
       .exec();
   }
@@ -278,6 +282,7 @@ export class PropertyService {
       .populate('district')
       .populate('photos')
       .populate('videos')
+      .populate('contract_file')
       .lean()
       .exec();
   }

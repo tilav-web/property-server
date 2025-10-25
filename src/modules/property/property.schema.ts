@@ -160,7 +160,7 @@ PropertySchema.virtual('contract_file', {
   ref: 'File',
   localField: '_id',
   foreignField: 'document_id',
-  justOne: false, // Can be multiple contract files
+  justOne: true, // Can be multiple contract files
   match: {
     document_type: 'Property',
     file_name: /^contract_file/i, // Match files starting with 'contract_file'
