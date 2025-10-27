@@ -52,8 +52,6 @@ export class PropertyController {
     @Req() req: IRequestCustom,
   ) {
     try {
-      console.log(files.contract_file);
-
       const user = req.user;
       const newProperty = await this.service.createProperty({
         ...dto,
