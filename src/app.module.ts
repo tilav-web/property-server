@@ -15,6 +15,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { InteractionsModule } from './modules/interactions/interactions.module';
 import { InquiryModule } from './modules/inquiry/inquiry.module';
 import { StatisticModule } from './modules/statistic/statistic.module';
+import { AdvertiseModule } from './modules/advertise/advertise.module';
 
 @Module({
   imports: [
@@ -51,6 +52,7 @@ import { StatisticModule } from './modules/statistic/statistic.module';
     DistrictModule,
     InquiryModule,
     StatisticModule,
+    AdvertiseModule,
   ],
   providers: [
     {

@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
+import { Document, Types } from 'mongoose';
 import { EnumAdvertiseType } from 'src/enums/advertise-type.enum';
 
 export type AdvertiseDocument = Document & Advertise;
@@ -16,6 +16,9 @@ export class Advertise {
     enum: EnumAdvertiseType,
   })
   type: EnumAdvertiseType;
+
+  @Prop({ type: Types.ObjectId, ref: 'File', required: true })
+  image: string;
 }
 
 export const AdvertiseSchema = SchemaFactory.createForClass(Advertise);
