@@ -4,6 +4,7 @@ import { Document, Types } from 'mongoose';
 export enum FileType {
   AVATAR = 'User',
   PROPERTY = 'Property',
+  ADVERTISE = 'Advertise',
   YTT_SELLER = 'YttSeller',
   MCHJ_SELLER = 'MchjSeller',
   SELF_EMPLOYED_SELLER = 'SelfEmployedSeller',
