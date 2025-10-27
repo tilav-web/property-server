@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
+import { EnumPaymentStatus } from 'src/enums/advertise-payment-status.enum';
 import { EnumAdvertiseStatus } from 'src/enums/advertise-status.enum';
 import { EnumAdvertiseType } from 'src/enums/advertise-type.enum';
 import { EnumPropertyCurrency } from 'src/enums/property-currency.enum';
@@ -30,11 +31,8 @@ export class Advertise {
   })
   status: EnumAdvertiseStatus;
 
-  @Prop({ type: Date, required: true })
-  from: Date;
-
-  @Prop({ type: Date, required: true })
-  to: Date;
+  @Prop({ type: Number, required: true, default: 1 })
+  days: number;
 
   @Prop({ type: Number, required: true })
   price: number;
@@ -45,6 +43,13 @@ export class Advertise {
     default: EnumPropertyCurrency.UZS,
   })
   currency: string;
+
+  @Prop({
+    type: String,
+    enum: EnumPaymentStatus,
+    default: EnumPaymentStatus.PENDING,
+  })
+  payment_status: EnumPaymentStatus;
 }
 
 export const AdvertiseSchema = SchemaFactory.createForClass(Advertise);

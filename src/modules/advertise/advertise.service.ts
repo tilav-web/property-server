@@ -5,7 +5,6 @@ import { Advertise, AdvertiseDocument } from './advertise.schema';
 import { CreateAdvertiseDto } from './dto/create-advertise.dto';
 import { FileService } from '../file/file.service';
 import { FileType } from '../file/file.schema';
-import dayjs from 'dayjs';
 
 @Injectable()
 export class AdvertiseService {
@@ -24,9 +23,11 @@ export class AdvertiseService {
     author: string;
     files: { image?: Express.Multer.File[] };
   }) {
+    const { totalPrice } = this.priceCalculus(parseInt(dto.days, 10));
     const newAdvertise = await this.advertiseModel.create({
       ...dto,
       author,
+      price: totalPrice,
     });
 
     if (files && files.image) {
@@ -46,24 +47,7 @@ export class AdvertiseService {
       .exec();
   }
 
-  priceCalculus({ from, to }: { from: string; to: string }) {
-    const start = dayjs(from);
-    const end = dayjs(to);
-
-    if (!start.isValid() || !end.isValid()) {
-      throw new BadRequestException('Berilgan sanalar noto‘g‘ri formatda');
-    }
-
-    if (end.isBefore(start)) {
-      throw new BadRequestException(
-        'Tugash sanasi boshlanish sanasidan oldin bo‘lishi mumkin emas',
-      );
-    }
-
-    // Kunlar soni (ikkala sana ham hisobga olinadi)
-    const days = end.diff(start, 'day') + 1;
-
-    // .env dan kunlik narxni o‘qiymiz
+  priceCalculus(days: number) {
     const dailyPrice = Number(process.env.ADVERTISE_DAILY_PRICE);
     if (!dailyPrice || Number.isNaN(dailyPrice) || dailyPrice < 0) {
       throw new BadRequestException('Serverda kunlik narx noto‘g‘ri sozlangan');
@@ -72,8 +56,6 @@ export class AdvertiseService {
     const totalPrice = days * dailyPrice;
 
     return {
-      from: start.toDate(),
-      to: end.toDate(),
       days,
       totalPrice,
       currency: process.env.ADVERTISE_CURRENCY || 'UZS',

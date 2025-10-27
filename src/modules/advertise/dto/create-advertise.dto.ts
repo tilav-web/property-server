@@ -1,4 +1,5 @@
-import { IsEnum, IsNotEmpty, IsString, IsDateString } from 'class-validator';
+import { Type } from 'class-transformer';
+import { IsEnum, IsNotEmpty, IsString, IsNumber } from 'class-validator';
 import { EnumAdvertiseType } from 'src/enums/advertise-type.enum';
 
 export class CreateAdvertiseDto {
@@ -10,11 +11,8 @@ export class CreateAdvertiseDto {
   @IsNotEmpty()
   type: EnumAdvertiseType;
 
-  @IsDateString()
+  @Type(() => Number)
+  @IsNumber()
   @IsNotEmpty()
-  from: string;
-
-  @IsDateString()
-  @IsNotEmpty()
-  to: string;
+  days: string;
 }

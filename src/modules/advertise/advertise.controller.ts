@@ -57,7 +57,7 @@ export class AdvertiseController {
   }
 
   @Get('/price/calculus')
-  priceCalculus(@Query() dto: { from: string; to: string }) {
-    return this.service.priceCalculus(dto);
+  priceCalculus(@Query() dto: { days: string }) {
+    return this.service.priceCalculus(parseInt(dto.days, 10));
   }
 }
