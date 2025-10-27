@@ -144,7 +144,7 @@ export class PropertyService {
     price_type,
     construction_status,
     is_premium,
-    is_verified,
+    is_verified = true,
     is_new,
     is_guest_choice,
     rating,

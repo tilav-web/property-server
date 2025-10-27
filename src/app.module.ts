@@ -14,6 +14,7 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { InteractionsModule } from './modules/interactions/interactions.module';
 import { InquiryModule } from './modules/inquiry/inquiry.module';
+import { StatisticModule } from './modules/statistic/statistic.module';
 
 @Module({
   imports: [
@@ -49,6 +50,7 @@ import { InquiryModule } from './modules/inquiry/inquiry.module';
     CommissionerModule,
     DistrictModule,
     InquiryModule,
+    StatisticModule,
   ],
   providers: [
     {
