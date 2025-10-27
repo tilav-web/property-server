@@ -1,9 +1,11 @@
 import {
   Body,
   Controller,
+  Get,
   HttpException,
   InternalServerErrorException,
   Post,
+  Query,
   Req,
   UploadedFiles,
   UseGuards,
@@ -52,5 +54,10 @@ export class AdvertiseController {
         "Tizimda xatolik ketdi. Iltimos birozdan so'ng qayta urinib ko'ring!",
       );
     }
+  }
+
+  @Get('/price/calculus')
+  priceCalculus(@Query() dto: { from: string; to: string }) {
+    return this.service.priceCalculus(dto);
   }
 }
