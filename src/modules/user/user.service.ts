@@ -6,7 +6,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { User, UserDocument } from './user.schema';
+import { AppUser, UserDocument } from './user.schema';
 import { Model } from 'mongoose';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
@@ -22,7 +22,7 @@ import { FileDocument, FileType } from '../file/file.schema';
 @Injectable()
 export class UserService {
   constructor(
-    @InjectModel(User.name) private model: Model<UserDocument>,
+    @InjectModel(AppUser.name) private model: Model<UserDocument>,
     private readonly jwtService: JwtService,
     private readonly otpService: OtpService,
     private readonly mailService: MailService,

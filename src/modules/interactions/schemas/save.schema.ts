@@ -5,7 +5,7 @@ export type SaveDocument = Document & Save;
 
 @Schema({ timestamps: true })
 export class Save {
-  @Prop({ type: Types.ObjectId, ref: 'User', required: true })
+  @Prop({ type: Types.ObjectId, ref: 'AppUser', required: true })
   user: Types.ObjectId;
 
   @Prop({ type: Types.ObjectId, ref: 'Property', required: true })

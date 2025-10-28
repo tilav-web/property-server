@@ -7,7 +7,7 @@ export type SellerDocument = Document & Seller;
 
 @Schema({ timestamps: true })
 export class Seller {
-  @Prop({ type: Types.ObjectId, ref: 'User', required: true })
+  @Prop({ type: Types.ObjectId, ref: 'AppUser', required: true })
   user: Types.ObjectId;
 
   @Prop({ type: String, required: true, unique: true, uppercase: true })

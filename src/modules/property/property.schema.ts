@@ -31,7 +31,7 @@ export const LocationSchema = SchemaFactory.createForClass(Location);
 
 @Schema({ timestamps: true })
 export class Property {
-  @Prop({ type: Types.ObjectId, ref: 'User', required: true })
+  @Prop({ type: Types.ObjectId, ref: 'AppUser', required: true })
   author: Types.ObjectId;
 
   @Prop({ type: Language, required: true })

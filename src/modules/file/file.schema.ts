@@ -2,7 +2,7 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
 
 export enum FileType {
-  AVATAR = 'User',
+  AVATAR = 'AppUser',
   PROPERTY = 'Property',
   ADVERTISE = 'Advertise',
   YTT_SELLER = 'YttSeller',
