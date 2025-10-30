@@ -152,7 +152,7 @@ export class SellerService {
     const user = await this.userService.findById(id);
     if (!user) throw new BadRequestException('User not found!');
     return this.sellerModel
-      .findOne({ user: id })
+      .findOne({ user: new Types.ObjectId(id) })
       .populate({
         path: 'ytt',
         populate: [
