@@ -9,7 +9,7 @@ export type AdvertiseDocument = Document & Advertise;
 
 @Schema({ timestamps: true })
 export class Advertise {
-  @Prop({ type: Types.ObjectId, ref: 'AppUser', required: true })
+  @Prop({ type: Types.ObjectId, ref: 'User', required: true })
   author: Types.ObjectId;
 
   @Prop({ type: String, required: true })
