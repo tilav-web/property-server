@@ -8,7 +8,7 @@ export class MessageStatus {
   @Prop({ type: Types.ObjectId, ref: 'Message', required: true })
   message: Types.ObjectId;
 
-  @Prop({ type: Types.ObjectId, ref: 'AppUser', required: true })
+  @Prop({ type: Types.ObjectId, ref: 'User', required: true })
   seller: Types.ObjectId;
 
   @Prop({ type: Boolean, default: false })

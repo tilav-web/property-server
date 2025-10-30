@@ -3,7 +3,7 @@ import { Document, Types } from 'mongoose';
 import { EnumLan } from 'src/enums/lan.enum';
 import { EnumRole } from 'src/enums/role.enum';
 
-export type UserDocument = Document & AppUser;
+export type UserDocument = Document & User;
 
 @Schema({ _id: false })
 export class Email {
@@ -25,8 +25,8 @@ export class Phone {
 
 export const PhoneSchema = SchemaFactory.createForClass(Phone);
 
-@Schema({ timestamps: true, collection: 'appusers' })
-export class AppUser {
+@Schema({ timestamps: true })
+export class User {
   @Prop({ type: String, default: null })
   first_name: string;
 
@@ -58,4 +58,4 @@ export class AppUser {
   password: string;
 }
 
-export const UserSchema = SchemaFactory.createForClass(AppUser);
+export const UserSchema = SchemaFactory.createForClass(User);

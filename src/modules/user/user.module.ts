@@ -12,7 +12,7 @@ import { FileModule } from '../file/file.module';
 
 @Module({
   imports: [
-    MongooseModule.forFeature([{ name: 'AppUser', schema: UserSchema }]),
+    MongooseModule.forFeature([{ name: 'User', schema: UserSchema }]),
     JwtModule.registerAsync({
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({

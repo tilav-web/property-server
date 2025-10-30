@@ -41,7 +41,7 @@ export const RentalPeriodSchema = SchemaFactory.createForClass(RentalPeriod);
 @Schema({ timestamps: true })
 export class Inquiry {
   // 👤 Kim yuborgan
-  @Prop({ type: Types.ObjectId, ref: 'AppUser', required: true })
+  @Prop({ type: Types.ObjectId, ref: 'User', required: true })
   user: Types.ObjectId;
 
   // 🏡 Qaysi property uchun
