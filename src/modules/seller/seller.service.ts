@@ -76,7 +76,7 @@ export class SellerService {
     await hasUser.save();
     const seller = await this.sellerModel
       .findOneAndUpdate(
-        { user },
+        { user: new Types.ObjectId(user) },
         { passport, business_type },
         { new: true, upsert: true, setDefaultsOnInsert: true },
       )
