@@ -25,7 +25,7 @@ export class Phone {
 
 export const PhoneSchema = SchemaFactory.createForClass(Phone);
 
-@Schema({ timestamps: true })
+@Schema({ timestamps: true, collection: 'users' })
 export class User {
   @Prop({ type: String, default: null })
   first_name: string;
