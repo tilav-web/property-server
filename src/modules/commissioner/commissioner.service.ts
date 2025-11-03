@@ -55,11 +55,11 @@ export class CommissionerService {
       FileType.COMMISSIONER,
     );
 
-    await this.fileService.uploadFiles(
-      commissioner._id as string,
-      FileType.COMMISSIONER,
-      { contract_file: [dto.contract_file] },
-    );
+    await this.fileService.uploadFiles({
+      documentId: commissioner._id as string,
+      documentType: FileType.COMMISSIONER,
+      files: { contract_file: [dto.contract_file] },
+    });
     await this.sellerService.updateSellerStatus({
       id: seller._id as string,
       status: EnumSellerStatus.COMPLETED,

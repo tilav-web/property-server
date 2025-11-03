@@ -256,11 +256,11 @@ export class SellerService {
     );
 
     // Upload the new files
-    await this.fileService.uploadFiles(
-      yttSeller._id as string,
-      FileType.YTT_SELLER,
+    await this.fileService.uploadFiles({
+      documentId: yttSeller._id as string,
+      documentType: FileType.YTT_SELLER,
       files,
-    );
+    });
     return this.sellerModel
       .findById(dto.seller)
       .populate({
@@ -385,11 +385,11 @@ export class SellerService {
       FileType.MCHJ_SELLER,
     );
 
-    await this.fileService.uploadFiles(
-      mchjSeller._id as string,
-      FileType.MCHJ_SELLER,
+    await this.fileService.uploadFiles({
+      documentId: mchjSeller._id as string,
+      documentType: FileType.MCHJ_SELLER,
       files,
-    );
+    });
 
     return this.sellerModel
       .findById(dto.seller)
@@ -463,11 +463,11 @@ export class SellerService {
       FileType.SELF_EMPLOYED_SELLER,
     );
 
-    await this.fileService.uploadFiles(
-      selfEmployedSeller._id as string,
-      FileType.SELF_EMPLOYED_SELLER,
+    await this.fileService.uploadFiles({
+      documentId: selfEmployedSeller._id as string,
+      documentType: FileType.SELF_EMPLOYED_SELLER,
       files,
-    );
+    });
 
     await this.updateSellerStatus({
       id: seller._id as string,
@@ -540,11 +540,11 @@ export class SellerService {
       FileType.PHYSICAL_SELLER,
     );
 
-    await this.fileService.uploadFiles(
-      physicalSeller._id as string,
-      FileType.PHYSICAL_SELLER,
+    await this.fileService.uploadFiles({
+      documentId: physicalSeller._id as string,
+      documentType: FileType.PHYSICAL_SELLER,
       files,
-    );
+    });
 
     await this.updateSellerStatus({
       id: seller._id as string,

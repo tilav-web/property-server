@@ -19,6 +19,17 @@ export class FileService {
   private readonly propertyUploadFolder = join(this.baseUploadFolder, 'images');
   private readonly sellerUploadFolder = join(this.baseUploadFolder, 'files');
 
+  private readonly folderMap: Record<string, string> = {
+    [FileType.AVATAR]: this.avatarUploadFolder,
+    [FileType.PROPERTY]: this.propertyUploadFolder,
+    [FileType.ADVERTISE]: this.propertyUploadFolder,
+    [FileType.YTT_SELLER]: this.sellerUploadFolder,
+    [FileType.MCHJ_SELLER]: this.sellerUploadFolder,
+    [FileType.SELF_EMPLOYED_SELLER]: this.sellerUploadFolder,
+    [FileType.COMMISSIONER]: this.sellerUploadFolder,
+    [FileType.PHYSICAL_SELLER]: this.sellerUploadFolder,
+  };
+
   private readonly allowedImageMimeTypes = [
     'image/jpeg',
     'image/png',
@@ -34,11 +45,15 @@ export class FileService {
 
   constructor(@InjectModel(File.name) private fileModel: Model<FileDocument>) {}
 
-  async uploadFiles(
-    documentId: string,
-    documentType: FileType,
-    files: { [fieldname: string]: MulterFile[] },
-  ): Promise<FileDocument[]> {
+  async uploadFiles({
+    documentId,
+    documentType,
+    files,
+  }: {
+    documentId: string;
+    documentType: FileType;
+    files: { [fieldname: string]: MulterFile[] };
+  }): Promise<FileDocument[]> {
     if (!Types.ObjectId.isValid(documentId)) {
       throw new BadRequestException('Yaroqsiz hujjat ID');
     }
@@ -51,18 +66,7 @@ export class FileService {
     ];
 
     // Determine upload folder based on document type
-    let uploadFolder: string;
-    switch (documentType) {
-      case FileType.AVATAR:
-        uploadFolder = this.avatarUploadFolder;
-        break;
-      case FileType.PROPERTY:
-        uploadFolder = this.propertyUploadFolder;
-        break;
-      default:
-        uploadFolder = this.sellerUploadFolder;
-        break;
-    }
+    const uploadFolder = this.folderMap[documentType] || this.sellerUploadFolder;
 
     for (const key in files) {
       const fileArray = files[key];
@@ -70,7 +74,7 @@ export class FileService {
         const savedFile = await this.processAndSaveFile(
           documentId,
           file,
-          file.fieldname, // Use the fieldname from multer as the fileKey
+          key, // Use the key from the files object
           documentType,
           uploadFolder, // Use the dynamically determined folder
           allowedMimeTypes,
@@ -112,7 +116,11 @@ export class FileService {
     uploadFolder: string,
     allowedMimeTypes: string[],
   ): Promise<FileDocument> {
+    console.log('--- Starting processAndSaveFile ---');
+    console.log(`Document ID: ${documentId}, FileKey: ${fileKey}, DocumentType: ${documentType}`);
+
     if (!allowedMimeTypes.includes(file.mimetype)) {
+      console.error(`Disallowed mimetype: ${file.mimetype}`);
       throw new BadRequestException(
         `Faqat ${allowedMimeTypes.join(', ')} formatlari qabul qilinadi`,
       );
@@ -120,6 +128,7 @@ export class FileService {
 
     const maxFileSize = 20 * 1024 * 1024; // 20MB
     if (file.size > maxFileSize) {
+      console.error(`File size too large: ${file.size}`);
       throw new BadRequestException(
         "Fayl hajmi 20MB dan katta bo'lmasligi kerak",
       );
@@ -138,12 +147,16 @@ export class FileService {
       fileName,
     );
 
+    console.log(`Generated fileName: ${fileName}`);
+    console.log(`Attempting to write file to: ${filePath}`);
+
     try {
       let processedBuffer: Buffer;
       let finalMimeType: string;
       let finalSize: number;
 
       if (isImage) {
+        console.log('Processing as image...');
         processedBuffer = await sharp(file.buffer)
           .resize(800, 600, { fit: 'inside', withoutEnlargement: true })
           .webp({ quality: 80 })
@@ -151,15 +164,17 @@ export class FileService {
         finalMimeType = 'image/webp';
         finalSize = processedBuffer.length;
       } else {
-        // For videos and documents, save the original buffer
+        console.log('Processing as non-image file...');
         processedBuffer = file.buffer;
         finalMimeType = file.mimetype;
         finalSize = file.size;
       }
 
+      console.log('Writing file to disk...');
       await fs.writeFile(filePath, processedBuffer);
+      console.log('--- File successfully written to disk ---');
 
-      const fileRecord = await this.fileModel.create({
+      const fileDataToCreate = {
         document_id: documentId,
         document_type: documentType,
         file_name: fileName,
@@ -173,10 +188,15 @@ export class FileService {
           processed: isImage,
           dimensions: isImage ? { width: 800, height: 600 } : undefined,
         },
-      });
+      };
+
+      console.log('Creating file record in database with data:', fileDataToCreate);
+      const fileRecord = await this.fileModel.create(fileDataToCreate);
+      console.log('--- File record successfully created in DB ---', fileRecord);
 
       return fileRecord;
     } catch (error: unknown) {
+      console.error('--- ERROR in processAndSaveFile ---', error);
       // If anything fails, attempt to delete the orphaned file
       await fs.unlink(filePath).catch(() => {});
       throw new InternalServerErrorException(

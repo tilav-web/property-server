@@ -2,6 +2,8 @@
 .git
 .github
 
+.env
+
 # O'rnatilgan kutubxonalar (konteyner ichida qayta o'rnatiladi)
 node_modules
 

@@ -107,11 +107,11 @@ export class PropertyService {
 
     // Fayllarni yuklash
     if (files && Object.keys(files).length > 0) {
-      await this.fileService.uploadFiles(
-        newProperty._id as string,
-        FileType.PROPERTY,
+      await this.fileService.uploadFiles({
+        documentId: newProperty._id as string,
+        documentType: FileType.PROPERTY,
         files,
-      );
+      });
     }
 
     // Yaratilgan mulkni qaytarish

@@ -238,11 +238,11 @@ export class UserService {
       await this.fileService.deleteFilesByDocument(user, FileType.AVATAR);
 
       // Upload the new avatar
-      const uploadedFiles = await this.fileService.uploadFiles(
-        user, // documentId
-        FileType.AVATAR, // documentType
-        { avatar: [avatar] }, // files object
-      );
+      const uploadedFiles = await this.fileService.uploadFiles({
+        documentId: user, // documentId
+        documentType: FileType.AVATAR, // documentType
+        files: { avatar: [avatar] }, // files object
+      });
 
       // Check if upload was successful and get the new avatar
       if (uploadedFiles && uploadedFiles.length > 0) {

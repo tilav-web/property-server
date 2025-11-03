@@ -50,6 +50,12 @@ export class Advertise {
     default: EnumPaymentStatus.PENDING,
   })
   payment_status: EnumPaymentStatus;
+
+  @Prop({ type: String, required: false, default: null })
+  from: string;
+
+  @Prop({ type: String, required: false, default: null })
+  to: string;
 }
 
 export const AdvertiseSchema = SchemaFactory.createForClass(Advertise);

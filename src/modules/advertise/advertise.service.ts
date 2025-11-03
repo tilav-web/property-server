@@ -31,13 +31,13 @@ export class AdvertiseService {
     });
 
     if (files && files.image) {
-      await this.fileService.uploadFiles(
-        newAdvertise._id as string,
-        FileType.ADVERTISE,
-        {
+      await this.fileService.uploadFiles({
+        documentId: newAdvertise._id as string,
+        documentType: FileType.ADVERTISE,
+        files: {
           advertise: files.image,
         },
-      );
+      });
     }
 
     return this.advertiseModel
@@ -60,5 +60,12 @@ export class AdvertiseService {
       totalPrice,
       currency: process.env.ADVERTISE_CURRENCY || 'UZS',
     };
+  }
+
+  async findMy(author: string) {
+    const advertises = await this.advertiseModel
+      .find({ author })
+      .populate('image');
+    return advertises;
   }
 }

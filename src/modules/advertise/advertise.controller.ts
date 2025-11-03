@@ -56,6 +56,29 @@ export class AdvertiseController {
     }
   }
 
+  @Get('/')
+  @UseGuards(AuthGuard('jwt'))
+  async findMy(@Req() req: IRequestCustom) {
+    try {
+      const user = req.user;
+      const result = await this.service.findMy(user?._id as string);
+      return result;
+    } catch (error) {
+      console.error(error);
+
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
+      if (error instanceof Error) {
+        throw new InternalServerErrorException(error.message);
+      }
+      throw new InternalServerErrorException(
+        "Tizimda xatolik ketdi. Iltimos birozdan so'ng qayta urinib ko'ring!",
+      );
+    }
+  }
+
   @Get('/price/calculus')
   priceCalculus(@Query() dto: { days: string }) {
     return this.service.priceCalculus(parseInt(dto.days, 10));
