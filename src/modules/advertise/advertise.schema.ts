@@ -70,3 +70,6 @@ AdvertiseSchema.virtual('image', {
     file_name: /^advertise/i,
   },
 });
+
+AdvertiseSchema.set('toObject', { virtuals: true });
+AdvertiseSchema.set('toJSON', { virtuals: true });

@@ -43,7 +43,6 @@ export class AdvertiseService {
     return this.advertiseModel
       .findById(newAdvertise._id)
       .populate('image')
-      .lean()
       .exec();
   }
 
