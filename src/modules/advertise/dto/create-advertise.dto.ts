@@ -14,5 +14,5 @@ export class CreateAdvertiseDto {
   @Type(() => Number)
   @IsNumber()
   @IsNotEmpty()
-  days: string;
+  days: number;
 }

@@ -14,5 +14,6 @@ import { FileModule } from '../file/file.module';
   ],
   controllers: [AdvertiseController],
   providers: [AdvertiseService],
+  exports: [AdvertiseService],
 })
 export class AdvertiseModule {}

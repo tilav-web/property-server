@@ -51,11 +51,11 @@ export class Advertise {
   })
   payment_status: EnumPaymentStatus;
 
-  @Prop({ type: String, required: false, default: null })
-  from: string;
+  @Prop({ type: Date, required: false, default: null })
+  from: Date;
 
-  @Prop({ type: String, required: false, default: null })
-  to: string;
+  @Prop({ type: Date, required: false, default: null })
+  to: Date;
 }
 
 export const AdvertiseSchema = SchemaFactory.createForClass(Advertise);

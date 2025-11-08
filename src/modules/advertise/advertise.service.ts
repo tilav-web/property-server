@@ -1,10 +1,13 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { FilterQuery, Model } from 'mongoose';
 import { Advertise, AdvertiseDocument } from './advertise.schema';
 import { CreateAdvertiseDto } from './dto/create-advertise.dto';
 import { FileService } from '../file/file.service';
 import { FileType } from '../file/file.schema';
+import { EnumAdvertiseStatus } from 'src/enums/advertise-status.enum';
+import { EnumAdvertiseType } from 'src/enums/advertise-type.enum';
+import { EnumPaymentStatus } from 'src/enums/advertise-payment-status.enum';
 
 @Injectable()
 export class AdvertiseService {
@@ -23,7 +26,7 @@ export class AdvertiseService {
     author: string;
     files: { image?: Express.Multer.File[] };
   }) {
-    const { totalPrice } = this.priceCalculus(parseInt(dto.days, 10));
+    const { totalPrice } = this.priceCalculus(dto.days);
     const newAdvertise = await this.advertiseModel.create({
       ...dto,
       author,
@@ -44,6 +47,54 @@ export class AdvertiseService {
       .findById(newAdvertise._id)
       .populate('image')
       .exec();
+  }
+
+  async findAll(params: {
+    limit?: number;
+    type?: EnumAdvertiseType;
+    sample?: boolean;
+  }) {
+    const { limit = 10, type, sample = false } = params;
+
+    const filter: FilterQuery<AdvertiseDocument> = {
+      status: EnumAdvertiseStatus.APPROVED,
+      payment_status: EnumPaymentStatus.PAID,
+      from: { $ne: null, $lte: new Date() },
+      to: { $ne: null, $gte: new Date() },
+    };
+
+    if (type) {
+      filter.type = type;
+    }
+
+    if (sample) {
+      const total = await this.advertiseModel.countDocuments(filter).exec();
+      const sampleSize = Math.min(limit, total);
+      let advertises: AdvertiseDocument[] = [];
+
+      if (sampleSize > 0) {
+        const randomSkip = Math.max(
+          0,
+          Math.floor(Math.random() * (total - sampleSize)),
+        );
+        advertises = await this.advertiseModel
+          .find(filter)
+          .skip(randomSkip)
+          .limit(sampleSize)
+          .populate('image')
+          .lean()
+          .exec();
+      }
+      return advertises;
+    } else {
+      const advertises = await this.advertiseModel
+        .find(filter)
+        .limit(limit)
+        .populate('image')
+        .lean()
+        .exec();
+      return advertises;
+    }
   }
 
   priceCalculus(days: number) {

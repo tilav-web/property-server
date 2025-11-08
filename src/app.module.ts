@@ -16,6 +16,7 @@ import { InteractionsModule } from './modules/interactions/interactions.module';
 import { InquiryModule } from './modules/inquiry/inquiry.module';
 import { StatisticModule } from './modules/statistic/statistic.module';
 import { AdvertiseModule } from './modules/advertise/advertise.module';
+import { LayoutModule } from './modules/layout/layout.module';
 
 @Module({
   imports: [
@@ -53,6 +54,7 @@ import { AdvertiseModule } from './modules/advertise/advertise.module';
     InquiryModule,
     StatisticModule,
     AdvertiseModule,
+    LayoutModule,
   ],
   providers: [
     {
