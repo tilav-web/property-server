@@ -7,7 +7,10 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Inquiry, InquiryDocument } from './inquiry.schema';
 import { CreateInquiryDto } from './dto/create-inquiry.dto';
-import { Property, PropertyDocument } from '../property/property.schema';
+import {
+  Property,
+  PropertyDocument,
+} from '../property/schemas/property.schema';
 
 @Injectable()
 export class InquiryService {

@@ -15,11 +15,12 @@ import { FileModule } from '../file/file.module';
     MongooseModule.forFeature([{ name: 'User', schema: UserSchema }]),
     JwtModule.registerAsync({
       inject: [ConfigService],
-      useFactory: (config: ConfigService) => ({
-        global: true,
-        secret: config.get<string>('JWT_SECRET'),
+      useFactory: (configService: ConfigService) => ({
+        secret: configService.get<string>('JWT_SECRET'),
+        signOptions: { expiresIn: '15m' },
       }),
     }),
+
     OtpModule,
     MailModule,
     FileModule,

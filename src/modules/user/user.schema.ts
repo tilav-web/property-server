@@ -1,6 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
-import { EnumLan } from 'src/enums/lan.enum';
+import { EnumLanguage } from 'src/enums/language.enum';
 import { EnumRole } from 'src/enums/role.enum';
 
 export type UserDocument = Document & User;
@@ -42,8 +42,8 @@ export class User {
   @Prop({ type: String, required: true, default: EnumRole.PHYSICAL })
   role: EnumRole;
 
-  @Prop({ type: String, required: true, default: EnumLan.UZ })
-  lan: EnumLan;
+  @Prop({ type: String, required: true, default: EnumLanguage.UZ })
+  lan: EnumLanguage;
 
   @Prop({ type: EmailSchema, required: true })
   email: Email;

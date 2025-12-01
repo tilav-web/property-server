@@ -21,9 +21,9 @@ import { AuthRoleGuard } from '../user/guards/role.guard';
 import { Roles } from '../user/decorators/roles.decorator';
 import { CreateMchjSellerDto } from './dto/create-mchj-seller.dto';
 import { CreateSelfEmployedSellerDto } from './dto/self-employed-seller.dto';
-import { MulterFile } from 'src/interfaces/multer-file.interface';
 import { Throttle } from '@nestjs/throttler';
 import { CreatePhysicalSellerDto } from './dto/create-physical-seller.dto';
+import { Express } from 'express';
 
 @Controller('sellers')
 export class SellerController {
@@ -105,9 +105,9 @@ export class SellerController {
     @Body() dto: CreateYttSellerDto,
     @UploadedFiles()
     files: {
-      passport_file?: MulterFile[];
-      ytt_certificate_file?: MulterFile[];
-      vat_file?: MulterFile[];
+      passport_file?: Express.Multer.File[];
+      ytt_certificate_file?: Express.Multer.File[];
+      vat_file?: Express.Multer.File[];
     },
   ) {
     try {
@@ -148,13 +148,13 @@ export class SellerController {
     @Body() dto: CreateMchjSellerDto,
     @UploadedFiles()
     files: {
-      ustav_file?: MulterFile[];
-      mchj_license?: MulterFile[];
-      director_appointment_file?: MulterFile[];
-      director_passport_file?: MulterFile[];
-      legal_address_file?: MulterFile[];
-      kadastr_file?: MulterFile[];
-      vat_file?: MulterFile[];
+      ustav_file?: Express.Multer.File[];
+      mchj_license?: Express.Multer.File[];
+      director_appointment_file?: Express.Multer.File[];
+      director_passport_file?: Express.Multer.File[];
+      legal_address_file?: Express.Multer.File[];
+      kadastr_file?: Express.Multer.File[];
+      vat_file?: Express.Multer.File[];
     },
   ) {
     try {
@@ -190,8 +190,8 @@ export class SellerController {
     @Body() dto: CreateSelfEmployedSellerDto,
     @UploadedFiles()
     files: {
-      passport_file?: MulterFile[];
-      self_employment_certificate?: MulterFile[];
+      passport_file?: Express.Multer.File[];
+      self_employment_certificate?: Express.Multer.File[];
     },
     @Req() req: IRequestCustom,
   ) {
@@ -228,7 +228,7 @@ export class SellerController {
     @Body() dto: CreatePhysicalSellerDto,
     @UploadedFiles()
     files: {
-      passport_file?: MulterFile[];
+      passport_file?: Express.Multer.File[];
     },
     @Req() req: IRequestCustom,
   ) {

@@ -17,7 +17,6 @@ import { OtpService } from '../otp/otp.service';
 import { MailService } from '../mailer/mail.service';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { FileService } from '../file/file.service';
-import { FileDocument, FileType } from '../file/file.schema';
 
 @Injectable()
 export class UserService {
@@ -230,25 +229,17 @@ export class UserService {
     user,
     lan,
   }: UpdateUserDto & { user: string; avatar?: Express.Multer.File }) {
-    let userAvatar: FileDocument | undefined;
     const userData = await this.model.findById(user);
     if (!userData) throw new BadRequestException("Tizimdan ro'yhatdan o'ting");
+    
     if (avatar) {
-      // Delete old avatars first
-      await this.fileService.deleteFilesByDocument(user, FileType.AVATAR);
-
-      // Upload the new avatar
-      const uploadedFiles = await this.fileService.uploadFiles({
-        documentId: user, // documentId
-        documentType: FileType.AVATAR, // documentType
-        files: { avatar: [avatar] }, // files object
-      });
-
-      // Check if upload was successful and get the new avatar
-      if (uploadedFiles && uploadedFiles.length > 0) {
-        userAvatar = uploadedFiles[0];
-        userData.avatar = userAvatar.file_path;
+      if (userData.avatar) {
+        this.fileService.deleteFile(userData.avatar);
       }
+      userData.avatar = this.fileService.saveFile({
+        file: avatar,
+        folder: 'avatars',
+      });
     }
 
     if (first_name) userData.first_name = first_name;

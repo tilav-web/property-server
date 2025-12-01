@@ -38,9 +38,10 @@ export class UserController {
       return res
         .cookie('refresh_token', refresh_token, {
           httpOnly: process.env.NODE_ENV === 'production',
-          secure: true,
+          secure: process.env.NODE_ENV === 'production',
           sameSite: 'strict',
           maxAge: 7 * 24 * 60 * 60 * 1000,
+          path: '/',
         })
         .json({ user, access_token });
     } catch (error) {
@@ -93,9 +94,10 @@ export class UserController {
       return res
         .cookie('refresh_token', refresh_token, {
           httpOnly: process.env.NODE_ENV === 'production',
-          secure: true,
+          secure: process.env.NODE_ENV === 'production',
           sameSite: 'strict',
           maxAge: 7 * 24 * 60 * 60 * 1000,
+          path: '/',
         })
         .json({ user, access_token });
     } catch (error) {
@@ -223,7 +225,7 @@ export class UserController {
     try {
       res.clearCookie('refresh_token', {
         httpOnly: process.env.NODE_ENV === 'production',
-        secure: true,
+        secure: process.env.NODE_ENV === 'production',
         sameSite: 'strict',
         path: '/',
       });

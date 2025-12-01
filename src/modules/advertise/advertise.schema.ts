@@ -56,20 +56,9 @@ export class Advertise {
 
   @Prop({ type: Date, required: false, default: null })
   to: Date;
+
+  @Prop({ type: String, required: true })
+  image: string;
 }
 
 export const AdvertiseSchema = SchemaFactory.createForClass(Advertise);
-
-AdvertiseSchema.virtual('image', {
-  ref: 'File',
-  localField: '_id',
-  foreignField: 'document_id',
-  justOne: true,
-  match: {
-    document_type: 'Advertise',
-    file_name: /^advertise/i,
-  },
-});
-
-AdvertiseSchema.set('toObject', { virtuals: true });
-AdvertiseSchema.set('toJSON', { virtuals: true });

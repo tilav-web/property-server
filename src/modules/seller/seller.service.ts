@@ -19,8 +19,6 @@ import { UpdateUserDto } from '../user/dto/update-user.dto';
 import { CreateMchjSellerDto } from './dto/create-mchj-seller.dto';
 import { CreateSelfEmployedSellerDto } from './dto/self-employed-seller.dto';
 import { FileService } from '../file/file.service';
-import { FileType } from '../file/file.schema';
-import { MulterFile } from 'src/interfaces/multer-file.interface';
 import { EnumSellerStatus } from 'src/enums/seller-status.enum';
 import {
   PhysicalSeller,
@@ -28,6 +26,7 @@ import {
 } from './schemas/physical-seller.schema';
 import { CreatePhysicalSellerDto } from './dto/create-physical-seller.dto';
 import { EnumSellerBusinessType } from 'src/enums/seller-business-type.enum';
+import { Express } from 'express';
 
 @Injectable()
 export class SellerService {
@@ -80,70 +79,12 @@ export class SellerService {
         { passport, business_type },
         { new: true, upsert: true, setDefaultsOnInsert: true },
       )
-      .populate({
-        path: 'ytt',
-        populate: [
-          {
-            path: 'passport_file',
-          },
-          {
-            path: 'ytt_certificate_file',
-          },
-          {
-            path: 'vat_file',
-          },
-        ],
-      })
-      .populate({
-        path: 'mchj',
-        populate: [
-          {
-            path: 'ustav_file',
-          },
-          {
-            path: 'mchj_license',
-          },
-          {
-            path: 'director_appointment_file',
-          },
-          {
-            path: 'director_passport_file',
-          },
-          {
-            path: 'legal_address_file',
-          },
-          {
-            path: 'kadastr_file',
-          },
-          {
-            path: 'vat_file',
-          },
-        ],
-      })
-      .populate({
-        path: 'self_employed',
-        populate: [
-          {
-            path: 'passport_file',
-          },
-          {
-            path: 'self_employment_certificate',
-          },
-        ],
-      })
-      .populate({
-        path: 'commissioner',
-        populate: 'contract_file',
-      })
+      .populate('ytt')
+      .populate('mchj')
+      .populate('self_employed')
+      .populate('commissioner')
       .populate('bank_account')
-      .populate({
-        path: 'physical',
-        populate: [
-          {
-            path: 'passport_file',
-          },
-        ],
-      })
+      .populate('physical')
       .lean();
     return { user: hasUser, seller };
   }
@@ -153,78 +94,20 @@ export class SellerService {
     if (!user) throw new BadRequestException('User not found!');
     return this.sellerModel
       .findOne({ user: new Types.ObjectId(id) })
-      .populate({
-        path: 'ytt',
-        populate: [
-          {
-            path: 'passport_file',
-          },
-          {
-            path: 'ytt_certificate_file',
-          },
-          {
-            path: 'vat_file',
-          },
-        ],
-      })
-      .populate({
-        path: 'mchj',
-        populate: [
-          {
-            path: 'ustav_file',
-          },
-          {
-            path: 'mchj_license',
-          },
-          {
-            path: 'director_appointment_file',
-          },
-          {
-            path: 'director_passport_file',
-          },
-          {
-            path: 'legal_address_file',
-          },
-          {
-            path: 'kadastr_file',
-          },
-          {
-            path: 'vat_file',
-          },
-        ],
-      })
-      .populate({
-        path: 'self_employed',
-        populate: [
-          {
-            path: 'passport_file',
-          },
-          {
-            path: 'self_employment_certificate',
-          },
-        ],
-      })
-      .populate({
-        path: 'commissioner',
-        populate: 'contract_file',
-      })
-      .populate({
-        path: 'physical',
-        populate: [
-          {
-            path: 'passport_file',
-          },
-        ],
-      })
+      .populate('ytt')
+      .populate('mchj')
+      .populate('self_employed')
+      .populate('commissioner')
+      .populate('physical')
       .lean();
   }
 
   async createYttSeller(
     dto: CreateYttSellerDto,
     files: {
-      passport_file?: MulterFile[];
-      ytt_certificate_file?: MulterFile[];
-      vat_file?: MulterFile[];
+      passport_file?: Express.Multer.File[];
+      ytt_certificate_file?: Express.Multer.File[];
+      vat_file?: Express.Multer.File[];
     },
   ) {
     const seller = await this.sellerModel.findById(dto.seller);
@@ -239,106 +122,68 @@ export class SellerService {
     if (dto.is_vat_payer && !files.vat_file)
       throw new BadRequestException('QQS hujjatini  yuborishingiz shart!');
 
-    // Use findOneAndUpdate with upsert to create or update the YttSeller document
-    const yttSeller = await this.yttSellerModel.findOneAndUpdate(
-      { seller: new Types.ObjectId(dto.seller) },
-      {
-        ...dto,
-        seller: new Types.ObjectId(dto.seller),
-      },
+    const { seller: sellerId, ...yttDto } = dto;
+    const yttUpdateData: Partial<Omit<YttSeller, 'seller'>> = { ...yttDto };
+
+    const existingYttSeller = await this.yttSellerModel.findOne({
+      seller: new Types.ObjectId(sellerId),
+    });
+
+    if (files.passport_file?.[0]) {
+      if (existingYttSeller?.passport_file) {
+        this.fileService.deleteFile(existingYttSeller.passport_file);
+      }
+      yttUpdateData.passport_file = this.fileService.saveFile({
+        file: files.passport_file[0],
+        folder: 'ytt-seller-files',
+      });
+    }
+
+    if (files.ytt_certificate_file?.[0]) {
+      if (existingYttSeller?.ytt_certificate_file) {
+        this.fileService.deleteFile(existingYttSeller.ytt_certificate_file);
+      }
+      yttUpdateData.ytt_certificate_file = this.fileService.saveFile({
+        file: files.ytt_certificate_file[0],
+        folder: 'ytt-seller-files',
+      });
+    }
+
+    if (dto.is_vat_payer && files.vat_file?.[0]) {
+      if (existingYttSeller?.vat_file) {
+        this.fileService.deleteFile(existingYttSeller.vat_file);
+      }
+      yttUpdateData.vat_file = this.fileService.saveFile({
+        file: files.vat_file[0],
+        folder: 'ytt-seller-files',
+      });
+    }
+
+    await this.yttSellerModel.findOneAndUpdate(
+      { seller: new Types.ObjectId(sellerId) },
+      { $set: yttUpdateData, seller: new Types.ObjectId(sellerId) },
       { upsert: true, new: true, setDefaultsOnInsert: true },
     );
 
-    // Delete old files associated with this YTT seller
-    await this.fileService.deleteFilesByDocument(
-      yttSeller._id as string,
-      FileType.YTT_SELLER,
-    );
-
-    // Upload the new files
-    await this.fileService.uploadFiles({
-      documentId: yttSeller._id as string,
-      documentType: FileType.YTT_SELLER,
-      files,
-    });
     return this.sellerModel
-      .findById(dto.seller)
-      .populate({
-        path: 'ytt',
-        populate: [
-          {
-            path: 'passport_file',
-          },
-          {
-            path: 'ytt_certificate_file',
-          },
-          {
-            path: 'vat_file',
-          },
-        ],
-      })
-      .populate({
-        path: 'mchj',
-        populate: [
-          {
-            path: 'ustav_file',
-          },
-          {
-            path: 'mchj_license',
-          },
-          {
-            path: 'director_appointment_file',
-          },
-          {
-            path: 'director_passport_file',
-          },
-          {
-            path: 'legal_address_file',
-          },
-          {
-            path: 'kadastr_file',
-          },
-          {
-            path: 'vat_file',
-          },
-        ],
-      })
-      .populate({
-        path: 'self_employed',
-        populate: [
-          {
-            path: 'passport_file',
-          },
-          {
-            path: 'self_employment_certificate',
-          },
-        ],
-      })
-      .populate({
-        path: 'commissioner',
-        populate: 'contract_file',
-      })
-      .populate({
-        path: 'physical',
-        populate: [
-          {
-            path: 'passport_file',
-          },
-        ],
-      })
+      .findById(sellerId)
+      .populate('ytt')
+      .populate('mchj')
+      .populate('self_employed')
+      .populate('physical')
       .lean();
   }
 
   async createMchjSeller(
     dto: CreateMchjSellerDto,
     files: {
-      ustav_file?: MulterFile[];
-      mchj_license?: MulterFile[];
-      director_appointment_file?: MulterFile[];
-      director_passport_file?: MulterFile[];
-      legal_address_file?: MulterFile[];
-      kadastr_file?: MulterFile[];
-      vat_file?: MulterFile[];
+      ustav_file?: Express.Multer.File[];
+      mchj_license?: Express.Multer.File[];
+      director_appointment_file?: Express.Multer.File[];
+      director_passport_file?: Express.Multer.File[];
+      legal_address_file?: Express.Multer.File[];
+      kadastr_file?: Express.Multer.File[];
+      vat_file?: Express.Multer.File[];
     },
   ) {
     const seller = await this.sellerModel.findById(dto.seller);
@@ -371,66 +216,55 @@ export class SellerService {
     if (dto.is_vat_payer && !files.vat_file)
       throw new BadRequestException('QQS (VAT) hujjatini yuborishingiz shart!');
 
-    const mchjSeller = await this.mchjSellerModel.findOneAndUpdate(
-      { seller: new Types.ObjectId(dto.seller) },
-      {
-        ...dto,
-        seller: new Types.ObjectId(dto.seller),
-      },
+    const { seller: sellerId, ...mchjDto } = dto;
+    const mchjUpdateData: Partial<Omit<MchjSeller, 'seller'>> = { ...mchjDto };
+
+    const existingMchjSeller = await this.mchjSellerModel.findOne({
+      seller: new Types.ObjectId(sellerId),
+    });
+
+    const fileFields: (keyof typeof files)[] = [
+      'ustav_file',
+      'mchj_license',
+      'director_appointment_file',
+      'director_passport_file',
+      'legal_address_file',
+      'kadastr_file',
+      'vat_file',
+    ];
+
+    for (const field of fileFields) {
+      if (files[field]?.[0]) {
+        if (existingMchjSeller?.[field]) {
+          this.fileService.deleteFile(existingMchjSeller[field]);
+        }
+        mchjUpdateData[field] = this.fileService.saveFile({
+          file: files[field][0],
+          folder: 'mchj-seller-files',
+        });
+      }
+    }
+
+    await this.mchjSellerModel.findOneAndUpdate(
+      { seller: new Types.ObjectId(sellerId) },
+      { $set: mchjUpdateData, seller: new Types.ObjectId(sellerId) },
       { upsert: true, new: true, setDefaultsOnInsert: true },
     );
 
-    await this.fileService.deleteFilesByDocument(
-      mchjSeller._id as string,
-      FileType.MCHJ_SELLER,
-    );
-
-    await this.fileService.uploadFiles({
-      documentId: mchjSeller._id as string,
-      documentType: FileType.MCHJ_SELLER,
-      files,
-    });
-
     return this.sellerModel
-      .findById(dto.seller)
-      .populate({
-        path: 'ytt',
-        populate: [{ path: 'passport_file' }, { path: 'ytt_certificate_file' }],
-      })
-      .populate({
-        path: 'mchj',
-        populate: [
-          { path: 'ustav_file' },
-          { path: 'mchj_license' },
-          { path: 'director_appointment_file' },
-          { path: 'director_passport_file' },
-          { path: 'legal_address_file' },
-          { path: 'kadastr_file' },
-        ],
-      })
-      .populate({
-        path: 'self_employed',
-        populate: [
-          { path: 'passport_file' },
-          { path: 'self_employment_certificate' },
-        ],
-      })
-      .populate({
-        path: 'physical',
-        populate: [
-          {
-            path: 'passport_file',
-          },
-        ],
-      })
+      .findById(sellerId)
+      .populate('ytt')
+      .populate('mchj')
+      .populate('self_employed')
+      .populate('physical')
       .lean();
   }
 
   async createSelfEmployedSeller(
     dto: CreateSelfEmployedSellerDto,
     files: {
-      passport_file?: MulterFile[];
-      self_employment_certificate?: MulterFile[];
+      passport_file?: Express.Multer.File[];
+      self_employment_certificate?: Express.Multer.File[];
     },
     user: string,
   ) {
@@ -448,26 +282,49 @@ export class SellerService {
       throw new BadRequestException(
         'O‘zini o‘zi bandlik sertifikatini yuborishingiz shart!',
       );
-    const selfEmployedSeller =
-      await this.selfEmployedSellerModel.findOneAndUpdate(
-        { seller: new Types.ObjectId(seller._id as string) },
-        {
-          ...selfEmployedDto,
-          seller: new Types.ObjectId(seller._id as string),
-        },
-        { upsert: true, new: true, setDefaultsOnInsert: true },
-      );
 
-    await this.fileService.deleteFilesByDocument(
-      selfEmployedSeller._id as string,
-      FileType.SELF_EMPLOYED_SELLER,
-    );
+    const { birth_date, ...restDto } = selfEmployedDto;
+    const selfEmployedUpdateData: Partial<Omit<SelfEmployedSeller, 'seller'>> =
+      {
+        ...restDto,
+        birth_date: new Date(birth_date),
+      };
 
-    await this.fileService.uploadFiles({
-      documentId: selfEmployedSeller._id as string,
-      documentType: FileType.SELF_EMPLOYED_SELLER,
-      files,
+    const existingSelfEmployed = await this.selfEmployedSellerModel.findOne({
+      seller: new Types.ObjectId(seller._id as string),
     });
+
+    if (files.passport_file?.[0]) {
+      if (existingSelfEmployed?.passport_file) {
+        this.fileService.deleteFile(existingSelfEmployed.passport_file);
+      }
+      selfEmployedUpdateData.passport_file = this.fileService.saveFile({
+        file: files.passport_file[0],
+        folder: 'self-employed-files',
+      });
+    }
+
+    if (files.self_employment_certificate?.[0]) {
+      if (existingSelfEmployed?.self_employment_certificate) {
+        this.fileService.deleteFile(
+          existingSelfEmployed.self_employment_certificate,
+        );
+      }
+      selfEmployedUpdateData.self_employment_certificate =
+        this.fileService.saveFile({
+          file: files.self_employment_certificate[0],
+          folder: 'self-employed-files',
+        });
+    }
+
+    await this.selfEmployedSellerModel.findOneAndUpdate(
+      { seller: new Types.ObjectId(seller._id as string) },
+      {
+        $set: selfEmployedUpdateData,
+        seller: new Types.ObjectId(seller._id as string),
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true },
+    );
 
     await this.updateSellerStatus({
       id: seller._id as string,
@@ -476,43 +333,17 @@ export class SellerService {
 
     return this.sellerModel
       .findById(seller._id)
-      .populate({
-        path: 'ytt',
-        populate: [{ path: 'passport_file' }, { path: 'ytt_certificate_file' }],
-      })
-      .populate({
-        path: 'mchj',
-        populate: [
-          { path: 'ustav_file' },
-          { path: 'mchj_license' },
-          { path: 'director_appointment_file' },
-          { path: 'director_passport_file' },
-          { path: 'legal_address_file' },
-          { path: 'kadastr_file' },
-        ],
-      })
-      .populate({
-        path: 'self_employed',
-        populate: [
-          { path: 'passport_file' },
-          { path: 'self_employment_certificate' },
-        ],
-      })
-      .populate({
-        path: 'physical',
-        populate: [
-          {
-            path: 'passport_file',
-          },
-        ],
-      })
+      .populate('ytt')
+      .populate('mchj')
+      .populate('self_employed')
+      .populate('physical')
       .lean();
   }
 
   async createPhysicalSeller(
     dto: CreatePhysicalSellerDto,
     files: {
-      passport_file?: MulterFile[];
+      passport_file?: Express.Multer.File[];
     },
     user: string,
   ) {
@@ -526,39 +357,41 @@ export class SellerService {
     if (!files.passport_file)
       throw new BadRequestException('Pasport faylni yuborishingiz shart!');
 
-    const physicalSeller = await this.physicalSellerModel.findOneAndUpdate(
+    const { birth_date, ...restDto } = physicalDto;
+    const physicalUpdateData: Partial<Omit<PhysicalSeller, 'seller'>> = {
+      ...restDto,
+      birth_date: new Date(birth_date),
+    };
+
+    const existingPhysicalSeller = await this.physicalSellerModel.findOne({
+      seller: new Types.ObjectId(seller._id as string),
+    });
+
+    if (files.passport_file?.[0]) {
+      if (existingPhysicalSeller?.passport_file) {
+        this.fileService.deleteFile(existingPhysicalSeller.passport_file);
+      }
+      physicalUpdateData.passport_file = this.fileService.saveFile({
+        file: files.passport_file[0],
+        folder: 'physical-seller-files',
+      });
+    }
+
+    await this.physicalSellerModel.findOneAndUpdate(
       { seller: new Types.ObjectId(seller._id as string) },
       {
-        ...physicalDto,
+        $set: physicalUpdateData,
         seller: new Types.ObjectId(seller._id as string),
       },
       { upsert: true, new: true, setDefaultsOnInsert: true },
     );
-
-    await this.fileService.deleteFilesByDocument(
-      physicalSeller._id as string,
-      FileType.PHYSICAL_SELLER,
-    );
-
-    await this.fileService.uploadFiles({
-      documentId: physicalSeller._id as string,
-      documentType: FileType.PHYSICAL_SELLER,
-      files,
-    });
 
     await this.updateSellerStatus({
       id: seller._id as string,
       status: EnumSellerStatus.COMPLETED,
     });
 
-    return this.sellerModel.findById(seller._id).populate({
-      path: 'physical',
-      populate: [
-        {
-          path: 'passport_file',
-        },
-      ],
-    });
+    return this.sellerModel.findById(seller._id).populate('physical');
   }
 
   async updateSellerStatus({

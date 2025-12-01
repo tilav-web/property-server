@@ -1,22 +1,41 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
-import { Property, PropertySchema } from './property.schema';
 import { PropertyService } from './property.service';
 import { PropertyController } from './property.controller';
 import { FileModule } from '../file/file.module';
 import { Like, LikeSchema } from '../interactions/schemas/like.schema';
 import { Save, SaveSchema } from '../interactions/schemas/save.schema';
 import { MessageModule } from '../message/message.module';
+import { ApartmentSaleSchema } from './schemas/categories/apartment-sale.schema';
+import { ApartmentRentSchema } from './schemas/categories/apartment-rent.schema';
+import { Property, PropertySchema } from './schemas/property.schema';
+import { EnumPropertyCategory } from './enums/property-category.enum';
+
+import { OpenaiModule } from '../openai/openai.module';
 
 @Module({
   imports: [
     MongooseModule.forFeature([
-      { name: Property.name, schema: PropertySchema },
+      {
+        name: Property.name,
+        schema: PropertySchema,
+        discriminators: [
+          {
+            name: EnumPropertyCategory.APARTMENT_SALE,
+            schema: ApartmentSaleSchema,
+          },
+          {
+            name: EnumPropertyCategory.APARTMENT_RENT,
+            schema: ApartmentRentSchema,
+          },
+        ],
+      },
       { name: Like.name, schema: LikeSchema },
       { name: Save.name, schema: SaveSchema },
     ]),
     FileModule,
     MessageModule,
+    OpenaiModule,
   ],
   providers: [PropertyService],
   controllers: [PropertyController],

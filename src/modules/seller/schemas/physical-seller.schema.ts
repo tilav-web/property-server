@@ -22,18 +22,10 @@ export class PhysicalSeller {
 
   @Prop({ required: true })
   jshshir: string; // JShShIR
+
+  @Prop({ type: String, required: false })
+  passport_file: string;
 }
 
 export const PhysicalSellerSchema =
   SchemaFactory.createForClass(PhysicalSeller);
-
-PhysicalSellerSchema.virtual('passport_file', {
-  ref: 'File',
-  localField: '_id',
-  foreignField: 'document_id',
-  justOne: true,
-  match: { document_type: 'PhysicalSeller', file_name: /passport_file/i },
-});
-
-PhysicalSellerSchema.set('toObject', { virtuals: true });
-PhysicalSellerSchema.set('toJSON', { virtuals: true });

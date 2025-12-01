@@ -7,7 +7,7 @@ import {
   MessageStatus,
   MessageStatusSchema,
 } from './schemas/message-status.schema';
-import { Property, PropertySchema } from '../property/property.schema';
+import { Property, PropertySchema } from '../property/schemas/property.schema';
 
 @Module({
   imports: [

@@ -1,5 +1,5 @@
 import { IsEnum, IsOptional, IsString } from 'class-validator';
-import { EnumLan } from 'src/enums/lan.enum';
+import { EnumLanguage } from 'src/enums/language.enum';
 
 export class UpdateUserDto {
   @IsString()
@@ -18,7 +18,7 @@ export class UpdateUserDto {
   @IsOptional()
   password?: string;
 
-  @IsEnum(EnumLan)
+  @IsEnum(EnumLanguage)
   @IsOptional()
-  lan?: EnumLan;
+  lan?: EnumLanguage;
 }

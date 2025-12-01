@@ -56,7 +56,7 @@ export class AdvertiseController {
   async create(
     @UploadedFiles()
     files: {
-      image: Express.Multer.File[];
+      image: Express.Multer.File;
     },
     @Body() dto: CreateAdvertiseDto,
     @Req() req: IRequestCustom,

@@ -22,29 +22,13 @@ export class SelfEmployedSeller {
 
   @Prop({ required: true })
   jshshir: string; // JShShIR
+
+  @Prop({ type: String, required: false })
+  passport_file: string;
+
+  @Prop({ type: String, required: false })
+  self_employment_certificate: string;
 }
 
 export const SelfEmployedSellerSchema =
   SchemaFactory.createForClass(SelfEmployedSeller);
-
-SelfEmployedSellerSchema.virtual('passport_file', {
-  ref: 'File',
-  localField: '_id',
-  foreignField: 'document_id',
-  justOne: true,
-  match: { document_type: 'SelfEmployedSeller', file_name: /passport_file/i },
-});
-
-SelfEmployedSellerSchema.virtual('self_employment_certificate', {
-  ref: 'File',
-  localField: '_id',
-  foreignField: 'document_id',
-  justOne: true,
-  match: {
-    document_type: 'SelfEmployedSeller',
-    file_name: /self_employment_certificate/i,
-  },
-});
-
-SelfEmployedSellerSchema.set('toObject', { virtuals: true });
-SelfEmployedSellerSchema.set('toJSON', { virtuals: true });

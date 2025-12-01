@@ -4,10 +4,10 @@ import { FilterQuery, Model } from 'mongoose';
 import { Advertise, AdvertiseDocument } from './advertise.schema';
 import { CreateAdvertiseDto } from './dto/create-advertise.dto';
 import { FileService } from '../file/file.service';
-import { FileType } from '../file/file.schema';
 import { EnumAdvertiseStatus } from 'src/enums/advertise-status.enum';
 import { EnumAdvertiseType } from 'src/enums/advertise-type.enum';
 import { EnumPaymentStatus } from 'src/enums/advertise-payment-status.enum';
+import { EnumFilesFolder } from '../file/enums/files-folder.enum';
 
 @Injectable()
 export class AdvertiseService {
@@ -24,24 +24,19 @@ export class AdvertiseService {
   }: {
     dto: CreateAdvertiseDto;
     author: string;
-    files: { image?: Express.Multer.File[] };
+    files: { image: Express.Multer.File };
   }) {
     const { totalPrice } = this.priceCalculus(dto.days);
+    const image = this.fileService.saveFile({
+      folder: EnumFilesFolder.PHOTOS,
+      file: files.image,
+    });
     const newAdvertise = await this.advertiseModel.create({
       ...dto,
       author,
       price: totalPrice,
+      image,
     });
-
-    if (files && files.image) {
-      await this.fileService.uploadFiles({
-        documentId: newAdvertise._id as string,
-        documentType: FileType.ADVERTISE,
-        files: {
-          advertise: files.image,
-        },
-      });
-    }
 
     return this.advertiseModel
       .findById(newAdvertise._id)

@@ -5,7 +5,7 @@ import { Like, LikeDocument } from '../schemas/like.schema';
 import {
   Property,
   PropertyDocument,
-} from 'src/modules/property/property.schema';
+} from 'src/modules/property/schemas/property.schema';
 
 @Injectable()
 export class LikeService {
