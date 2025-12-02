@@ -4,6 +4,7 @@ import {
   Get,
   HttpException,
   InternalServerErrorException,
+  Param,
   Post,
   Query,
   Req,
@@ -56,7 +57,7 @@ export class AdvertiseController {
   async create(
     @UploadedFiles()
     files: {
-      image: Express.Multer.File;
+      image: Express.Multer.File[];
     },
     @Body() dto: CreateAdvertiseDto,
     @Req() req: IRequestCustom,
@@ -111,5 +112,10 @@ export class AdvertiseController {
   @Get('/price/calculus')
   priceCalculus(@Query() dto: { days: string }) {
     return this.service.priceCalculus(parseInt(dto.days, 10));
+  }
+
+  @Get('type/:type')
+  async findOneByType(@Param('type') type: EnumAdvertiseType) {
+    return this.service.findOneByType(type);
   }
 }

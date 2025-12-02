@@ -10,6 +10,7 @@ import {
   InternalServerErrorException,
   Get,
   Query,
+  Param,
 } from '@nestjs/common';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { PropertyService } from './property.service';
@@ -17,6 +18,8 @@ import { type CreatePropertyDto } from './dto/create-property.dto';
 import { AuthGuard } from '@nestjs/passport';
 import { type IRequestCustom } from 'src/interfaces/custom-request.interface';
 import { FilterMyPropertiesDto } from './dto/filter-my-properties.dto';
+import type { Request } from 'express';
+import { EnumLanguage } from 'src/enums/language.enum';
 
 @Controller('properties')
 export class PropertyController {
@@ -63,10 +66,24 @@ export class PropertyController {
     @Req() req: IRequestCustom,
     @Query() filter: FilterMyPropertiesDto,
   ) {
+    const language = (req.headers['accept-language'] || 'uz')
+      .toLowerCase()
+      .split(',')[0] as EnumLanguage;
     const result = await this.propertyService.findMyProperties({
       author: req.user?._id,
       ...filter,
+      language,
     });
+    return result;
+  }
+
+  @Get('/:id')
+  async findById(@Param('id') id: string, @Req() req: Request) {
+    const language = (req.headers['accept-language'] || 'uz')
+      .toLowerCase()
+      .split(',')[0] as EnumLanguage;
+
+    const result = await this.propertyService.findById({ id, language });
     return result;
   }
 }

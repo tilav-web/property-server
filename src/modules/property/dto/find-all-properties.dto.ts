@@ -7,9 +7,6 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { EnumPropertyCategory } from '../enums/property-category.enum';
-import { EnumPropertyPurpose } from 'src/enums/property-purpose.enum';
-import { EnumPropertyPriceType } from 'src/enums/property-price-type.enum';
-import { EnumConstructionStatus } from 'src/enums/property-construction-status.enum';
 
 export class FindAllPropertiesDto {
   @IsOptional()
@@ -23,14 +20,6 @@ export class FindAllPropertiesDto {
   limit?: number;
 
   @IsOptional()
-  @IsString()
-  region?: string;
-
-  @IsOptional()
-  @IsString()
-  district?: string;
-
-  @IsOptional()
   @IsArray()
   @Type(() => Number)
   coordinates?: [number, number];
@@ -41,19 +30,7 @@ export class FindAllPropertiesDto {
 
   @IsOptional()
   @IsString()
-  purpose?: EnumPropertyPurpose;
-
-  @IsOptional()
-  @IsString()
   search?: string;
-
-  @IsOptional()
-  @IsString()
-  price_type?: EnumPropertyPriceType;
-
-  @IsOptional()
-  @IsString()
-  construction_status?: EnumConstructionStatus;
 
   @IsOptional()
   @IsBoolean()
@@ -71,11 +48,6 @@ export class FindAllPropertiesDto {
   is_new?: boolean;
 
   @IsOptional()
-  @IsBoolean()
-  @Type(() => Boolean)
-  is_guest_choice?: boolean;
-
-  @IsOptional()
   @IsNumber()
   @Type(() => Number)
   rating?: number;
@@ -83,7 +55,7 @@ export class FindAllPropertiesDto {
   @IsOptional()
   @IsNumber()
   @Type(() => Number)
-  radius?: number; // in kilometers
+  radius?: number;
 
   @IsOptional()
   @IsBoolean()

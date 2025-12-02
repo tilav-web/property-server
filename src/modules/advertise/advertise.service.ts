@@ -24,12 +24,12 @@ export class AdvertiseService {
   }: {
     dto: CreateAdvertiseDto;
     author: string;
-    files: { image: Express.Multer.File };
+    files: { image: Express.Multer.File[] };
   }) {
     const { totalPrice } = this.priceCalculus(dto.days);
     const image = this.fileService.saveFile({
       folder: EnumFilesFolder.PHOTOS,
-      file: files.image,
+      file: files.image[0],
     });
     const newAdvertise = await this.advertiseModel.create({
       ...dto,
@@ -38,10 +38,7 @@ export class AdvertiseService {
       image,
     });
 
-    return this.advertiseModel
-      .findById(newAdvertise._id)
-      .populate('image')
-      .exec();
+    return this.advertiseModel.findById(newAdvertise._id).exec();
   }
 
   async findAll(params: {
@@ -76,7 +73,6 @@ export class AdvertiseService {
           .find(filter)
           .skip(randomSkip)
           .limit(sampleSize)
-          .populate('image')
           .lean()
           .exec();
       }
@@ -108,9 +104,32 @@ export class AdvertiseService {
   }
 
   async findMy(author: string) {
-    const advertises = await this.advertiseModel
-      .find({ author })
-      .populate('image');
+    const advertises = await this.advertiseModel.find({ author });
     return advertises;
+  }
+
+  async findOneByType(type: EnumAdvertiseType) {
+    const count = await this.advertiseModel.countDocuments({
+      type,
+      status: EnumAdvertiseStatus.APPROVED,
+      payment_status: EnumPaymentStatus.PAID,
+    });
+
+    if (count === 0) return null; // Agar reklama bo'lmasa
+
+    // Tasodifiy offset tanlaymiz
+    const offset = Math.floor(Math.random() * count);
+
+    // Bitta tasodifiy reklamani olamiz
+    const [advertise] = await this.advertiseModel
+      .find({
+        type,
+        status: EnumAdvertiseStatus.APPROVED,
+        payment_status: EnumPaymentStatus.PAID,
+      })
+      .skip(offset)
+      .limit(1);
+
+    return advertise ?? null;
   }
 }

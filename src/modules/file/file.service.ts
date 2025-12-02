@@ -84,7 +84,7 @@ export class FileService {
         return false;
       }
     } catch (err) {
-      this.logger.error(`Error deleting file: ${fileUrl}`, err.stack);
+      this.logger.error(`Error deleting file: ${fileUrl}`, err);
       return false;
     }
   }
