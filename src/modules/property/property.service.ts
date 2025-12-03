@@ -7,7 +7,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Property, PropertyDocument } from './schemas/property.schema';
 import { FilterQuery, Model } from 'mongoose';
 import { FileService } from '../file/file.service';
-import { OpenaiService } from '../openai/openai.service';
+import { GenaiService } from '../genai/genai.service';
 import { CreatePropertyDto } from './dto/create-property.dto';
 import { EnumPropertyCategory } from './enums/property-category.enum';
 import { EnumFilesFolder } from '../file/enums/files-folder.enum';
@@ -24,7 +24,7 @@ export class PropertyService {
     @InjectModel(EnumPropertyCategory.APARTMENT_SALE)
     private readonly apartmentSaleModel: Model<PropertyDocument>,
     private readonly fileService: FileService,
-    private readonly openaiService: OpenaiService,
+    private readonly genaiService: GenaiService,
   ) {}
 
   async create({
@@ -81,7 +81,7 @@ export class PropertyService {
       coordinates: [dto.location_lng, dto.location_lat],
     };
 
-    const language = this.openaiService.translateTexts({
+    const language = await this.genaiService.translateTexts({
       title: dto.title,
       description: dto.description,
       address: dto.address,
@@ -108,6 +108,8 @@ export class PropertyService {
       title: { $ifNull: [`$title.${language}`, '$title.uz'] },
       description: { $ifNull: [`$description.${language}`, '$description.uz'] },
       address: { $ifNull: [`$address.${language}`, '$address.uz'] },
+      photos: 1,
+      videos: 1,
 
       // Umumiy fieldlar
       _id: 1,
@@ -129,7 +131,7 @@ export class PropertyService {
     if (!category) return baseProjection;
 
     // Category-specific fieldlar
-    const categoryFields: Record<string, any> = {
+    const categoryFields: Record<string, Record<string, number>> = {
       // 🏢 APARTMENT_RENT - Kvartira Ijarasi
       APARTMENT_RENT: {
         price: 1,
@@ -238,24 +240,9 @@ export class PropertyService {
       );
     }
 
-    // VARIANT 1: $addFields (barcha fieldlarni saqlaydi) - TAVSIYA ETILADI
     pipeline.push({
-      $addFields: {
-        title: { $ifNull: [`$title.${language}`, '$title.uz'] },
-        description: {
-          $ifNull: [`$description.${language}`, '$description.uz'],
-        },
-        address: { $ifNull: [`$address.${language}`, '$address.uz'] },
-      },
+      $project: this.getProjectionByCategory(language, category),
     });
-
-    // VARIANT 2: $project (faqat kerakli fieldlar) - Network traffic kamaytirish uchun
-    // Agar $project ishlatmoqchi bo'lsangiz, $addFields o'rniga quyidagini ishlating:
-    /*
-  pipeline.push({
-    $project: this.getProjectionByCategory(language, category),
-  });
-  */
 
     // Parallel execution
     const [data, totalItems] = await Promise.all([
@@ -268,24 +255,7 @@ export class PropertyService {
       totalPages: totalItems ? Math.ceil(totalItems / limit) : null,
       page: sample ? null : page,
       limit,
-      data,
-    };
-  }
-
-  // BONUS: Bitta property olish uchun helper
-  async findOne(id: string, language: EnumLanguage = EnumLanguage.UZ) {
-    const property = await this.propertyModel.findById(id).lean().exec();
-
-    if (!property) {
-      throw new NotFoundException('Property topilmadi');
-    }
-
-    // Tilni o'zgartirish
-    return {
-      ...property,
-      title: property.title?.[language] || property.title?.uz,
-      description: property.description?.[language] || property.description?.uz,
-      address: property.address?.[language] || property.address?.uz,
+      properties: data,
     };
   }
 
@@ -348,7 +318,7 @@ export class PropertyService {
       totalPages,
       page,
       limit,
-      data,
+      properties: data,
     };
   }
 

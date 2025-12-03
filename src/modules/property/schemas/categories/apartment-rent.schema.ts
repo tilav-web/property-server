@@ -8,9 +8,6 @@ export type ApartmentRentDocument = Document & ApartmentRent;
 
 @Schema()
 export class ApartmentRent {
-  @Prop({ type: Number, required: true, default: 0 })
-  price: number;
-
   // 🛏️ Xonalar soni
   @Prop({ type: Number, min: 0, required: true })
   bedrooms: number;

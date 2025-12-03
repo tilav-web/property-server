@@ -41,6 +41,9 @@ export class Property {
   })
   currency: string;
 
+  @Prop({ type: Number, required: true, default: 0 })
+  price: number;
+
   @Prop({ type: Boolean, default: false })
   is_premium: boolean;
 
@@ -64,3 +67,4 @@ export class Property {
 }
 
 export const PropertySchema = SchemaFactory.createForClass(Property);
+PropertySchema.index({ location: '2dsphere' });

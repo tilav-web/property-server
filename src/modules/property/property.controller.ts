@@ -20,6 +20,7 @@ import { type IRequestCustom } from 'src/interfaces/custom-request.interface';
 import { FilterMyPropertiesDto } from './dto/filter-my-properties.dto';
 import type { Request } from 'express';
 import { EnumLanguage } from 'src/enums/language.enum';
+import { FindAllPropertiesDto } from './dto/find-all-properties.dto';
 
 @Controller('properties')
 export class PropertyController {
@@ -85,5 +86,16 @@ export class PropertyController {
 
     const result = await this.propertyService.findById({ id, language });
     return result;
+  }
+
+  @Get('/')
+  async findAll(
+    @Req() req: IRequestCustom,
+    @Query() filter: FindAllPropertiesDto,
+  ) {
+    const language = (req.headers['accept-language'] || 'uz')
+      .toLowerCase()
+      .split(',')[0] as EnumLanguage;
+    return this.propertyService.findAll({ language, ...filter });
   }
 }

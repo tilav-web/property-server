@@ -13,7 +13,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { InteractionsModule } from './modules/interactions/interactions.module';
 import { InquiryModule } from './modules/inquiry/inquiry.module';
 import { AdvertiseModule } from './modules/advertise/advertise.module';
-import { OpenaiModule } from './modules/openai/openai.module';
+import { GenaiModule } from './modules/genai/genai.module';
 
 @Module({
   imports: [
@@ -47,7 +47,7 @@ import { OpenaiModule } from './modules/openai/openai.module';
     CommissionerModule,
     InquiryModule,
     AdvertiseModule,
-    OpenaiModule,
+    GenaiModule,
   ],
   providers: [
     {
