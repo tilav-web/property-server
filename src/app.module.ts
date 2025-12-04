@@ -14,6 +14,7 @@ import { InteractionsModule } from './modules/interactions/interactions.module';
 import { InquiryModule } from './modules/inquiry/inquiry.module';
 import { AdvertiseModule } from './modules/advertise/advertise.module';
 import { GenaiModule } from './modules/genai/genai.module';
+import { AiPropertyModule } from './modules/ai-property/ai-property.module';
 
 @Module({
   imports: [
@@ -48,6 +49,7 @@ import { GenaiModule } from './modules/genai/genai.module';
     InquiryModule,
     AdvertiseModule,
     GenaiModule,
+    AiPropertyModule,
   ],
   providers: [
     {

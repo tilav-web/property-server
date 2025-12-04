@@ -104,27 +104,23 @@ export class PropertyService {
   private getProjectionByCategory(language: EnumLanguage, category?: string) {
     // Base projection (barcha category uchun umumiy fieldlar)
     const baseProjection = {
-      // Til fieldlari
+      _id: 1,
+      author: 1,
       title: { $ifNull: [`$title.${language}`, '$title.uz'] },
       description: { $ifNull: [`$description.${language}`, '$description.uz'] },
       address: { $ifNull: [`$address.${language}`, '$address.uz'] },
-      photos: 1,
-      videos: 1,
-
-      // Umumiy fieldlar
-      _id: 1,
       category: 1,
+      location: 1,
+      currency: 1,
+
+      price: 1,
       is_premium: 1,
       is_verified: 1,
-      is_new: 1,
       rating: 1,
-      images: 1,
-      coordinates: 1,
-      createdAt: 1,
-      updatedAt: 1,
-      distance: 1, // $geoNear dan keladi
-      owner: 1,
-      views: 1,
+      liked: 1,
+      saved: 1,
+      photos: 1,
+      videos: 1,
     };
 
     // Agar category ko'rsatilmagan bo'lsa, faqat base fieldlarni qaytarish
@@ -134,7 +130,6 @@ export class PropertyService {
     const categoryFields: Record<string, Record<string, number>> = {
       // 🏢 APARTMENT_RENT - Kvartira Ijarasi
       APARTMENT_RENT: {
-        price: 1,
         bedrooms: 1,
         bathrooms: 1,
         floor_level: 1,
@@ -153,7 +148,6 @@ export class PropertyService {
 
       // 🏢 APARTMENT_SALE - Kvartira Sotish
       APARTMENT_SALE: {
-        price: 1,
         bedrooms: 1,
         bathrooms: 1,
         floor_level: 1,
@@ -183,7 +177,8 @@ export class PropertyService {
     page = 1,
     limit = 10,
     category,
-    coordinates,
+    lng,
+    lat,
     search,
     is_premium,
     is_verified,
@@ -214,19 +209,23 @@ export class PropertyService {
 
     const pipeline: any[] = [];
 
-    // GeoNear
-    if (coordinates && radius) {
+    // ✅ $geoNear BIRINCHI bo'lishi kerak!
+    if (lng !== undefined && lat !== undefined && radius) {
+      const coordinates: [number, number] = [lng, lat];
       pipeline.push({
         $geoNear: {
           near: { type: 'Point', coordinates },
           distanceField: 'distance',
           maxDistance: radius,
           spherical: true,
-          query: match,
+          query: match, // ✅ Filterlarni query ichida beramiz
         },
       });
     } else {
-      pipeline.push({ $match: match });
+      // Agar geoNear yo'q bo'lsa, oddiy $match ishlatamiz
+      if (Object.keys(match).length > 0) {
+        pipeline.push({ $match: match });
+      }
     }
 
     // Sample yoki Pagination

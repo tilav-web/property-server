@@ -1,10 +1,4 @@
-import {
-  IsOptional,
-  IsNumber,
-  IsString,
-  IsBoolean,
-  IsArray,
-} from 'class-validator';
+import { IsOptional, IsNumber, IsString, IsBoolean } from 'class-validator';
 import { Type } from 'class-transformer';
 import { EnumPropertyCategory } from '../enums/property-category.enum';
 
@@ -20,9 +14,14 @@ export class FindAllPropertiesDto {
   limit?: number;
 
   @IsOptional()
-  @IsArray()
+  @IsNumber()
   @Type(() => Number)
-  coordinates?: [number, number];
+  lng?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
+  lat?: number;
 
   @IsOptional()
   @IsString()

@@ -61,9 +61,6 @@ export class GenaiService {
     }
   }
 
-  /**
-   * 🌍 Bir nechta fieldlarni 3 tilda tarjima qilish
-   */
   async translateTexts(
     texts: Record<string, string>,
   ): Promise<Record<string, Language>> {
@@ -85,5 +82,13 @@ export class GenaiService {
     }
 
     return translatedFields;
+  }
+
+  /**
+   * 🤖 Matn yaratish uchun ochiq metod (AiPropertyService tomonidan ishlatiladi)
+   */
+  public async generateText(prompt: string) {
+    const response = (await this.model(prompt)) as string;
+    return response;
   }
 }
