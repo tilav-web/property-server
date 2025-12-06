@@ -3,6 +3,7 @@ import { Document } from 'mongoose';
 import { EnumAmenities } from 'src/enums/amenities.enum';
 import { EnumRepairType } from '../../enums/repair-type.enum';
 import { EnumHeating } from '../../enums/heating.enum';
+import { EnumRentalTarget } from '../../enums/rental-target.enum';
 
 export type ApartmentRentDocument = Document & ApartmentRent;
 
@@ -71,6 +72,13 @@ export class ApartmentRent {
   // 📅 Kontrakt muddati (oylar)
   @Prop({ type: Number, default: 12 })
   contract_duration_months: number;
+
+  @Prop({
+    type: [String],
+    enum: EnumRentalTarget,
+    default: [EnumRentalTarget.ANY],
+  })
+  rental_target: EnumRentalTarget[];
 }
 
 export const ApartmentRentSchema = SchemaFactory.createForClass(ApartmentRent);

@@ -13,6 +13,8 @@ import { EnumPropertyCategory } from './enums/property-category.enum';
 import { EnumFilesFolder } from '../file/enums/files-folder.enum';
 import { EnumLanguage } from 'src/enums/language.enum';
 import { FindAllPropertiesDto } from './dto/find-all-properties.dto';
+import { MessageService } from '../message/message.service';
+import { CreateMessageDto } from '../message/dto/create-message.dto';
 
 @Injectable()
 export class PropertyService {
@@ -25,6 +27,7 @@ export class PropertyService {
     private readonly apartmentSaleModel: Model<PropertyDocument>,
     private readonly fileService: FileService,
     private readonly genaiService: GenaiService,
+    private readonly messageService: MessageService,
   ) {}
 
   async create({
@@ -186,11 +189,13 @@ export class PropertyService {
     rating,
     radius,
     language = EnumLanguage.UZ,
+    filterCategory,
   }: FindAllPropertiesDto & { language: EnumLanguage }) {
     const match: FilterQuery<PropertyDocument> = {};
 
     // Filterlar
     if (category) match.category = category;
+
     if (is_premium !== undefined) match.is_premium = is_premium;
     if (is_verified !== undefined) match.is_verified = is_verified;
     if (is_new) {
@@ -207,9 +212,12 @@ export class PropertyService {
       ];
     }
 
+    if (filterCategory && !category) {
+      match.category = { $regex: filterCategory, $options: 'i' };
+    }
+
     const pipeline: any[] = [];
 
-    // ✅ $geoNear BIRINCHI bo'lishi kerak!
     if (lng !== undefined && lat !== undefined && radius) {
       const coordinates: [number, number] = [lng, lat];
       pipeline.push({
@@ -222,7 +230,6 @@ export class PropertyService {
         },
       });
     } else {
-      // Agar geoNear yo'q bo'lsa, oddiy $match ishlatamiz
       if (Object.keys(match).length > 0) {
         pipeline.push({ $match: match });
       }
@@ -338,4 +345,173 @@ export class PropertyService {
       address: property.address[language ?? 'uz'] ?? property.address.uz,
     };
   }
+
+  async remove({ id, userId }: { id: string; userId: string }) {
+    const property = await this.propertyModel.findByIdAndDelete(id).exec();
+    if (!property) {
+      throw new NotFoundException('Property not found!');
+    }
+
+    if (property.author.toString() !== userId.toString()) {
+      throw new BadRequestException(
+        "You don't have permission to delete this property.",
+      );
+    }
+
+    property.photos.forEach((photoUrl) =>
+      this.fileService.deleteFile(photoUrl),
+    );
+    property.videos.forEach((videoUrl) =>
+      this.fileService.deleteFile(videoUrl),
+    );
+
+    return property;
+  }
+
+  async sendMessage({ dto, user }: { dto: CreateMessageDto; user: string }) {
+    const property = await this.propertyModel.findById(dto.property);
+    if (!property) {
+      throw new NotFoundException('Property not found!');
+    }
+
+    const { message, rating } = await this.messageService.create({
+      ...dto,
+      user,
+    });
+
+    if (message && property.author) {
+      await this.messageService.createMessageStatus({
+        message: message?._id as string,
+        seller: property.author.toString(),
+      });
+    }
+
+    property.rating = rating ?? property.rating;
+    await property.save();
+
+    return message;
+  }
+
+  async getCategories() {
+    const filterCategories = Object.values(EnumPropertyCategory);
+
+    const counts = await Promise.all(
+      filterCategories.map(async (category) => {
+        const count = await this.propertyModel.countDocuments({ category });
+        return { category, count };
+      }),
+    );
+    return counts;
+  }
+
+  // async update({
+  //   id,
+  //   dto,
+  //   files,
+  //   author,
+  // }: {
+  //   id: string;
+  //   dto: UpdatePropertyDto;
+  //   files: {
+  //     photos?: Express.Multer.File[];
+  //     videos?: Express.Multer.File[];
+  //   };
+  //   author?: string;
+  // }) {
+  //   // 1. Find the property with the base model to check existence and author
+  //   const baseProperty = await this.propertyModel.findById(id).lean();
+  //   if (!baseProperty) {
+  //     throw new NotFoundException('E`lon topilmadi!');
+  //   }
+
+  //   // 2. Authorize the user
+  //   if (baseProperty.author.toString() !== author) {
+  //     throw new ForbiddenException(
+  //       'Sizda ushbu e`lonni tahrirlashga ruxsat yo`q!',
+  //     );
+  //   }
+
+  //   // 3. Select the correct model based on the property's category
+  //   let propertyModel: Model<PropertyDocument>;
+  //   switch (baseProperty.category) {
+  //     case EnumPropertyCategory.APARTMENT_RENT:
+  //       propertyModel = this.apartmentRentModel;
+  //       break;
+  //     case EnumPropertyCategory.APARTMENT_SALE:
+  //       propertyModel = this.apartmentSaleModel;
+  //       break;
+  //     default:
+  //       // Fallback to the base model if category is somehow unknown
+  //       propertyModel = this.propertyModel;
+  //       break;
+  //   }
+
+  //   // 4. Fetch the fully-typed document using the correct model
+  //   const property = await propertyModel.findById(id);
+  //   if (!property) {
+  //     // This should theoretically never happen if baseProperty was found
+  //     throw new NotFoundException('E`lon topilmadi!');
+  //   }
+
+  //   // 5. Conditionally update fields from DTO
+  //   if (dto.title) property.title = dto.title;
+  //   if (dto.description) property.description = dto.description;
+  //   if (dto.address) property.address = dto.address;
+  //   if (dto.price) property.price = dto.price;
+  //   if (dto.currency) property.currency = dto.currency;
+  //   if (dto.bedrooms) property.bedrooms = dto.bedrooms;
+  //   if (dto.bathrooms) property.bathrooms = dto.bathrooms;
+  //   if (dto.floor_level) property.floor_level = dto.floor_level;
+  //   if (dto.total_floors) property.total_floors = dto.total_floors;
+  //   if (dto.area) property.area = dto.area;
+  //   if (dto.balcony !== undefined) property.balcony = dto.balcony;
+  //   if (dto.furnished !== undefined) property.furnished = dto.furnished;
+  //   if (dto.repair_type) property.repair_type = dto.repair_type;
+  //   if (dto.heating) property.heating = dto.heating;
+  //   if (dto.air_conditioning !== undefined)
+  //     property.air_conditioning = dto.air_conditioning;
+  //   if (dto.parking !== undefined) property.parking = dto.parking;
+  //   if (dto.elevator !== undefined) property.elevator = dto.elevator;
+  //   if (dto.amenities) property.amenities = dto.amenities;
+  //   if (dto.contract_duration_months)
+  //     property.contract_duration_months = dto.contract_duration_months;
+  //   if (dto.mortgage_available !== undefined)
+  //     property.mortgage_available = dto.mortgage_available;
+
+  //   // 6. Handle location update
+  //   if (dto.location_lat && dto.location_lng) {
+  //     property.location = {
+  //       type: 'Point',
+  //       coordinates: [dto.location_lng, dto.location_lat],
+  //     };
+  //   }
+
+  //   // 7. Handle file updates
+  //   if (files?.photos?.length) {
+  //     // Delete old photos
+  //     property.photos.forEach((photoUrl) =>
+  //       this.fileService.deleteFile(photoUrl),
+  //     );
+  //     // Save new photos
+  //     property.photos = this.fileService.saveFiles({
+  //       files: files.photos,
+  //       folder: EnumFilesFolder.PHOTOS,
+  //     });
+  //   }
+
+  //   if (files?.videos?.length) {
+  //     // Delete old videos
+  //     property.videos.forEach((videoUrl) =>
+  //       this.fileService.deleteFile(videoUrl),
+  //     );
+  //     // Save new videos
+  //     property.videos = this.fileService.saveFiles({
+  //       files: files.videos,
+  //       folder: EnumFilesFolder.VIDEOS,
+  //     });
+  //   }
+
+  //   // 8. Save the updated document and return it
+  //   return await property.save();
+  // }
 }

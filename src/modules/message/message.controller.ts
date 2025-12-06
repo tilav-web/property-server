@@ -12,6 +12,7 @@ import {
 import { MessageService } from './message.service';
 import { AuthGuard } from '@nestjs/passport';
 import { type IRequestCustom } from 'src/interfaces/custom-request.interface';
+import { EnumLanguage } from 'src/enums/language.enum';
 
 @UseGuards(AuthGuard('jwt'))
 @Controller('messages')
@@ -112,10 +113,14 @@ export class MessageController {
   @UseGuards(AuthGuard('jwt'))
   async findMessageStatusBySeller(@Req() req: IRequestCustom) {
     try {
+      const language = (req.headers['accept-language'] || 'uz')
+        .toLowerCase()
+        .split(',')[0] as EnumLanguage;
       const user = req.user;
-      const result = await this.service.findMessageStatusBySeller(
-        user?._id as string,
-      );
+      const result = await this.service.findMessageStatusBySeller({
+        language,
+        seller: user?._id as string,
+      });
       return result;
     } catch (error) {
       console.error(error);

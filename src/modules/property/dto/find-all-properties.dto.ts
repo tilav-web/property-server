@@ -1,6 +1,7 @@
 import { IsOptional, IsNumber, IsString, IsBoolean } from 'class-validator';
 import { Type } from 'class-transformer';
 import { EnumPropertyCategory } from '../enums/property-category.enum';
+import { EnumPropertyCategoryFilter } from '../enums/property-category-filter.enum';
 
 export class FindAllPropertiesDto {
   @IsOptional()
@@ -26,6 +27,10 @@ export class FindAllPropertiesDto {
   @IsOptional()
   @IsString()
   category?: EnumPropertyCategory;
+
+  @IsOptional()
+  @IsString()
+  filterCategory?: EnumPropertyCategoryFilter;
 
   @IsOptional()
   @IsString()

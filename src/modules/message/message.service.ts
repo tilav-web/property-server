@@ -5,14 +5,20 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Message, MessageDocument } from './schemas/message.schema';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { CreateMessageDto } from './dto/create-message.dto';
 import { CreateMessageStatusDto } from './dto/create-message-status.dto';
 import {
   MessageStatus,
   MessageStatusDocument,
 } from './schemas/message-status.schema';
-import { NotFoundError } from 'rxjs';
+import { EnumLanguage } from 'src/enums/language.enum';
+
+type RatingsAggResult = {
+  _id: string; // property id
+  totalMessages: number;
+  avgRating: number;
+};
 
 @Injectable()
 export class MessageService {
@@ -40,9 +46,11 @@ export class MessageService {
       .populate('property');
   }
 
-  async create(dto: CreateMessageDto & { user: string }) {
+  async create(
+    dto: CreateMessageDto & { user: string },
+  ): Promise<{ message: MessageDocument | null; rating: number }> {
     if (!dto.user) {
-      throw new NotFoundError('User not found!');
+      throw new NotFoundException('User not found!');
     }
 
     const hasMessage = await this.messageModel.findOne({
@@ -55,38 +63,93 @@ export class MessageService {
 
     const message = await this.messageModel.create({
       ...dto,
-      property: dto.property.toString(),
-      user: dto.user.toString(),
+      property: new Types.ObjectId(dto.property),
+      user: new Types.ObjectId(dto.user),
     });
-    return this.messageModel
+
+    const ratings = await this.messageModel.aggregate<RatingsAggResult>([
+      { $match: { property: message.property } },
+      {
+        $group: {
+          _id: '$property',
+          totalMessages: { $sum: 1 },
+          avgRating: { $avg: '$rating' }, // o'rtacha rating
+        },
+      },
+    ]);
+
+    const avgRating = ratings[0]?.avgRating || 0;
+
+    const resMessage = await this.messageModel
       .findById(message._id)
       .populate('user')
       .populate('property');
+
+    return { message: resMessage, rating: avgRating };
   }
 
   async createMessageStatus(dto: CreateMessageStatusDto) {
-    return this.messageStatusModel.create(dto);
+    return this.messageStatusModel.create({
+      ...dto,
+      message: new Types.ObjectId(dto.message),
+      seller: new Types.ObjectId(dto.seller),
+    });
   }
 
-  async findMessageStatusBySeller(seller: string) {
-    const query = { seller: seller.toString() };
+  async findMessageStatusBySeller({
+    seller,
+    language,
+  }: {
+    seller: string;
+    language: EnumLanguage;
+  }): Promise<any[]> {
+    const messages = await this.messageStatusModel.aggregate([
+      { $match: { seller: new Types.ObjectId(seller) } },
 
-    const messages = await this.messageStatusModel
-      .find(query)
-      .populate({
-        path: 'message',
-        populate: [
-          {
-            path: 'user',
+      // message join
+      {
+        $lookup: {
+          from: 'messages',
+          localField: 'message',
+          foreignField: '_id',
+          as: 'message',
+        },
+      },
+      { $unwind: '$message' },
+
+      // user join
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'message.user',
+          foreignField: '_id',
+          as: 'message.user',
+        },
+      },
+      { $unwind: '$message.user' },
+
+      // property join
+      {
+        $lookup: {
+          from: 'properties',
+          localField: 'message.property',
+          foreignField: '_id',
+          as: 'property',
+        },
+      },
+      { $unwind: '$property' },
+
+      // 🔥 message ning qolgan fieldlarini saqlaymiz, property dan faqat title olamiz
+      {
+        $addFields: {
+          'message.property': {
+            title: `$property.title.${language}`,
           },
-          {
-            path: 'property',
-          },
-        ],
-      })
-      .populate('seller')
-      .sort({ createdAt: -1 })
-      .lean();
+        },
+      },
+
+      { $sort: { createdAt: -1 } },
+    ]);
 
     return messages;
   }
@@ -112,7 +175,7 @@ export class MessageService {
   }
 
   async deleteStatusMessageAll(seller: string) {
-    return this.messageStatusModel.deleteMany({ seller: seller.toString() });
+    return this.messageStatusModel.deleteMany({ seller, is_read: true });
   }
 
   async readMessageStatus(id: string) {
@@ -125,7 +188,7 @@ export class MessageService {
 
   async readMessageStatusAll(seller: string) {
     return this.messageStatusModel
-      .updateMany({ seller: seller.toString() }, { is_read: true })
+      .updateMany({ seller }, { is_read: true })
       .populate('seller')
       .sort({ createdAt: -1 })
       .lean();
