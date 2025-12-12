@@ -3,6 +3,7 @@ import { AuthGuard } from '@nestjs/passport';
 import type { IRequestCustom } from 'src/interfaces/custom-request.interface';
 import { LikeService } from '../services/like.service';
 import { Throttle } from '@nestjs/throttler';
+import { EnumLanguage } from 'src/enums/language.enum';
 
 @Controller('likes')
 export class LikeController {
@@ -16,7 +17,8 @@ export class LikeController {
     @Req() req: IRequestCustom,
   ) {
     const userId = req.user?._id as string;
-    return this.likeService.likeProperty(userId, propertyId);
+    const language = req.headers['accept-language'] as EnumLanguage;
+    return this.likeService.likeProperty({ userId, propertyId, language });
   }
 
   @Throttle({ default: { limit: 15, ttl: 10000 } })

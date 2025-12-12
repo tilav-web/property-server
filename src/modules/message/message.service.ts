@@ -116,8 +116,6 @@ export class MessageService {
         },
       },
       { $unwind: '$message' },
-
-      // user join
       {
         $lookup: {
           from: 'users',
@@ -127,8 +125,6 @@ export class MessageService {
         },
       },
       { $unwind: '$message.user' },
-
-      // property join
       {
         $lookup: {
           from: 'properties',

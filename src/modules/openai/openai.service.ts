@@ -28,7 +28,6 @@ export class OpenaiService {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
-  // Type guard for translation validation
   private isValidTranslation(obj: unknown): obj is TranslationResponse {
     if (typeof obj !== 'object' || obj === null) {
       return false;
@@ -41,7 +40,6 @@ export class OpenaiService {
     );
   }
 
-  // Queue-based approach (better than lock/unlock)
   private async queueRequest<T>(fn: () => Promise<T>): Promise<T> {
     const previousRequest = this.requestQueue;
     let resolver: (() => void) | undefined;
@@ -62,9 +60,6 @@ export class OpenaiService {
     }
   }
 
-  // ----------------------------
-  // TRANSLATE ONE (Optimized)
-  // ----------------------------
   private async translateOne(text: string, retries = 3): Promise<Language> {
     return this.queueRequest(async () => {
       try {
@@ -140,9 +135,6 @@ If a translation is not possible, return the original text for that language.`;
     });
   }
 
-  // ----------------------------
-  // TRANSLATE MULTIPLE (Parallel)
-  // ----------------------------
   async translateTexts(
     texts: Record<string, string>,
   ): Promise<Record<string, Language>> {
@@ -179,9 +171,6 @@ If a translation is not possible, return the original text for that language.`;
     return chunks;
   }
 
-  // ----------------------------
-  // GENERATE TEXT (Optimized)
-  // ----------------------------
   async generateText(prompt: string, retries = 3): Promise<string> {
     return this.queueRequest(async () => {
       try {
