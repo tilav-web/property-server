@@ -11,7 +11,7 @@ import { ApartmentRentSchema } from './schemas/categories/apartment-rent.schema'
 import { Property, PropertySchema } from './schemas/property.schema';
 import { EnumPropertyCategory } from './enums/property-category.enum';
 
-import { GenaiModule } from '../genai/genai.module';
+import { GenaiModule } from '../openai/openai.module';
 
 @Module({
   imports: [

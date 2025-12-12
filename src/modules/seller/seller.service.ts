@@ -131,9 +131,9 @@ export class SellerService {
 
     if (files.passport_file?.[0]) {
       if (existingYttSeller?.passport_file) {
-        this.fileService.deleteFile(existingYttSeller.passport_file);
+        await this.fileService.deleteFile(existingYttSeller.passport_file);
       }
-      yttUpdateData.passport_file = this.fileService.saveFile({
+      yttUpdateData.passport_file = await this.fileService.saveFile({
         file: files.passport_file[0],
         folder: 'ytt-seller-files',
       });
@@ -141,9 +141,9 @@ export class SellerService {
 
     if (files.ytt_certificate_file?.[0]) {
       if (existingYttSeller?.ytt_certificate_file) {
-        this.fileService.deleteFile(existingYttSeller.ytt_certificate_file);
+        await this.fileService.deleteFile(existingYttSeller.ytt_certificate_file);
       }
-      yttUpdateData.ytt_certificate_file = this.fileService.saveFile({
+      yttUpdateData.ytt_certificate_file = await this.fileService.saveFile({
         file: files.ytt_certificate_file[0],
         folder: 'ytt-seller-files',
       });
@@ -151,9 +151,9 @@ export class SellerService {
 
     if (dto.is_vat_payer && files.vat_file?.[0]) {
       if (existingYttSeller?.vat_file) {
-        this.fileService.deleteFile(existingYttSeller.vat_file);
+        await this.fileService.deleteFile(existingYttSeller.vat_file);
       }
-      yttUpdateData.vat_file = this.fileService.saveFile({
+      yttUpdateData.vat_file = await this.fileService.saveFile({
         file: files.vat_file[0],
         folder: 'ytt-seller-files',
       });
@@ -236,9 +236,9 @@ export class SellerService {
     for (const field of fileFields) {
       if (files[field]?.[0]) {
         if (existingMchjSeller?.[field]) {
-          this.fileService.deleteFile(existingMchjSeller[field]);
+          await this.fileService.deleteFile(existingMchjSeller[field]);
         }
-        mchjUpdateData[field] = this.fileService.saveFile({
+        mchjUpdateData[field] = await this.fileService.saveFile({
           file: files[field][0],
           folder: 'mchj-seller-files',
         });
@@ -296,9 +296,9 @@ export class SellerService {
 
     if (files.passport_file?.[0]) {
       if (existingSelfEmployed?.passport_file) {
-        this.fileService.deleteFile(existingSelfEmployed.passport_file);
+        await this.fileService.deleteFile(existingSelfEmployed.passport_file);
       }
-      selfEmployedUpdateData.passport_file = this.fileService.saveFile({
+      selfEmployedUpdateData.passport_file = await this.fileService.saveFile({
         file: files.passport_file[0],
         folder: 'self-employed-files',
       });
@@ -306,12 +306,12 @@ export class SellerService {
 
     if (files.self_employment_certificate?.[0]) {
       if (existingSelfEmployed?.self_employment_certificate) {
-        this.fileService.deleteFile(
+        await this.fileService.deleteFile(
           existingSelfEmployed.self_employment_certificate,
         );
       }
       selfEmployedUpdateData.self_employment_certificate =
-        this.fileService.saveFile({
+        await this.fileService.saveFile({
           file: files.self_employment_certificate[0],
           folder: 'self-employed-files',
         });
@@ -369,9 +369,9 @@ export class SellerService {
 
     if (files.passport_file?.[0]) {
       if (existingPhysicalSeller?.passport_file) {
-        this.fileService.deleteFile(existingPhysicalSeller.passport_file);
+        await this.fileService.deleteFile(existingPhysicalSeller.passport_file);
       }
-      physicalUpdateData.passport_file = this.fileService.saveFile({
+      physicalUpdateData.passport_file = await this.fileService.saveFile({
         file: files.passport_file[0],
         folder: 'physical-seller-files',
       });

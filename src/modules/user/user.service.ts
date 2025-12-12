@@ -231,12 +231,12 @@ export class UserService {
   }: UpdateUserDto & { user: string; avatar?: Express.Multer.File }) {
     const userData = await this.model.findById(user);
     if (!userData) throw new BadRequestException("Tizimdan ro'yhatdan o'ting");
-    
+
     if (avatar) {
       if (userData.avatar) {
-        this.fileService.deleteFile(userData.avatar);
+        await this.fileService.deleteFile(userData.avatar);
       }
-      userData.avatar = this.fileService.saveFile({
+      userData.avatar = await this.fileService.saveFile({
         file: avatar,
         folder: 'avatars',
       });

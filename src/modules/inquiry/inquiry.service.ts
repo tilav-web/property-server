@@ -11,6 +11,7 @@ import {
   Property,
   PropertyDocument,
 } from '../property/schemas/property.schema';
+import { EnumLanguage } from 'src/enums/language.enum';
 
 @Injectable()
 export class InquiryService {
@@ -37,7 +38,13 @@ export class InquiryService {
     return inquiry.save();
   }
 
-  async findAllForSeller(userId: string) {
+  async findAllForSeller({
+    userId,
+    language,
+  }: {
+    userId: string;
+    language: EnumLanguage;
+  }) {
     // Find all properties belonging to the seller
     const sellerProperties = await this.propertyModel
       .find({ author: userId })
@@ -49,6 +56,7 @@ export class InquiryService {
       .populate('user', 'first_name last_name email avatar')
       .populate('property', 'title')
       .sort({ createdAt: -1 })
+      .lean()
       .exec();
 
     return inquiries;

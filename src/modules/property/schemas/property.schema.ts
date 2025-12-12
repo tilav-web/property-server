@@ -4,6 +4,7 @@ import { EnumPropertyCategory } from 'src/modules/property/enums/property-catego
 import { EnumPropertyCurrency } from 'src/enums/property-currency.enum';
 import { Language } from 'src/common/language/language.schema';
 import { Location } from 'src/common/location/location.schema';
+import { EnumPropertyStatus } from '../enums/property-status.enum';
 
 export type PropertyDocument = HydratedDocument<Property>;
 
@@ -47,8 +48,15 @@ export class Property {
   @Prop({ type: Boolean, default: false })
   is_premium: boolean;
 
+  @Prop({
+    type: String,
+    enum: EnumPropertyStatus,
+    default: EnumPropertyStatus.PENDING,
+  })
+  status: EnumPropertyStatus;
+
   @Prop({ type: Boolean, default: false })
-  is_verified: boolean;
+  is_archived: boolean;
 
   @Prop({ type: Number, default: 0, max: 5 })
   rating: number;
@@ -68,3 +76,14 @@ export class Property {
 
 export const PropertySchema = SchemaFactory.createForClass(Property);
 PropertySchema.index({ location: '2dsphere' });
+PropertySchema.index({
+  'title.uz': 'text',
+  'title.ru': 'text',
+  'title.en': 'text',
+  'description.uz': 'text',
+  'description.ru': 'text',
+  'description.en': 'text',
+  'address.uz': 'text',
+  'address.ru': 'text',
+  'address.en': 'text',
+});

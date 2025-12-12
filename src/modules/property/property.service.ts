@@ -1,13 +1,14 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Property, PropertyDocument } from './schemas/property.schema';
-import { FilterQuery, Model } from 'mongoose';
+import { FilterQuery, Model, PipelineStage, Types } from 'mongoose';
 import { FileService } from '../file/file.service';
-import { GenaiService } from '../genai/genai.service';
+import { OpenaiService } from '../openai/openai.service';
 import { CreatePropertyDto } from './dto/create-property.dto';
 import { EnumPropertyCategory } from './enums/property-category.enum';
 import { EnumFilesFolder } from '../file/enums/files-folder.enum';
@@ -15,6 +16,7 @@ import { EnumLanguage } from 'src/enums/language.enum';
 import { FindAllPropertiesDto } from './dto/find-all-properties.dto';
 import { MessageService } from '../message/message.service';
 import { CreateMessageDto } from '../message/dto/create-message.dto';
+import { EnumPropertyStatus } from './enums/property-status.enum';
 
 @Injectable()
 export class PropertyService {
@@ -26,7 +28,7 @@ export class PropertyService {
     @InjectModel(EnumPropertyCategory.APARTMENT_SALE)
     private readonly apartmentSaleModel: Model<PropertyDocument>,
     private readonly fileService: FileService,
-    private readonly genaiService: GenaiService,
+    private readonly openaiService: OpenaiService,
     private readonly messageService: MessageService,
   ) {}
 
@@ -53,14 +55,14 @@ export class PropertyService {
 
     // Fayllarni saqlash
     const photos = files?.photos?.length
-      ? this.fileService.saveFiles({
+      ? await this.fileService.saveFiles({
           files: files.photos,
           folder: EnumFilesFolder.PHOTOS,
         })
       : [];
 
     const videos = files?.videos?.length
-      ? this.fileService.saveFiles({
+      ? await this.fileService.saveFiles({
           files: files.videos,
           folder: EnumFilesFolder.VIDEOS,
         })
@@ -84,7 +86,7 @@ export class PropertyService {
       coordinates: [dto.location_lng, dto.location_lat],
     };
 
-    const language = await this.genaiService.translateTexts({
+    const language = await this.openaiService.translateTexts({
       title: dto.title,
       description: dto.description,
       address: dto.address,
@@ -104,8 +106,244 @@ export class PropertyService {
     return property;
   }
 
+  async findAll(dto: FindAllPropertiesDto & { language: EnumLanguage }) {
+    const {
+      sample = false,
+      page = 1,
+      limit = 10,
+      category,
+      lng,
+      lat,
+      radius,
+      search,
+      is_premium,
+      is_new,
+      rating,
+      filterCategory,
+      language = EnumLanguage.UZ,
+    } = dto;
+
+    const match = this.buildMatchQuery({
+      category,
+      is_premium,
+      is_new,
+      rating,
+      search,
+      filterCategory,
+    });
+
+    const hasGeo =
+      lng !== undefined && lat !== undefined && radius !== undefined;
+
+    if (sample) {
+      return this.executeSampleQuery({
+        match,
+        lng,
+        lat,
+        radius,
+        limit,
+        language,
+        category,
+        hasGeo,
+      });
+    }
+
+    return this.executePaginationQuery({
+      match,
+      lng,
+      lat,
+      radius,
+      page,
+      limit,
+      language,
+      category,
+      hasGeo,
+    });
+  }
+
+  private buildMatchQuery({
+    category,
+    is_premium,
+    is_new,
+    rating,
+    search,
+    filterCategory,
+  }: {
+    category?: string;
+    is_premium?: boolean;
+    is_new?: boolean;
+    rating?: number;
+    search?: string;
+    filterCategory?: string;
+  }): FilterQuery<PropertyDocument> {
+    const match: FilterQuery<PropertyDocument> = {
+      status: EnumPropertyStatus.APPROVED,
+      is_archived: false,
+    };
+
+    if (category) match.category = category;
+    if (is_premium !== undefined) match.is_premium = is_premium;
+
+    if (is_new) {
+      match.createdAt = { $gte: new Date(Date.now() - 604800000) }; // 7 kun
+    }
+    if (rating) match.rating = { $gte: rating };
+
+    if (search) {
+      match.$text = { $search: search };
+    }
+
+    if (filterCategory && !category) {
+      match.category = { $regex: `^${filterCategory}`, $options: 'i' };
+    }
+
+    return match;
+  }
+
+  private async executeSampleQuery({
+    match,
+    lng,
+    lat,
+    radius,
+    limit,
+    language,
+    category,
+    hasGeo,
+  }: {
+    match: FilterQuery<PropertyDocument>;
+    lng?: number;
+    lat?: number;
+    radius?: number;
+    limit: number;
+    language: EnumLanguage;
+    category?: string;
+    hasGeo: boolean;
+  }) {
+    const pipeline: any[] = [];
+
+    if (hasGeo && lng !== undefined && lat !== undefined) {
+      pipeline.push({
+        $geoNear: {
+          near: { type: 'Point', coordinates: [lng, lat] },
+          distanceField: 'distance',
+          maxDistance: radius,
+          spherical: true,
+          query: match,
+        },
+      });
+    } else if (Object.keys(match).length > 0) {
+      pipeline.push({ $match: match });
+    }
+
+    pipeline.push(
+      { $sample: { size: limit } },
+      { $project: this.getProjectionByCategory(language, category) },
+    );
+
+    const properties = await this.propertyModel.aggregate(pipeline).exec();
+
+    return {
+      properties,
+      totalItems: null,
+      totalPages: null,
+      page: null,
+      limit,
+    };
+  }
+
+  private async executePaginationQuery({
+    match,
+    lng,
+    lat,
+    radius,
+    page,
+    limit,
+    language,
+    category,
+    hasGeo,
+  }: {
+    match: FilterQuery<PropertyDocument>;
+    lng?: number;
+    lat?: number;
+    radius?: number;
+    page: number;
+    limit: number;
+    language: EnumLanguage;
+    category?: string;
+    hasGeo: boolean;
+  }) {
+    const pipeline: any[] = [];
+
+    if (hasGeo && lng !== undefined && lat !== undefined) {
+      pipeline.push({
+        $geoNear: {
+          near: { type: 'Point', coordinates: [lng, lat] },
+          distanceField: 'distance',
+          maxDistance: radius,
+          spherical: true,
+          query: match,
+        },
+      });
+    } else if (Object.keys(match).length > 0) {
+      pipeline.push({ $match: match });
+    }
+
+    pipeline.push(
+      { $sort: { createdAt: -1 } },
+      { $skip: (page - 1) * limit },
+      { $limit: limit },
+      { $project: this.getProjectionByCategory(language, category) },
+    );
+
+    const [properties, totalItems] = await Promise.all([
+      this.propertyModel.aggregate(pipeline).exec(),
+      this.getCount(match, lng, lat, radius, hasGeo),
+    ]);
+
+    return {
+      properties,
+      totalItems,
+      totalPages: Math.ceil(totalItems / limit),
+      page,
+      limit,
+    };
+  }
+
+  private async getCount(
+    match: FilterQuery<PropertyDocument>,
+    lng?: number,
+    lat?: number,
+    radius?: number,
+    hasGeo?: boolean,
+  ): Promise<number> {
+    if (
+      hasGeo &&
+      lng !== undefined &&
+      lat !== undefined &&
+      radius !== undefined
+    ) {
+      const result = await this.propertyModel
+        .aggregate([
+          {
+            $geoNear: {
+              near: { type: 'Point', coordinates: [lng, lat] },
+              distanceField: 'distance',
+              maxDistance: radius,
+              spherical: true,
+              query: match,
+            },
+          },
+          { $count: 'total' },
+        ])
+        .exec();
+
+      return (result[0]?.total as number) || 0;
+    }
+
+    return this.propertyModel.countDocuments(match).exec();
+  }
+
   private getProjectionByCategory(language: EnumLanguage, category?: string) {
-    // Base projection (barcha category uchun umumiy fieldlar)
     const baseProjection = {
       _id: 1,
       author: 1,
@@ -115,23 +353,21 @@ export class PropertyService {
       category: 1,
       location: 1,
       currency: 1,
-
       price: 1,
       is_premium: 1,
-      is_verified: 1,
+      status: 1,
+      is_archived: 1,
       rating: 1,
       liked: 1,
       saved: 1,
       photos: 1,
       videos: 1,
+      createdAt: 1,
     };
 
-    // Agar category ko'rsatilmagan bo'lsa, faqat base fieldlarni qaytarish
     if (!category) return baseProjection;
 
-    // Category-specific fieldlar
     const categoryFields: Record<string, Record<string, number>> = {
-      // 🏢 APARTMENT_RENT - Kvartira Ijarasi
       APARTMENT_RENT: {
         bedrooms: 1,
         bathrooms: 1,
@@ -146,10 +382,8 @@ export class PropertyService {
         parking: 1,
         elevator: 1,
         amenities: 1,
-        contract_duration_months: 1, // Faqat RENT uchun
+        contract_duration_months: 1,
       },
-
-      // 🏢 APARTMENT_SALE - Kvartira Sotish
       APARTMENT_SALE: {
         bedrooms: 1,
         bathrooms: 1,
@@ -164,111 +398,20 @@ export class PropertyService {
         parking: 1,
         elevator: 1,
         amenities: 1,
-        mortgage_available: 1, // Faqat SALE uchun
+        mortgage_available: 1,
       },
     };
 
-    // Base + category-specific fieldlarni birlashtirish
     return {
       ...baseProjection,
       ...(categoryFields[category] || {}),
     };
   }
 
-  async findAll({
-    sample = false,
-    page = 1,
-    limit = 10,
-    category,
-    lng,
-    lat,
-    search,
-    is_premium,
-    is_verified,
-    is_new,
-    rating,
-    radius,
-    language = EnumLanguage.UZ,
-    filterCategory,
-  }: FindAllPropertiesDto & { language: EnumLanguage }) {
-    const match: FilterQuery<PropertyDocument> = {};
-
-    // Filterlar
-    if (category) match.category = category;
-
-    if (is_premium !== undefined) match.is_premium = is_premium;
-    if (is_verified !== undefined) match.is_verified = is_verified;
-    if (is_new) {
-      match.createdAt = { $gte: new Date(Date.now() - 604800000) };
-    }
-    if (rating) match.rating = { $gte: rating };
-
-    // Search
-    if (search) {
-      match.$or = [
-        { [`title.${language}`]: { $regex: search, $options: 'i' } },
-        { [`description.${language}`]: { $regex: search, $options: 'i' } },
-        { [`address.${language}`]: { $regex: search, $options: 'i' } },
-      ];
-    }
-
-    if (filterCategory && !category) {
-      match.category = { $regex: filterCategory, $options: 'i' };
-    }
-
-    const pipeline: any[] = [];
-
-    if (lng !== undefined && lat !== undefined && radius) {
-      const coordinates: [number, number] = [lng, lat];
-      pipeline.push({
-        $geoNear: {
-          near: { type: 'Point', coordinates },
-          distanceField: 'distance',
-          maxDistance: radius,
-          spherical: true,
-          query: match, // ✅ Filterlarni query ichida beramiz
-        },
-      });
-    } else {
-      if (Object.keys(match).length > 0) {
-        pipeline.push({ $match: match });
-      }
-    }
-
-    // Sample yoki Pagination
-    if (sample) {
-      pipeline.push({ $sample: { size: limit } });
-    } else {
-      pipeline.push(
-        { $sort: { createdAt: -1 } },
-        { $skip: (page - 1) * limit },
-        { $limit: limit },
-      );
-    }
-
-    pipeline.push({
-      $project: this.getProjectionByCategory(language, category),
-    });
-
-    // Parallel execution
-    const [data, totalItems] = await Promise.all([
-      this.propertyModel.aggregate(pipeline).exec(),
-      sample ? Promise.resolve(null) : this.propertyModel.countDocuments(match),
-    ]);
-
-    return {
-      totalItems,
-      totalPages: totalItems ? Math.ceil(totalItems / limit) : null,
-      page: sample ? null : page,
-      limit,
-      properties: data,
-    };
-  }
-
   async findMyProperties({
     search,
     author,
-    language,
+    language = EnumLanguage.UZ,
     page = 1,
     limit = 10,
   }: {
@@ -278,53 +421,55 @@ export class PropertyService {
     page?: number;
     limit?: number;
   }) {
-    if (!author) {
-      throw new NotFoundException('Author not found!');
-    }
+    if (!author) throw new NotFoundException('Author not found!');
 
-    // Base match: faqat author
-    const match: FilterQuery<PropertyDocument> = { author };
+    const match: FilterQuery<PropertyDocument> = {
+      author: new Types.ObjectId(author),
+    };
 
-    // Search bo'lsa language field bo'yicha qidirish
+    // To‘g‘ri qidiruv (text indexsiz ham ishlaydi)
     if (search) {
-      const langField = language || 'uz';
+      const regex = new RegExp(search.trim(), 'i');
       match.$or = [
-        { [`title.${langField}`]: { $regex: search, $options: 'i' } },
-        { [`description.${langField}`]: { $regex: search, $options: 'i' } },
-        { [`address.${langField}`]: { $regex: search, $options: 'i' } },
+        { 'title.uz': regex },
+        { 'title.ru': regex },
+        { 'title.en': regex },
+        { 'description.uz': regex },
+        { 'description.ru': regex },
+        { 'description.en': regex },
+        { 'address.uz': regex },
       ];
     }
 
     const skip = (page - 1) * limit;
 
-    const aggregation = this.propertyModel.aggregate([
-      { $match: match },
-      {
-        $addFields: {
-          title: { $ifNull: [`$title.${language}`, '$title.uz'] },
-          description: {
-            $ifNull: [`$description.${language}`, '$description.uz'],
-          },
-          address: { $ifNull: [`$address.${language}`, '$address.uz'] },
-        },
-      },
-      { $sort: { createdAt: -1 } },
-      { $skip: skip },
-      { $limit: limit },
+    const [properties, totalItems] = await Promise.all([
+      this.propertyModel
+        .find(match)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean() // Muhim! → oddiy JS object qaytaradi
+        .exec(),
+
+      // countDocuments to‘g‘ri ishlaydi
+      this.propertyModel.countDocuments(match).exec(),
     ]);
 
-    const data = await aggregation.exec();
-
-    // Umumiy sonini olish uchun alohida count
-    const totalItems = await this.propertyModel.countDocuments(match);
-    const totalPages = Math.ceil(totalItems / limit);
+    // Tilni JS da to‘g‘ri tanlash — eng tezkor va ishonchli usul
+    const translated = properties.map((p) => ({
+      ...p,
+      title: p.title?.[language] ?? p.title?.uz ?? '',
+      description: p.description?.[language] ?? p.description?.uz ?? '',
+      address: p.address?.[language] ?? p.address?.uz ?? '',
+    }));
 
     return {
+      properties: translated,
       totalItems,
-      totalPages,
+      totalPages: Math.ceil(totalItems / limit),
       page,
       limit,
-      properties: data,
     };
   }
 
@@ -347,25 +492,67 @@ export class PropertyService {
   }
 
   async remove({ id, userId }: { id: string; userId: string }) {
-    const property = await this.propertyModel.findByIdAndDelete(id).exec();
+    const property = await this.propertyModel.findById(id).exec();
+
     if (!property) {
       throw new NotFoundException('Property not found!');
     }
 
     if (property.author.toString() !== userId.toString()) {
-      throw new BadRequestException(
+      throw new ForbiddenException(
         "You don't have permission to delete this property.",
       );
     }
 
-    property.photos.forEach((photoUrl) =>
-      this.fileService.deleteFile(photoUrl),
-    );
-    property.videos.forEach((videoUrl) =>
-      this.fileService.deleteFile(videoUrl),
-    );
+    // Barcha foto va videolarni parallel o'chirish (async deleteFile ishlatilgani uchun)
+    const deletePromises = [
+      ...property.photos.map((photoUrl) =>
+        this.fileService.deleteFile(photoUrl),
+      ),
+      ...property.videos.map((videoUrl) =>
+        this.fileService.deleteFile(videoUrl),
+      ),
+    ];
+
+    // Hammasi tugashini kutamiz, xato bo'lsa ham davom etaveradi (fire-and-forget emas, to'liq kuzatiladi)
+    await Promise.allSettled(deletePromises);
+
+    // Property ni o'chirish (oxirida qilish yaxshi – fayllar avval o'chirilsin)
+    await property.deleteOne();
 
     return property;
+  }
+
+  async updateStatus({
+    id,
+    status,
+  }: {
+    id: string;
+    status: EnumPropertyStatus;
+  }) {
+    const property = await this.propertyModel.findById(id);
+    if (!property) {
+      throw new NotFoundException('Property not found!');
+    }
+    property.status = status;
+    return property.save();
+  }
+
+  async toggleArchive({ id, userId }: { id: string; userId: string }) {
+    const property = await this.propertyModel.findById(id);
+    if (!property) {
+      throw new NotFoundException('Property not found!');
+    }
+    if (property.author.toString() !== userId) {
+      throw new ForbiddenException('You can only archive your own properties.');
+    }
+    if (property.status !== EnumPropertyStatus.APPROVED) {
+      throw new BadRequestException(
+        'Only approved properties can be archived or unarchived.',
+      );
+    }
+    property.is_archived = !property.is_archived;
+    return property.save();
   }
 
   async sendMessage({ dto, user }: { dto: CreateMessageDto; user: string }) {
@@ -392,126 +579,38 @@ export class PropertyService {
     return message;
   }
 
-  async getCategories() {
-    const filterCategories = Object.values(EnumPropertyCategory);
+  async getCategories(): Promise<{ category: string; count: number }[]> {
+    // 1 ta database call - super tez!
+    const pipeline: PipelineStage[] = [
+      {
+        $match: {
+          status: EnumPropertyStatus.APPROVED,
+          is_archived: false,
+        },
+      },
+      {
+        $group: {
+          _id: { $arrayElemAt: [{ $split: ['$category', '_'] }, 0] },
+          count: { $sum: 1 },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          category: '$_id',
+          count: 1,
+        },
+      },
+    ];
 
-    const counts = await Promise.all(
-      filterCategories.map(async (category) => {
-        const count = await this.propertyModel.countDocuments({ category });
-        return { category, count };
-      }),
-    );
-    return counts;
+    interface CategoryCountResult {
+      category: string;
+      count: number;
+    }
+
+    const categories =
+      await this.propertyModel.aggregate<CategoryCountResult>(pipeline);
+
+    return categories;
   }
-
-  // async update({
-  //   id,
-  //   dto,
-  //   files,
-  //   author,
-  // }: {
-  //   id: string;
-  //   dto: UpdatePropertyDto;
-  //   files: {
-  //     photos?: Express.Multer.File[];
-  //     videos?: Express.Multer.File[];
-  //   };
-  //   author?: string;
-  // }) {
-  //   // 1. Find the property with the base model to check existence and author
-  //   const baseProperty = await this.propertyModel.findById(id).lean();
-  //   if (!baseProperty) {
-  //     throw new NotFoundException('E`lon topilmadi!');
-  //   }
-
-  //   // 2. Authorize the user
-  //   if (baseProperty.author.toString() !== author) {
-  //     throw new ForbiddenException(
-  //       'Sizda ushbu e`lonni tahrirlashga ruxsat yo`q!',
-  //     );
-  //   }
-
-  //   // 3. Select the correct model based on the property's category
-  //   let propertyModel: Model<PropertyDocument>;
-  //   switch (baseProperty.category) {
-  //     case EnumPropertyCategory.APARTMENT_RENT:
-  //       propertyModel = this.apartmentRentModel;
-  //       break;
-  //     case EnumPropertyCategory.APARTMENT_SALE:
-  //       propertyModel = this.apartmentSaleModel;
-  //       break;
-  //     default:
-  //       // Fallback to the base model if category is somehow unknown
-  //       propertyModel = this.propertyModel;
-  //       break;
-  //   }
-
-  //   // 4. Fetch the fully-typed document using the correct model
-  //   const property = await propertyModel.findById(id);
-  //   if (!property) {
-  //     // This should theoretically never happen if baseProperty was found
-  //     throw new NotFoundException('E`lon topilmadi!');
-  //   }
-
-  //   // 5. Conditionally update fields from DTO
-  //   if (dto.title) property.title = dto.title;
-  //   if (dto.description) property.description = dto.description;
-  //   if (dto.address) property.address = dto.address;
-  //   if (dto.price) property.price = dto.price;
-  //   if (dto.currency) property.currency = dto.currency;
-  //   if (dto.bedrooms) property.bedrooms = dto.bedrooms;
-  //   if (dto.bathrooms) property.bathrooms = dto.bathrooms;
-  //   if (dto.floor_level) property.floor_level = dto.floor_level;
-  //   if (dto.total_floors) property.total_floors = dto.total_floors;
-  //   if (dto.area) property.area = dto.area;
-  //   if (dto.balcony !== undefined) property.balcony = dto.balcony;
-  //   if (dto.furnished !== undefined) property.furnished = dto.furnished;
-  //   if (dto.repair_type) property.repair_type = dto.repair_type;
-  //   if (dto.heating) property.heating = dto.heating;
-  //   if (dto.air_conditioning !== undefined)
-  //     property.air_conditioning = dto.air_conditioning;
-  //   if (dto.parking !== undefined) property.parking = dto.parking;
-  //   if (dto.elevator !== undefined) property.elevator = dto.elevator;
-  //   if (dto.amenities) property.amenities = dto.amenities;
-  //   if (dto.contract_duration_months)
-  //     property.contract_duration_months = dto.contract_duration_months;
-  //   if (dto.mortgage_available !== undefined)
-  //     property.mortgage_available = dto.mortgage_available;
-
-  //   // 6. Handle location update
-  //   if (dto.location_lat && dto.location_lng) {
-  //     property.location = {
-  //       type: 'Point',
-  //       coordinates: [dto.location_lng, dto.location_lat],
-  //     };
-  //   }
-
-  //   // 7. Handle file updates
-  //   if (files?.photos?.length) {
-  //     // Delete old photos
-  //     property.photos.forEach((photoUrl) =>
-  //       this.fileService.deleteFile(photoUrl),
-  //     );
-  //     // Save new photos
-  //     property.photos = this.fileService.saveFiles({
-  //       files: files.photos,
-  //       folder: EnumFilesFolder.PHOTOS,
-  //     });
-  //   }
-
-  //   if (files?.videos?.length) {
-  //     // Delete old videos
-  //     property.videos.forEach((videoUrl) =>
-  //       this.fileService.deleteFile(videoUrl),
-  //     );
-  //     // Save new videos
-  //     property.videos = this.fileService.saveFiles({
-  //       files: files.videos,
-  //       folder: EnumFilesFolder.VIDEOS,
-  //     });
-  //   }
-
-  //   // 8. Save the updated document and return it
-  //   return await property.save();
-  // }
 }

@@ -1,91 +1,77 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { writeFileSync, existsSync, mkdirSync, unlinkSync } from 'fs';
+import { promises as fs } from 'fs';
 import { join } from 'path';
 import { v4 as uuid } from 'uuid';
 
 @Injectable()
 export class FileService {
-  private serverUrl = process.env.SERVER_URL || '';
   private readonly logger = new Logger(FileService.name);
+  private readonly baseUrl = (process.env.SERVER_URL || '').replace(/\/$/, '');
+  private readonly uploadRoot = join(process.cwd(), 'uploads');
 
-  saveFile({
+  async saveFile({
     file,
     folder,
   }: {
     file: Express.Multer.File;
     folder: string;
-  }): string {
-    const uploadPath = join(process.cwd(), 'uploads', folder);
-
-    if (!existsSync(uploadPath)) {
-      mkdirSync(uploadPath, { recursive: true });
-    }
-
-    // unique filename
-    const ext = file.originalname.split('.').pop();
-    const uniqueName = uuid() + '.' + ext;
-
-    const filePath = join(uploadPath, uniqueName);
-    writeFileSync(filePath, file.buffer);
-
-    // local path
-    const localPath = join('uploads', folder, uniqueName).replace(/\\/g, '/');
-
-    // return FULL URL
-    return `${this.serverUrl}/${localPath}`;
+  }): Promise<string> {
+    const filePath = this.getUniquePath(folder, file.originalname);
+    await this.ensureDir(filePath);
+    await fs.writeFile(filePath, file.buffer);
+    return this.toUrl(filePath);
   }
 
-  saveFiles({
+  async saveFiles({
     files,
     folder,
   }: {
     files: Express.Multer.File[];
     folder: string;
-  }): string[] {
-    const uploadPath = join(process.cwd(), 'uploads', folder);
-
-    if (!existsSync(uploadPath)) {
-      mkdirSync(uploadPath, { recursive: true });
-    }
-
-    const savedFileUrls: string[] = [];
-
-    for (const file of files) {
-      const ext = file.originalname.split('.').pop();
-      const uniqueName = uuid() + '.' + ext;
-
-      const filePath = join(uploadPath, uniqueName);
-      writeFileSync(filePath, file.buffer);
-
-      const localPath = join('uploads', folder, uniqueName).replace(/\\/g, '/');
-
-      savedFileUrls.push(`${this.serverUrl}/${localPath}`);
-    }
-
-    return savedFileUrls;
+  }): Promise<string[]> {
+    const saves = files.map((file) => this.saveFile({ file, folder }));
+    return Promise.all(saves);
   }
 
-  deleteFile(fileUrl: string): boolean {
-    if (!fileUrl) {
-      return false;
-    }
+  async deleteFile(fileUrl: string): Promise<boolean> {
+    if (!fileUrl) return false;
 
     try {
-      // Extract the local path from the full URL
-      const localPath = fileUrl.replace(this.serverUrl + '/', '');
+      const localPath = fileUrl.replace(this.baseUrl + '/', '');
       const fullPath = join(process.cwd(), localPath);
 
-      if (existsSync(fullPath)) {
-        unlinkSync(fullPath);
-        this.logger.log(`Successfully deleted file: ${fullPath}`);
-        return true;
+      await fs.unlink(fullPath);
+      this.logger.log(`Deleted: ${fullPath}`);
+      return true;
+    } catch (err: any) {
+      if (err) {
+        this.logger.warn(`File not found: ${fileUrl}`);
       } else {
-        this.logger.warn(`File not found, could not delete: ${fullPath}`);
-        return false;
+        this.logger.error(`Delete failed: ${fileUrl}`, err);
       }
-    } catch (err) {
-      this.logger.error(`Error deleting file: ${fileUrl}`, err);
       return false;
     }
+  }
+
+  // ── Helpers ─────────────────────────────────────
+
+  private getUniquePath(folder: string, originalName: string): string {
+    const ext = originalName.includes('.')
+      ? '.' + originalName.split('.').pop()!
+      : '';
+    return join(this.uploadRoot, folder, uuid() + ext);
+  }
+
+  private async ensureDir(filePath: string): Promise<void> {
+    const dir = filePath.substring(0, filePath.lastIndexOf('/'));
+    await fs.mkdir(dir, { recursive: true });
+  }
+
+  private toUrl(fullPath: string): string {
+    return (
+      this.baseUrl +
+      '/' +
+      fullPath.replace(this.uploadRoot, 'uploads').replace(/\\/g, '/')
+    );
   }
 }

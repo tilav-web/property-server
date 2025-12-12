@@ -3,7 +3,7 @@ import {
   InternalServerErrorException,
   Logger,
 } from '@nestjs/common';
-import { GenaiService } from '../genai/genai.service';
+import { OpenaiService } from '../openai/openai.service';
 import {
   Property,
   PropertyDocument,
@@ -88,7 +88,7 @@ export class AiPropertyService {
   };
 
   constructor(
-    private readonly genaiService: GenaiService,
+    private readonly openaiService: OpenaiService,
     @InjectModel(Property.name)
     private readonly propertyModel: Model<PropertyDocument>,
   ) {}
@@ -137,10 +137,9 @@ Mongoose FilterQuery JSON object:`;
 
     let query: FilterQuery<PropertyDocument>;
     try {
-      const aiResponse = await this.genaiService.generateText(aiPrompt);
-      this.logger.debug(`AI Response: ${aiResponse}`);
+      const aiResponse = await this.openaiService.generateText(aiPrompt);
 
-      const cleanedResponse = aiResponse.replace(/```json\n|\n```/g, ''); // Remove markdown code block fences
+      const cleanedResponse = aiResponse.replace(/```json\n|\n```/g, '');
       query = JSON.parse(cleanedResponse);
       if (typeof query !== 'object' || query === null) {
         throw new Error('AI returned invalid JSON object type.');
@@ -152,11 +151,9 @@ Mongoose FilterQuery JSON object:`;
       );
     }
 
-    // Xavfsizlik va standart filtrlarni qo'shish
-    // Masalan, faqat "active" holatdagi e'lonlarni qidirish
-    // if (!query.status) {
-    //   query.status = 'active'; // Agar "status" maydoni bo'lsa
-    // }
+    if (!query.status) {
+      query.status = 'APPROVED';
+    }
 
     const skip = (page - 1) * limit;
 
@@ -176,7 +173,7 @@ Mongoose FilterQuery JSON object:`;
         properties,
       };
     } catch (error) {
-      this.logger.error(`Error executing Mongoose query: ${error.message}`);
+      this.logger.error(`Error executing Mongoose query: ${error}`);
       throw new InternalServerErrorException(
         'Failed to execute property search query. Please check the generated query or try again.',
       );

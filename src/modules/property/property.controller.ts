@@ -1,101 +1,56 @@
 import {
-  Controller,
-  Post,
   Body,
-  UseInterceptors,
-  UploadedFiles,
-  UseGuards,
-  Req,
+  Controller,
+  Get,
   HttpException,
   InternalServerErrorException,
-  Get,
-  Query,
   Param,
+  Put,
+  Post,
+  Query,
+  Req,
+  UploadedFiles,
+  UseGuards,
+  UseInterceptors,
   Delete,
 } from '@nestjs/common';
-import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { PropertyService } from './property.service';
-import { type CreatePropertyDto } from './dto/create-property.dto';
-import { AuthGuard } from '@nestjs/passport';
-import { type IRequestCustom } from 'src/interfaces/custom-request.interface';
-import { FilterMyPropertiesDto } from './dto/filter-my-properties.dto';
-import type { Request } from 'express';
-import { EnumLanguage } from 'src/enums/language.enum';
 import { FindAllPropertiesDto } from './dto/find-all-properties.dto';
+import { EnumLanguage } from 'src/enums/language.enum';
+import { AuthGuard } from '@nestjs/passport';
+import type { IRequestCustom } from 'src/interfaces/custom-request.interface';
+import { UpdatePropertyStatusDto } from './dto/update-property-status.dto';
+import { FileFieldsInterceptor } from '@nestjs/platform-express';
+import type { CreatePropertyDto } from './dto/create-property.dto';
 import { CreateMessageDto } from '../message/dto/create-message.dto';
+import { FilterMyPropertiesDto } from './dto/filter-my-properties.dto';
 
 @Controller('properties')
 export class PropertyController {
-  constructor(private readonly propertyService: PropertyService) {}
+  constructor(private readonly service: PropertyService) {}
 
   @Post()
   @UseGuards(AuthGuard('jwt'))
   @UseInterceptors(
     FileFieldsInterceptor([
       { name: 'photos', maxCount: 10 },
-      { name: 'videos', maxCount: 3 },
+      { name: 'videos', maxCount: 2 },
     ]),
   )
   create(
-    @UploadedFiles()
-    files: {
-      photos: Express.Multer.File[];
-      videos: Express.Multer.File[];
-    },
     @Body() dto: CreatePropertyDto,
+    @UploadedFiles()
+    files: { photos?: Express.Multer.File[]; videos?: Express.Multer.File[] },
     @Req() req: IRequestCustom,
   ) {
-    try {
-      return this.propertyService.create({ dto, files, author: req.user?._id });
-    } catch (error) {
-      console.error(error);
-
-      if (error instanceof HttpException) {
-        throw error;
-      }
-
-      if (error instanceof Error) {
-        throw new InternalServerErrorException(error.message);
-      }
-      throw new InternalServerErrorException(
-        "Tizimda xatolik ketdi. Iltimos birozdan so'ng qayta urinib ko'ring!",
-      );
-    }
+    return this.service.create({ dto, files, author: req.user?._id });
   }
 
-  // @Patch(':id')
-  // @UseGuards(AuthGuard('jwt'))
-  // @UseInterceptors(
-  //   FileFieldsInterceptor([
-  //     { name: 'photos', maxCount: 10 },
-  //     { name: 'videos', maxCount: 3 },
-  //   ]),
-  // )
-  // update(
-  //   @Param('id') id: string,
-  //   @UploadedFiles()
-  //   files: {
-  //     photos?: Express.Multer.File[];
-  //     videos?: Express.Multer.File[];
-  //   },
-  //   @Body() dto: UpdatePropertyDto,
-  //   @Req() req: IRequestCustom,
-  // ) {
-  //   try {
-  //     return this.propertyService.update({
-  //       id,
-  //       dto,
-  //       files,
-  //       author: req.user?._id,
-  //     });
-  //   } catch (error) {
-  //     console.error(error);
-  //     if (error instanceof HttpException) {
-  //       throw error;
-  //     }
-  //     throw new InternalServerErrorException('Failed to update property.');
-  //   }
-  // }
+  @Get()
+  findAll(@Query() query: FindAllPropertiesDto, @Req() req: IRequestCustom) {
+    const language = req.headers['accept-language'] as EnumLanguage;
+    return this.service.findAll({ ...query, language });
+  }
 
   @Get('/my')
   @UseGuards(AuthGuard('jwt'))
@@ -106,33 +61,12 @@ export class PropertyController {
     const language = (req.headers['accept-language'] || 'uz')
       .toLowerCase()
       .split(',')[0] as EnumLanguage;
-    const result = await this.propertyService.findMyProperties({
-      author: req.user?._id,
+    const result = await this.service.findMyProperties({
+      author: req.user?._id as string,
       ...filter,
       language,
     });
     return result;
-  }
-
-  @Get('/:id')
-  async findById(@Param('id') id: string, @Req() req: Request) {
-    const language = (req.headers['accept-language'] || 'uz')
-      .toLowerCase()
-      .split(',')[0] as EnumLanguage;
-
-    const result = await this.propertyService.findById({ id, language });
-    return result;
-  }
-
-  @Get('/')
-  async findAll(
-    @Req() req: IRequestCustom,
-    @Query() filter: FindAllPropertiesDto,
-  ) {
-    const language = (req.headers['accept-language'] || 'uz')
-      .toLowerCase()
-      .split(',')[0] as EnumLanguage;
-    return this.propertyService.findAll({ language, ...filter });
   }
 
   @Delete('/:id')
@@ -143,7 +77,7 @@ export class PropertyController {
       if (!user) {
         throw new HttpException('Unauthorized', 401);
       }
-      const result = await this.propertyService.remove({
+      const result = await this.service.remove({
         id,
         userId: user._id,
       });
@@ -164,12 +98,27 @@ export class PropertyController {
     }
   }
 
+  @Get(':id')
+  findById(@Param('id') id: string, @Query('language') language: EnumLanguage) {
+    return this.service.findById({ id, language });
+  }
+
+  @Put(':id/status')
+  @UseGuards(AuthGuard('jwt'))
+  updateStatus(@Param('id') id: string, @Body() dto: UpdatePropertyStatusDto) {
+    // The service method already checks for ADMIN role
+    return this.service.updateStatus({
+      id,
+      status: dto.status,
+    });
+  }
+
   @Post('/message')
   @UseGuards(AuthGuard('jwt'))
   async sendMessage(@Body() dto: CreateMessageDto, @Req() req: IRequestCustom) {
     try {
       const user = req.user;
-      const result = await this.propertyService.sendMessage({
+      const result = await this.service.sendMessage({
         dto,
         user: user?._id as string,
       });
@@ -190,8 +139,15 @@ export class PropertyController {
     }
   }
 
+  @Put(':id/archive')
+  @UseGuards(AuthGuard('jwt'))
+  toggleArchive(@Param('id') id: string, @Req() req: IRequestCustom) {
+    // The service method checks for ownership
+    return this.service.toggleArchive({ id, userId: req.user?._id as string });
+  }
+
   @Get('/categories/list')
   async getCategories() {
-    return this.propertyService.getCategories();
+    return this.service.getCategories();
   }
 }

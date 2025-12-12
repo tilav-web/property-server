@@ -12,6 +12,7 @@ import { InquiryService } from './inquiry.service';
 import { CreateInquiryDto } from './dto/create-inquiry.dto';
 import { AuthGuard } from '@nestjs/passport';
 import type { IRequestCustom } from 'src/interfaces/custom-request.interface';
+import { EnumLanguage } from 'src/enums/language.enum';
 
 @Controller('inquiry')
 export class InquiryController {
@@ -21,8 +22,14 @@ export class InquiryController {
   @Get()
   findAll(@Req() req: IRequestCustom) {
     try {
+      const language = (req.headers['accept-language'] || 'uz')
+        .toLowerCase()
+        .split(',')[0] as EnumLanguage;
       const user = req.user;
-      return this.inquiryService.findAllForSeller(user?._id as string);
+      return this.inquiryService.findAllForSeller({
+        userId: user?._id as string,
+        language,
+      });
     } catch (error) {
       console.error(error);
       if (error instanceof HttpException) {

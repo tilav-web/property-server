@@ -39,10 +39,6 @@ export class LikeService {
       const populatedProperty = await this.propertyModel
         .findById(propertyId)
         .populate('author', '-password')
-        .populate('region')
-        .populate('district')
-        .populate('photos')
-        .populate('videos')
         .lean();
 
       return {
@@ -66,10 +62,6 @@ export class LikeService {
       const populatedProperty = await this.propertyModel
         .findById(propertyId)
         .populate('author', '-password')
-        .populate('region')
-        .populate('district')
-        .populate('photos')
-        .populate('videos')
         .lean();
 
       return {
@@ -81,18 +73,12 @@ export class LikeService {
     }
   }
 
-  async findMyLikes(userId: string) {
+  async findMyLikes(user: string) {
     const likes = await this.likeModel
-      .find({ user: userId })
+      .find({ user })
       .populate({
         path: 'property',
-        populate: [
-          { path: 'author', select: '-password' },
-          { path: 'region' },
-          { path: 'district' },
-          { path: 'photos' },
-          { path: 'videos' },
-        ],
+        populate: [{ path: 'author', select: '-password' }],
       })
       .lean()
       .exec();
