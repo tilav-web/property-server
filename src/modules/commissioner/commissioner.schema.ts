@@ -43,17 +43,12 @@ export class Commissioner {
     required: true,
   })
   contract_end_date: string;
+
+  @Prop({
+    type: String,
+    required: true,
+  })
+  contract_file: string;
 }
 
 export const CommissionerSchema = SchemaFactory.createForClass(Commissioner);
-
-CommissionerSchema.virtual('contract_file', {
-  ref: 'File',
-  localField: '_id',
-  foreignField: 'document_id',
-  justOne: true,
-  match: { document_type: 'Commissioner', file_name: /contract_file/i },
-});
-
-CommissionerSchema.set('toObject', { virtuals: true });
-CommissionerSchema.set('toJSON', { virtuals: true });

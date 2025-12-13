@@ -26,8 +26,11 @@ export class CreateYttSellerDto {
   @IsNotEmpty()
   business_reg_address: string; // Ro‘yxatdan o‘tgan manzil
 
-  @Transform(({ value }) => value === 'true' || value === true)
+  @Transform(({ value }) => {
+    if (value === true || value === 'true') return true;
+    if (value === false || value === 'false') return false;
+    return value as boolean;
+  })
   @IsBoolean()
-  @IsNotEmpty()
-  is_vat_payer: boolean; // QQS mavjudmi
+  is_vat_payer: boolean;
 }

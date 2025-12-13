@@ -27,6 +27,7 @@ import {
 import { CreatePhysicalSellerDto } from './dto/create-physical-seller.dto';
 import { EnumSellerBusinessType } from 'src/enums/seller-business-type.enum';
 import { Express } from 'express';
+import { EnumFilesFolder } from '../file/enums/files-folder.enum';
 
 @Injectable()
 export class SellerService {
@@ -96,6 +97,7 @@ export class SellerService {
       .findOne({ user: new Types.ObjectId(id) })
       .populate('ytt')
       .populate('mchj')
+      .populate('bank_account')
       .populate('self_employed')
       .populate('commissioner')
       .populate('physical')
@@ -111,57 +113,102 @@ export class SellerService {
     },
   ) {
     const seller = await this.sellerModel.findById(dto.seller);
-    if (!seller) throw new NotFoundException('Sotuvchi profili topilmadi');
+    if (!seller) {
+      throw new NotFoundException('Sotuvchi profili topilmadi');
+    }
 
-    if (!files.passport_file)
+    // ─────────────────────────────────────
+    // Majburiy fayllar (empty array bug fix)
+    // ─────────────────────────────────────
+    if (!files?.passport_file?.[0]) {
       throw new BadRequestException('Pasport faylni yuborishingiz shart!');
+    }
 
-    if (!files.ytt_certificate_file)
-      throw new BadRequestException('YTT hujjatini  yuborishingiz shart!');
+    if (!files?.ytt_certificate_file?.[0]) {
+      throw new BadRequestException('YTT hujjatini yuborishingiz shart!');
+    }
 
-    if (dto.is_vat_payer && !files.vat_file)
-      throw new BadRequestException('QQS hujjatini  yuborishingiz shart!');
+    if (dto.is_vat_payer === true && !files?.vat_file?.[0]) {
+      throw new BadRequestException('QQS hujjatini yuborishingiz shart!');
+    }
 
-    const { seller: sellerId, ...yttDto } = dto;
-    const yttUpdateData: Partial<Omit<YttSeller, 'seller'>> = { ...yttDto };
+    const sellerId = new Types.ObjectId(dto.seller);
 
+    // ─────────────────────────────────────
+    // Eski YTT ma'lumotini olish
+    // ─────────────────────────────────────
     const existingYttSeller = await this.yttSellerModel.findOne({
-      seller: new Types.ObjectId(sellerId),
+      seller: sellerId,
     });
 
+    // ─────────────────────────────────────
+    // DTO → DB mapping (explicit, xavfsiz)
+    // ─────────────────────────────────────
+    const updateData: Partial<YttSeller> = {
+      seller: sellerId,
+      company_name: dto.company_name,
+      inn: dto.inn,
+      pinfl: dto.pinfl,
+      business_reg_number: dto.business_reg_number,
+      business_reg_address: dto.business_reg_address,
+      is_vat_payer: dto.is_vat_payer === true,
+    };
+
+    // ─────────────────────────────────────
+    // PASSPORT FILE
+    // ─────────────────────────────────────
     if (files.passport_file?.[0]) {
+      const newPassportUrl = await this.fileService.saveFile({
+        file: files.passport_file[0],
+        folder: EnumFilesFolder.FILES,
+      });
+
       if (existingYttSeller?.passport_file) {
         await this.fileService.deleteFile(existingYttSeller.passport_file);
       }
-      yttUpdateData.passport_file = await this.fileService.saveFile({
-        file: files.passport_file[0],
-        folder: 'ytt-seller-files',
-      });
+
+      updateData.passport_file = newPassportUrl;
     }
 
+    // ─────────────────────────────────────
+    // YTT CERTIFICATE FILE
+    // ─────────────────────────────────────
     if (files.ytt_certificate_file?.[0]) {
-      if (existingYttSeller?.ytt_certificate_file) {
-        await this.fileService.deleteFile(existingYttSeller.ytt_certificate_file);
-      }
-      yttUpdateData.ytt_certificate_file = await this.fileService.saveFile({
+      const newYttCertUrl = await this.fileService.saveFile({
         file: files.ytt_certificate_file[0],
-        folder: 'ytt-seller-files',
+        folder: EnumFilesFolder.FILES,
       });
+
+      if (existingYttSeller?.ytt_certificate_file) {
+        await this.fileService.deleteFile(
+          existingYttSeller.ytt_certificate_file,
+        );
+      }
+
+      updateData.ytt_certificate_file = newYttCertUrl;
     }
 
-    if (dto.is_vat_payer && files.vat_file?.[0]) {
+    if (dto.is_vat_payer === true && files.vat_file?.[0]) {
+      const newVatUrl = await this.fileService.saveFile({
+        file: files.vat_file[0],
+        folder: EnumFilesFolder.FILES,
+      });
+
       if (existingYttSeller?.vat_file) {
         await this.fileService.deleteFile(existingYttSeller.vat_file);
       }
-      yttUpdateData.vat_file = await this.fileService.saveFile({
-        file: files.vat_file[0],
-        folder: 'ytt-seller-files',
-      });
+
+      updateData.vat_file = newVatUrl;
+    }
+
+    if (dto.is_vat_payer === false && existingYttSeller?.vat_file) {
+      await this.fileService.deleteFile(existingYttSeller.vat_file);
+      updateData.vat_file = undefined;
     }
 
     await this.yttSellerModel.findOneAndUpdate(
-      { seller: new Types.ObjectId(sellerId) },
-      { $set: yttUpdateData, seller: new Types.ObjectId(sellerId) },
+      { seller: sellerId },
+      { $set: updateData },
       { upsert: true, new: true, setDefaultsOnInsert: true },
     );
 
@@ -186,71 +233,77 @@ export class SellerService {
       vat_file?: Express.Multer.File[];
     },
   ) {
+    // Sotuvchi tekshiruvi
     const seller = await this.sellerModel.findById(dto.seller);
     if (!seller) throw new NotFoundException('Sotuvchi profili topilmadi');
 
-    if (!files.ustav_file)
-      throw new BadRequestException('Ustav faylni yuborishingiz shart!');
-
-    if (!files.mchj_license)
-      throw new BadRequestException('Litsenziya faylni yuborishingiz shart!');
-
-    if (!files.director_appointment_file)
-      throw new BadRequestException(
-        'Direktor tayinlanish hujjatini yuborishingiz shart!',
-      );
-
-    if (!files.director_passport_file)
-      throw new BadRequestException(
-        'Direktor pasport faylini yuborishingiz shart!',
-      );
-
-    if (!files.legal_address_file)
-      throw new BadRequestException(
-        'Yuridik manzil hujjatini yuborishingiz shart!',
-      );
-
-    if (!files.kadastr_file)
-      throw new BadRequestException('Kadastr hujjatini yuborishingiz shart!');
-
-    if (dto.is_vat_payer && !files.vat_file)
-      throw new BadRequestException('QQS (VAT) hujjatini yuborishingiz shart!');
-
-    const { seller: sellerId, ...mchjDto } = dto;
-    const mchjUpdateData: Partial<Omit<MchjSeller, 'seller'>> = { ...mchjDto };
-
-    const existingMchjSeller = await this.mchjSellerModel.findOne({
-      seller: new Types.ObjectId(sellerId),
-    });
-
-    const fileFields: (keyof typeof files)[] = [
+    // Majburiy fayllar
+    const requiredFiles: (keyof typeof files)[] = [
       'ustav_file',
       'mchj_license',
       'director_appointment_file',
       'director_passport_file',
       'legal_address_file',
       'kadastr_file',
-      'vat_file',
     ];
 
-    for (const field of fileFields) {
-      if (files[field]?.[0]) {
-        if (existingMchjSeller?.[field]) {
-          await this.fileService.deleteFile(existingMchjSeller[field]);
-        }
-        mchjUpdateData[field] = await this.fileService.saveFile({
-          file: files[field][0],
-          folder: 'mchj-seller-files',
-        });
+    for (const field of requiredFiles) {
+      if (!files[field]?.[0]) {
+        throw new BadRequestException(`${field} faylni yuborishingiz shart!`);
       }
     }
 
+    if (dto.is_vat_payer && !files.vat_file?.[0]) {
+      throw new BadRequestException('QQS (VAT) hujjatini yuborishingiz shart!');
+    }
+
+    const sellerId = new Types.ObjectId(dto.seller);
+
+    // Eski MCHJ ma’lumotini olish
+    const existingMchjSeller = await this.mchjSellerModel.findOne({
+      seller: sellerId,
+    });
+
+    // DTO → DB mapping
+    const { seller: _, ...mchjDto } = dto;
+    const updateData: Partial<Omit<MchjSeller, 'seller'>> = { ...mchjDto };
+
+    // Fayllarni saqlash va eski fayllarni o‘chirish
+    const fileFields: (keyof typeof files)[] = [...requiredFiles, 'vat_file'];
+
+    for (const field of fileFields) {
+      if (files[field]?.[0]) {
+        // Eski faylni o'chirish
+        if (existingMchjSeller?.[field]) {
+          await this.fileService.deleteFile(existingMchjSeller[field]);
+        }
+
+        // Yangi faylni saqlash
+        updateData[field] = await this.fileService.saveFile({
+          file: files[field][0],
+          folder: EnumFilesFolder.FILES,
+        });
+      }
+
+      // Agar QQS to‘lovchi bo‘lmasa va eski fayl bo‘lsa, o'chirish
+      if (
+        field === 'vat_file' &&
+        dto.is_vat_payer === false &&
+        existingMchjSeller?.vat_file
+      ) {
+        await this.fileService.deleteFile(existingMchjSeller.vat_file);
+        updateData.vat_file = undefined;
+      }
+    }
+
+    // Ma’lumotni bazaga yozish
     await this.mchjSellerModel.findOneAndUpdate(
-      { seller: new Types.ObjectId(sellerId) },
-      { $set: mchjUpdateData, seller: new Types.ObjectId(sellerId) },
+      { seller: sellerId },
+      { $set: updateData, seller: sellerId },
       { upsert: true, new: true, setDefaultsOnInsert: true },
     );
 
+    // Sotuvchi profilingini qaytarish
     return this.sellerModel
       .findById(sellerId)
       .populate('ytt')
@@ -268,6 +321,7 @@ export class SellerService {
     },
     user: string,
   ) {
+    // Sotuvchi yaratish yoki olish
     const { passport, ...selfEmployedDto } = dto;
     const { seller } = await this.createSeller({
       passport,
@@ -275,62 +329,59 @@ export class SellerService {
       business_type: EnumSellerBusinessType.SELF_EMPLOYED,
     });
 
-    if (!files.passport_file)
-      throw new BadRequestException('Pasport faylni yuborishingiz shart!');
+    // Majburiy fayllar tekshiruvi
+    const requiredFiles: (keyof typeof files)[] = [
+      'passport_file',
+      'self_employment_certificate',
+    ];
 
-    if (!files.self_employment_certificate)
-      throw new BadRequestException(
-        'O‘zini o‘zi bandlik sertifikatini yuborishingiz shart!',
-      );
+    for (const field of requiredFiles) {
+      if (!files[field]?.[0]) {
+        throw new BadRequestException(`${field} faylni yuborishingiz shart!`);
+      }
+    }
 
-    const { birth_date, ...restDto } = selfEmployedDto;
-    const selfEmployedUpdateData: Partial<Omit<SelfEmployedSeller, 'seller'>> =
-      {
-        ...restDto,
-        birth_date: new Date(birth_date),
-      };
+    const sellerId = new Types.ObjectId(seller._id as string);
 
+    // Eski Self-Employed ma’lumotini olish
     const existingSelfEmployed = await this.selfEmployedSellerModel.findOne({
-      seller: new Types.ObjectId(seller._id as string),
+      seller: sellerId,
     });
 
-    if (files.passport_file?.[0]) {
-      if (existingSelfEmployed?.passport_file) {
-        await this.fileService.deleteFile(existingSelfEmployed.passport_file);
-      }
-      selfEmployedUpdateData.passport_file = await this.fileService.saveFile({
-        file: files.passport_file[0],
-        folder: 'self-employed-files',
-      });
-    }
+    // DTO → DB mapping
+    const { birth_date, ...restDto } = selfEmployedDto;
+    const updateData: Partial<Omit<SelfEmployedSeller, 'seller'>> = {
+      ...restDto,
+      birth_date: new Date(birth_date),
+    };
 
-    if (files.self_employment_certificate?.[0]) {
-      if (existingSelfEmployed?.self_employment_certificate) {
-        await this.fileService.deleteFile(
-          existingSelfEmployed.self_employment_certificate,
-        );
-      }
-      selfEmployedUpdateData.self_employment_certificate =
-        await this.fileService.saveFile({
-          file: files.self_employment_certificate[0],
-          folder: 'self-employed-files',
+    // Fayllarni saqlash va eski fayllarni o‘chirish
+    for (const field of requiredFiles) {
+      if (files[field]?.[0]) {
+        if (existingSelfEmployed?.[field]) {
+          await this.fileService.deleteFile(existingSelfEmployed[field]);
+        }
+        updateData[field] = await this.fileService.saveFile({
+          file: files[field][0],
+          folder: EnumFilesFolder.FILES,
         });
+      }
     }
 
+    // Ma’lumotni bazaga yozish
     await this.selfEmployedSellerModel.findOneAndUpdate(
-      { seller: new Types.ObjectId(seller._id as string) },
-      {
-        $set: selfEmployedUpdateData,
-        seller: new Types.ObjectId(seller._id as string),
-      },
+      { seller: sellerId },
+      { $set: updateData, seller: sellerId },
       { upsert: true, new: true, setDefaultsOnInsert: true },
     );
 
+    // Sotuvchi statusini yangilash
     await this.updateSellerStatus({
       id: seller._id as string,
       status: EnumSellerStatus.COMPLETED,
     });
 
+    // Sotuvchi profilingini qaytarish
     return this.sellerModel
       .findById(seller._id)
       .populate('ytt')
@@ -347,6 +398,7 @@ export class SellerService {
     },
     user: string,
   ) {
+    // Sotuvchi yaratish yoki olish
     const { passport, ...physicalDto } = dto;
     const { seller } = await this.createSeller({
       passport,
@@ -354,44 +406,52 @@ export class SellerService {
       business_type: EnumSellerBusinessType.PHYSICAL,
     });
 
-    if (!files.passport_file)
+    // Majburiy fayl tekshiruvi
+    if (!files.passport_file?.[0]) {
       throw new BadRequestException('Pasport faylni yuborishingiz shart!');
+    }
 
+    const sellerId = new Types.ObjectId(seller._id as string);
+
+    // Eski Physical ma’lumotini olish
+    const existingPhysicalSeller = await this.physicalSellerModel.findOne({
+      seller: sellerId,
+    });
+
+    // DTO → DB mapping
     const { birth_date, ...restDto } = physicalDto;
-    const physicalUpdateData: Partial<Omit<PhysicalSeller, 'seller'>> = {
+    const updateData: Partial<Omit<PhysicalSeller, 'seller'>> = {
       ...restDto,
       birth_date: new Date(birth_date),
     };
 
-    const existingPhysicalSeller = await this.physicalSellerModel.findOne({
-      seller: new Types.ObjectId(seller._id as string),
-    });
-
-    if (files.passport_file?.[0]) {
-      if (existingPhysicalSeller?.passport_file) {
-        await this.fileService.deleteFile(existingPhysicalSeller.passport_file);
+    // Faylni saqlash va eski faylni o‘chirish
+    const fileField: keyof typeof files = 'passport_file';
+    if (files[fileField]?.[0]) {
+      if (existingPhysicalSeller?.[fileField]) {
+        await this.fileService.deleteFile(existingPhysicalSeller[fileField]);
       }
-      physicalUpdateData.passport_file = await this.fileService.saveFile({
-        file: files.passport_file[0],
-        folder: 'physical-seller-files',
+      updateData[fileField] = await this.fileService.saveFile({
+        file: files[fileField][0],
+        folder: EnumFilesFolder.FILES,
       });
     }
 
+    // Ma’lumotni bazaga yozish
     await this.physicalSellerModel.findOneAndUpdate(
-      { seller: new Types.ObjectId(seller._id as string) },
-      {
-        $set: physicalUpdateData,
-        seller: new Types.ObjectId(seller._id as string),
-      },
+      { seller: sellerId },
+      { $set: updateData, seller: sellerId },
       { upsert: true, new: true, setDefaultsOnInsert: true },
     );
 
+    // Sotuvchi statusini yangilash
     await this.updateSellerStatus({
       id: seller._id as string,
       status: EnumSellerStatus.COMPLETED,
     });
 
-    return this.sellerModel.findById(seller._id).populate('physical');
+    // Sotuvchi profilingini qaytarish
+    return this.sellerModel.findById(seller._id).populate('physical').lean();
   }
 
   async updateSellerStatus({

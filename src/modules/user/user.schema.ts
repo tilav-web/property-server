@@ -1,29 +1,19 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document, Types } from 'mongoose';
+import { Document } from 'mongoose';
 import { EnumLanguage } from 'src/enums/language.enum';
 import { EnumRole } from 'src/enums/role.enum';
 
 export type UserDocument = Document & User;
 
 @Schema({ _id: false })
-export class Email {
-  @Prop({ type: String })
-  value: string;
-  @Prop({ type: Boolean, default: false })
-  isVerified: boolean;
-}
-
-export const EmailSchema = SchemaFactory.createForClass(Email);
-
-@Schema({ _id: false })
-export class Phone {
+export class Identifier {
   @Prop({ type: String, sparse: true, default: null })
   value: string;
   @Prop({ type: Boolean, default: false })
   isVerified: boolean;
 }
 
-export const PhoneSchema = SchemaFactory.createForClass(Phone);
+export const IdentifierSchema = SchemaFactory.createForClass(Identifier);
 
 @Schema({ timestamps: true, collection: 'users' })
 export class User {
@@ -33,8 +23,11 @@ export class User {
   @Prop({ type: String, default: null })
   last_name: string;
 
-  @Prop({ type: PhoneSchema, default: { value: null, isVerified: false } })
-  phone: Phone;
+  @Prop({ type: IdentifierSchema, default: { value: null, isVerified: false } })
+  phone: Identifier;
+
+  @Prop({ type: IdentifierSchema, required: true })
+  email: Identifier;
 
   @Prop({ type: String, default: null })
   avatar: string;
@@ -44,15 +37,6 @@ export class User {
 
   @Prop({ type: String, required: true, default: EnumLanguage.UZ })
   lan: EnumLanguage;
-
-  @Prop({ type: EmailSchema, required: true })
-  email: Email;
-
-  @Prop({ type: Types.ObjectId, ref: 'Region' })
-  region: Types.ObjectId;
-
-  @Prop({ type: Types.ObjectId, ref: 'District' })
-  district: Types.ObjectId;
 
   @Prop({ type: String, required: true, select: false })
   password: string;
