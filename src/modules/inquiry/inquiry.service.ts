@@ -34,7 +34,10 @@ export class InquiryService {
       );
     }
 
-    const inquiry = new this.inquiryModel(dto);
+    const inquiry = new this.inquiryModel({
+      ...dto,
+      seller: property.author,
+    });
     return inquiry.save();
   }
 
@@ -45,14 +48,8 @@ export class InquiryService {
     userId: string;
     language: EnumLanguage;
   }) {
-    // Find all properties belonging to the seller
-    const sellerProperties = await this.propertyModel
-      .find({ author: userId })
-      .select('_id');
-    const propertyIds = sellerProperties.map((p) => p._id?.toString());
-    const query = { property: { $in: propertyIds } };
     const inquiries = await this.inquiryModel
-      .find(query)
+      .find({ seller: userId })
       .populate('user', 'first_name last_name email avatar')
       .populate('property', 'title')
       .sort({ createdAt: -1 })

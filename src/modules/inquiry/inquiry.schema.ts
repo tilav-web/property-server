@@ -44,6 +44,9 @@ export class Inquiry {
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
   user: Types.ObjectId;
 
+  @Prop({ type: Types.ObjectId, ref: 'Seller', required: true })
+  seller: Types.ObjectId;
+
   // 🏡 Qaysi property uchun
   @Prop({ type: Types.ObjectId, ref: 'Property', required: true })
   property: Types.ObjectId;
