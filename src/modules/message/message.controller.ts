@@ -1,11 +1,14 @@
 import {
   Body,
   Controller,
+  DefaultValuePipe,
   Delete,
   Get,
   HttpException,
   InternalServerErrorException,
   Param,
+  ParseIntPipe,
+  Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
@@ -64,9 +67,13 @@ export class MessageController {
   }
 
   @Get('/property/:id')
-  async findByProperty(@Param('id') id: string) {
+  async findByProperty(
+    @Param('id') id: string,
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('limit', new DefaultValuePipe(15), ParseIntPipe) limit: number,
+  ) {
     try {
-      const result = await this.service.findByProperty(id);
+      const result = await this.service.findByProperty(id, page, limit);
       return result;
     } catch (error) {
       console.error(error);

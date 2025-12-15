@@ -39,12 +39,27 @@ export class MessageService {
       .populate('property');
   }
 
-  async findByProperty(property: string) {
+  async findByProperty(property: string, page = 1, limit = 15) {
+    const skip = (page - 1) * limit;
     const messages = await this.messageModel
       .find({ property: new Types.ObjectId(property) })
-      .populate('user');
-    console.log(messages);
-    return messages;
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .populate('user', 'first_name last_name avatar')
+      .lean()
+      .exec();
+
+    const total = await this.messageModel.countDocuments({
+      property: new Types.ObjectId(property),
+    });
+
+    return {
+      data: messages,
+      total,
+      page: Number(page),
+      limit: Number(limit),
+    };
   }
 
   async create(
