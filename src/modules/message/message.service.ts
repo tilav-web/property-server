@@ -40,10 +40,11 @@ export class MessageService {
   }
 
   async findByProperty(property: string) {
-    return this.messageModel
-      .find({ property })
-      .populate('user')
-      .populate('property');
+    const messages = await this.messageModel
+      .find({ property: new Types.ObjectId(property) })
+      .populate('user');
+    console.log(messages);
+    return messages;
   }
 
   async create(
