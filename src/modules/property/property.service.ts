@@ -121,6 +121,8 @@ export class PropertyService {
       rating,
       filterCategory,
       language = EnumLanguage.UZ,
+      bathrooms,
+      bedrooms,
     } = dto;
 
     const match = this.buildMatchQuery({
@@ -130,6 +132,8 @@ export class PropertyService {
       rating,
       search,
       filterCategory,
+      bathrooms,
+      bedrooms,
     });
 
     const hasGeo =
@@ -168,6 +172,8 @@ export class PropertyService {
     rating,
     search,
     filterCategory,
+    bathrooms,
+    bedrooms,
   }: {
     category?: string;
     is_premium?: boolean;
@@ -175,6 +181,8 @@ export class PropertyService {
     rating?: number;
     search?: string;
     filterCategory?: string;
+    bathrooms?: number[];
+    bedrooms?: number[];
   }): FilterQuery<PropertyDocument> {
     const match: FilterQuery<PropertyDocument> = {
       status: EnumPropertyStatus.APPROVED,
@@ -185,8 +193,9 @@ export class PropertyService {
     if (is_premium !== undefined) match.is_premium = is_premium;
 
     if (is_new) {
-      match.createdAt = { $gte: new Date(Date.now() - 604800000) }; // 7 kun
+      match.createdAt = { $gte: new Date(Date.now() - 604800000) };
     }
+
     if (rating) match.rating = { $gte: rating };
 
     if (search) {
@@ -195,6 +204,37 @@ export class PropertyService {
 
     if (filterCategory && !category) {
       match.category = { $regex: `^${filterCategory}`, $options: 'i' };
+    }
+
+    if (bedrooms?.length) {
+      const exact = bedrooms.filter((v) => v < 7);
+      const hasSevenPlus = bedrooms.includes(7);
+
+      if (exact.length && hasSevenPlus) {
+        match.$or = match.$or || [];
+        match.$or.push({ bedrooms: { $in: exact } }, { bedrooms: { $gte: 7 } });
+      } else if (exact.length) {
+        match.bedrooms = { $in: exact };
+      } else if (hasSevenPlus) {
+        match.bedrooms = { $gte: 7 };
+      }
+    }
+
+    if (bathrooms?.length) {
+      const exact = bathrooms.filter((v) => v < 7);
+      const hasSevenPlus = bathrooms.includes(7);
+
+      if (exact.length && hasSevenPlus) {
+        match.$or = match.$or || [];
+        match.$or.push(
+          { bathrooms: { $in: exact } },
+          { bathrooms: { $gte: 7 } },
+        );
+      } else if (exact.length) {
+        match.bathrooms = { $in: exact };
+      } else if (hasSevenPlus) {
+        match.bathrooms = { $gte: 7 };
+      }
     }
 
     return match;

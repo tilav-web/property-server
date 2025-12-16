@@ -1,7 +1,15 @@
-import { IsOptional, IsNumber, IsString, IsBoolean } from 'class-validator';
+import {
+  IsOptional,
+  IsNumber,
+  IsString,
+  IsBoolean,
+  IsEnum,
+  IsArray,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 import { EnumPropertyCategory } from '../enums/property-category.enum';
 import { EnumPropertyCategoryFilter } from '../enums/property-category-filter.enum';
+import { EnumPropertyStatus } from '../enums/property-status.enum';
 
 export class FindAllPropertiesDto {
   @IsOptional()
@@ -13,6 +21,18 @@ export class FindAllPropertiesDto {
   @IsNumber()
   @Type(() => Number)
   limit?: number;
+
+  @IsOptional()
+  @IsArray()
+  @IsNumber({}, { each: true })
+  @Type(() => Number)
+  bedrooms?: number[];
+
+  @IsOptional()
+  @IsArray()
+  @IsNumber({}, { each: true })
+  @Type(() => Number)
+  bathrooms?: number[];
 
   @IsOptional()
   @IsNumber()
@@ -42,9 +62,13 @@ export class FindAllPropertiesDto {
   is_premium?: boolean;
 
   @IsOptional()
+  @IsEnum(EnumPropertyStatus)
+  status?: EnumPropertyStatus;
+
+  @IsOptional()
   @IsBoolean()
   @Type(() => Boolean)
-  is_verified?: boolean;
+  is_archived?: boolean;
 
   @IsOptional()
   @IsBoolean()
