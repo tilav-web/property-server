@@ -1,5 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { Language } from 'src/common/language/language.schema';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import OpenAI from 'openai';
 
 interface TranslationResponse {
@@ -8,19 +7,22 @@ interface TranslationResponse {
   uz?: string;
 }
 
+interface AIResponse {
+  translations: Record<string, TranslationResponse>;
+  tags: string[];
+}
+
 @Injectable()
-export class OpenaiService {
+export class OpenaiService implements OnModuleInit {
   private readonly logger = new Logger(OpenaiService.name);
-  private readonly ai: OpenAI;
+  private ai!: OpenAI;
   private requestQueue: Promise<void> = Promise.resolve();
 
-  constructor() {
+  onModuleInit() {
     const apiKey = process.env.OPENAI_API_KEY?.trim();
-
     if (!apiKey) {
       throw new Error('OPENAI_API_KEY environment variable is required');
     }
-
     this.ai = new OpenAI({ apiKey });
   }
 
@@ -29,9 +31,7 @@ export class OpenaiService {
   }
 
   private isValidTranslation(obj: unknown): obj is TranslationResponse {
-    if (typeof obj !== 'object' || obj === null) {
-      return false;
-    }
+    if (typeof obj !== 'object' || obj === null) return false;
     const translation = obj as Record<string, unknown>;
     return (
       (typeof translation.en === 'string' || translation.en === undefined) &&
@@ -40,140 +40,197 @@ export class OpenaiService {
     );
   }
 
-  private async queueRequest<T>(fn: () => Promise<T>): Promise<T> {
-    const previousRequest = this.requestQueue;
-    let resolver: (() => void) | undefined;
+  private isValidAIResponse(obj: unknown): obj is AIResponse {
+    if (typeof obj !== 'object' || obj === null) return false;
 
-    this.requestQueue = new Promise<void>((resolve) => {
-      resolver = resolve;
-    });
+    const response = obj as Record<string, unknown>;
 
-    await previousRequest;
-
-    try {
-      return await fn();
-    } finally {
-      await this.delay(450); // Rate limit protection
-      if (resolver) {
-        resolver();
-      }
+    // Check if translations exists and is an object
+    if (!response.translations || typeof response.translations !== 'object') {
+      return false;
     }
+
+    // Check if tags exists and is an array
+    if (!Array.isArray(response.tags)) {
+      return false;
+    }
+
+    return true;
   }
 
-  private async translateOne(text: string, retries = 3): Promise<Language> {
-    return this.queueRequest(async () => {
-      try {
-        const prompt = `Translate this text exactly to English, Russian, and Uzbek.
-Return ONLY valid JSON in this format (no extra text):
+  private async queueRequest<T>(fn: () => Promise<T>): Promise<T> {
+    const previousRequest = this.requestQueue;
 
-{
-  "en": "English translation",
-  "ru": "Russian translation",
-  "uz": "Uzbek translation"
-}
+    this.requestQueue = previousRequest
+      .then(() => this.delay(450))
+      .catch(() => {});
 
-Text: ${text}
+    await previousRequest;
+    return fn();
+  }
 
-If a translation is not possible, return the original text for that language.`;
+  private async withRetry<T>(
+    fn: () => Promise<T>,
+    retries: number,
+    delayMs = 2000,
+  ): Promise<T> {
+    try {
+      return await fn();
+    } catch (err: unknown) {
+      if (retries <= 0) throw err;
 
-        const response = await this.ai.chat.completions.create({
-          model: 'gpt-4o-mini',
-          messages: [{ role: 'user', content: prompt }],
-          max_tokens: 500, // Increased for 3 languages
-          temperature: 0.3,
-        });
+      const error = err as { status?: number; message?: string };
 
-        const output = response.choices?.[0]?.message?.content ?? '';
-
-        if (!output.trim()) {
-          if (retries > 0) {
-            this.logger.warn('OpenAI returned no text, retrying...');
-            await this.delay(2000);
-            return this.translateOne(text, retries - 1);
-          } else {
-            throw new Error('OpenAI returned empty response after retries');
-          }
-        }
-
-        // Extract JSON safely
-        const jsonMatch = output.match(/\{[\s\S]*\}/);
-        if (!jsonMatch) {
-          this.logger.warn('No valid JSON found in response');
-          return { en: text, ru: text, uz: text };
-        }
-
-        try {
-          const parsed: unknown = JSON.parse(jsonMatch[0]);
-
-          if (!this.isValidTranslation(parsed)) {
-            this.logger.warn('Invalid translation format received');
-            return { en: text, ru: text, uz: text };
-          }
-
-          return {
-            en: (parsed.en ?? text).trim(),
-            ru: (parsed.ru ?? text).trim(),
-            uz: (parsed.uz ?? text).trim(),
-          };
-        } catch (parseErr) {
-          this.logger.error('JSON parse failed', parseErr);
-          return { en: text, ru: text, uz: text };
-        }
-      } catch (err: any) {
-        this.logger.warn(
-          `OpenAI translate error: ${err?.message ?? 'Unknown error'}`,
-        );
-
-        // Retry on rate limit
-        if (err?.status === 429 && retries > 0) {
-          await this.delay(3000);
-          return this.translateOne(text, retries - 1);
-        }
-
-        throw err;
+      if (error?.status === 429) {
+        this.logger.warn(`Rate limit hit, retrying in ${delayMs * 1.5}ms...`);
+        await this.delay(delayMs * 1.5);
+      } else {
+        this.logger.warn(`Request failed, retrying in ${delayMs}ms...`);
+        await this.delay(delayMs);
       }
-    });
+
+      return this.withRetry(fn, retries - 1, delayMs);
+    }
   }
 
   async translateTexts(
     texts: Record<string, string>,
-  ): Promise<Record<string, Language>> {
-    const entries = Object.entries(texts).filter(([_, v]) => v?.trim());
+  ): Promise<[string[], Record<string, TranslationResponse>]> {
+    return this.queueRequest(() =>
+      this.withRetry(async () => {
+        const textsJson = JSON.stringify(texts, null, 2);
 
-    // Process 5 translations in parallel
-    const chunks = this.chunkArray(entries, 5);
-    const result: Record<string, Language> = {};
+        const prompt = `You are a property listing translator and tag generator. 
 
-    for (const chunk of chunks) {
-      const promises = chunk.map(([key, value]) =>
-        this.translateOne(value)
-          .then((translation) => ({ key, translation }))
-          .catch((err) => {
-            this.logger.error(`Translation failed for key "${key}"`, err);
-            return { key, translation: { en: value, ru: value, uz: value } };
-          }),
-      );
+Given these property fields, provide:
+1. Translations for each field in English, Russian, and Uzbek
+2. Relevant search tags/keywords in all three languages that users might search for
 
-      const results = await Promise.all(promises);
-      results.forEach(({ key, translation }) => {
-        result[key] = translation;
-      });
+Input:
+${textsJson}
+
+Return ONLY valid JSON in this exact format:
+{
+  "translations": {
+    "title": {
+      "en": "English translation",
+      "ru": "Russian translation",
+      "uz": "Uzbek translation"
+    },
+    "description": {
+      "en": "English translation",
+      "ru": "Russian translation",
+      "uz": "Uzbek translation"
+    },
+    "address": {
+      "en": "English translation",
+      "ru": "Russian translation",
+      "uz": "Uzbek translation"
     }
+  },
+  "tags": [
+    "Tashkent",
+    "Toshkent",
+    "Ташкент",
+    "3 bedroom",
+    "3 xonali",
+    "3 комнатная",
+    "luxury",
+    "hashamatli",
+    "люкс"
+  ]
+}
 
-    return result;
+Rules for tags:
+- Extract key features (bedrooms, location, property type, amenities)
+- Include variations in all 3 languages
+- Keep tags short (1-3 words each)
+- Include 10-20 relevant tags total
+- Mix of specific (location names) and general (property features) tags`;
+
+        const response = await this.ai.chat.completions.create({
+          model: 'gpt-4o-mini',
+          messages: [{ role: 'user', content: prompt }],
+          max_tokens: 1500,
+          temperature: 0.3,
+        });
+
+        const output = response.choices?.[0]?.message?.content?.trim() ?? '';
+        if (!output) {
+          throw new Error('OpenAI returned empty response');
+        }
+
+        // JSON ni extract qilamiz
+        const jsonMatch = output.match(/\{[\s\S]*\}/);
+        if (!jsonMatch) {
+          this.logger.warn('No valid JSON found, returning original texts');
+          return this.createFallbackResponse(texts);
+        }
+
+        const parsed: unknown = JSON.parse(jsonMatch[0]);
+
+        // Validate structure with type guard
+        if (!this.isValidAIResponse(parsed)) {
+          this.logger.warn('Invalid response structure');
+          return this.createFallbackResponse(texts);
+        }
+
+        // Now TypeScript knows parsed is AIResponse type
+        const translations: Record<string, TranslationResponse> = {};
+
+        for (const key of Object.keys(texts)) {
+          const translation = parsed.translations[key];
+          if (this.isValidTranslation(translation)) {
+            translations[key] = {
+              en: (translation.en ?? texts[key]).trim(),
+              ru: (translation.ru ?? texts[key]).trim(),
+              uz: (translation.uz ?? texts[key]).trim(),
+            };
+          } else {
+            translations[key] = {
+              en: texts[key],
+              ru: texts[key],
+              uz: texts[key],
+            };
+          }
+        }
+
+        // Clean tags - remove duplicates and empty strings
+        const tags = Array.from(
+          new Set(
+            parsed.tags
+              .filter(
+                (tag): tag is string =>
+                  typeof tag === 'string' && tag.trim().length > 0,
+              )
+              .map((tag) => tag.trim()),
+          ),
+        );
+
+        return [tags, translations];
+      }, 3),
+    );
   }
 
-  private chunkArray<T>(array: T[], size: number): T[][] {
-    const chunks: T[][] = [];
-    for (let i = 0; i < array.length; i += size) {
-      chunks.push(array.slice(i, i + size));
+  private createFallbackResponse(
+    texts: Record<string, string>,
+  ): [string[], Record<string, TranslationResponse>] {
+    const fallbackTranslations: Record<string, TranslationResponse> = {};
+
+    for (const key of Object.keys(texts)) {
+      fallbackTranslations[key] = {
+        en: texts[key],
+        ru: texts[key],
+        uz: texts[key],
+      };
     }
-    return chunks;
+
+    return [[], fallbackTranslations];
   }
 
-  async generateText(prompt: string, retries = 3): Promise<string> {
-    return this.queueRequest(async () => {
-      try {
+  async generateText(prompt: string): Promise<string> {
+    return this.queueRequest(() =>
+      this.withRetry(async () => {
         const response = await this.ai.chat.completions.create({
           model: 'gpt-4o',
           messages: [{ role: 'user', content: prompt }],
@@ -181,31 +238,13 @@ If a translation is not possible, return the original text for that language.`;
           temperature: 0.7,
         });
 
-        const output = response.choices?.[0]?.message?.content ?? '';
-
-        if (!output.trim()) {
-          if (retries > 0) {
-            this.logger.warn('OpenAI returned no text, retrying...');
-            await this.delay(2000);
-            return this.generateText(prompt, retries - 1);
-          } else {
-            throw new Error('OpenAI returned empty response after retries');
-          }
+        const output = response.choices?.[0]?.message?.content?.trim() ?? '';
+        if (!output) {
+          throw new Error('OpenAI returned empty response');
         }
 
-        return output.trim();
-      } catch (err: any) {
-        this.logger.error('generateText failed', err);
-
-        // Retry on rate limit
-        if (err?.status === 429 && retries > 0) {
-          this.logger.warn('Rate limit hit, retrying...');
-          await this.delay(3000);
-          return this.generateText(prompt, retries - 1);
-        }
-
-        throw err;
-      }
-    });
+        return output;
+      }, 3),
+    );
   }
 }

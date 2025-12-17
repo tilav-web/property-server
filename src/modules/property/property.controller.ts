@@ -150,4 +150,9 @@ export class PropertyController {
   async getCategories() {
     return this.service.getCategories();
   }
+
+  @Get('/tags/search')
+  async searchTags(@Query('q') query: string, @Query('limit') limit?: number) {
+    return this.service.searchTags(query, limit ? +limit : 20);
+  }
 }

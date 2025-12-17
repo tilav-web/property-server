@@ -12,6 +12,7 @@ import { Property, PropertySchema } from './schemas/property.schema';
 import { EnumPropertyCategory } from './enums/property-category.enum';
 
 import { GenaiModule } from '../openai/openai.module';
+import { Tag, TagSchema } from './schemas/tag.schema';
 
 @Module({
   imports: [
@@ -32,6 +33,10 @@ import { GenaiModule } from '../openai/openai.module';
       },
       { name: Like.name, schema: LikeSchema },
       { name: Save.name, schema: SaveSchema },
+      {
+        name: Tag.name,
+        schema: TagSchema,
+      },
     ]),
     FileModule,
     MessageModule,
