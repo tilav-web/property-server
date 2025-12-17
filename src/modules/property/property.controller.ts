@@ -49,7 +49,65 @@ export class PropertyController {
   @Get()
   findAll(@Query() query: FindAllPropertiesDto, @Req() req: IRequestCustom) {
     const language = req.headers['accept-language'] as EnumLanguage;
-    return this.service.findAll({ ...query, language });
+
+    const rawQuery = (req.query ?? {}) as Record<string, unknown>;
+
+    const normalizeArrayParam = (key: string): number[] | undefined => {
+      const maybe = rawQuery[key] ?? rawQuery[`${key}[]`];
+      if (maybe === undefined || maybe === null || maybe === '')
+        return undefined;
+
+      if (Array.isArray(maybe)) {
+        return maybe
+          .map((x) => {
+            if (typeof x === 'string' || typeof x === 'number')
+              return Number(x);
+            return NaN;
+          })
+          .filter((n) => !Number.isNaN(n));
+      }
+
+      if (typeof maybe === 'string') {
+        const s = maybe.trim();
+        if (s === '') return undefined;
+
+        if (s.startsWith('[') && s.endsWith(']')) {
+          try {
+            const parsed: unknown = JSON.parse(s);
+            if (Array.isArray(parsed)) {
+              return (parsed as unknown[])
+                .filter((v) => typeof v === 'string' || typeof v === 'number')
+                .map((v) => Number(v))
+                .filter((n) => !Number.isNaN(n));
+            }
+          } catch (e) {
+            console.error(e);
+          }
+        }
+
+        if (s.includes(',')) {
+          return s
+            .split(',')
+            .map((x) => Number(x.trim()))
+            .filter((n) => !Number.isNaN(n));
+        }
+
+        const num = Number(s);
+        return Number.isNaN(num) ? undefined : [num];
+      }
+
+      if (typeof maybe === 'number') return [maybe];
+
+      return undefined;
+    };
+
+    const normalized = { ...query } as FindAllPropertiesDto;
+    if (!normalized.bedrooms)
+      normalized.bedrooms = normalizeArrayParam('bedrooms');
+    if (!normalized.bathrooms)
+      normalized.bathrooms = normalizeArrayParam('bathrooms');
+
+    return this.service.findAll({ ...normalized, language });
   }
 
   @Get('/my')

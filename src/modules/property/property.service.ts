@@ -106,8 +106,6 @@ export class PropertyService {
       address: translations.address,
     });
 
-    console.log(tags);
-
     if (tags.length > 0) {
       await this.saveTags(tags);
     }
