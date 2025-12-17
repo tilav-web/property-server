@@ -106,6 +106,8 @@ export class PropertyService {
       address: translations.address,
     });
 
+    console.log(tags);
+
     if (tags.length > 0) {
       await this.saveTags(tags);
     }
@@ -123,8 +125,8 @@ export class PropertyService {
       // Bulk upsert - agar tag mavjud bo'lsa o'tkazib yuboradi
       const operations = uniqueTags.map((tag) => ({
         updateOne: {
-          filter: { search: tag },
-          update: { $setOnInsert: { search: tag } },
+          filter: { value: tag },
+          update: { $setOnInsert: { value: tag } },
           upsert: true,
         },
       }));
@@ -695,7 +697,7 @@ export class PropertyService {
   }
 
   // ****************************************
-  async searchTags(query: string, limit = 20): Promise<string[]> {
+  async searchTags(query: string, limit = 20) {
     if (!query || query.trim().length === 0) {
       return [];
     }
@@ -703,24 +705,25 @@ export class PropertyService {
     const regex = new RegExp(`^${query.trim()}`, 'i');
 
     const tags = await this.tagModel
-      .find({ search: regex })
+      .find({ value: regex })
       .limit(limit)
-      .select('search')
       .lean()
       .exec();
 
-    return tags.map((t) => t.search);
+    return tags.map((t) => ({
+      _id: t._id,
+      value: t.value,
+    }));
   }
 
-  async getAllTags(limit = 100): Promise<string[]> {
+  async getAllTags(limit = 100) {
     const tags = await this.tagModel
       .find()
       .limit(limit)
-      .select('search')
-      .sort({ search: 1 })
+      .sort({ value: 1 })
       .lean()
       .exec();
 
-    return tags.map((t) => t.search);
+    return tags.map((t) => t.value);
   }
 }

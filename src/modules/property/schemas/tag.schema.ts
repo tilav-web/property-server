@@ -11,7 +11,7 @@ export class Tag {
     trim: true,
     lowercase: true,
   })
-  search: string;
+  value: string;
 }
 
 export const TagSchema = SchemaFactory.createForClass(Tag);
