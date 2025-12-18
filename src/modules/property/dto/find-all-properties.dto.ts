@@ -151,4 +151,24 @@ export class FindAllPropertiesDto {
   @IsBoolean()
   @Type(() => Boolean)
   sample?: boolean;
+
+  @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
+  sw_lng?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
+  sw_lat?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
+  ne_lng?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
+  ne_lat?: number;
 }

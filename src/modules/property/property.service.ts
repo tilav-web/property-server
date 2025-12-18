@@ -145,9 +145,6 @@ export class PropertyService {
       page = 1,
       limit = 10,
       category,
-      lng,
-      lat,
-      radius,
       search,
       is_premium,
       is_new,
@@ -156,8 +153,13 @@ export class PropertyService {
       language = EnumLanguage.UZ,
       bathrooms,
       bedrooms,
+      sw_lng,
+      sw_lat,
+      ne_lng,
+      ne_lat,
     } = dto;
 
+    // ✅ BOUNDS ma'lumotlarini ham buildMatchQuery ga yuborish
     const match = this.buildMatchQuery({
       category,
       is_premium,
@@ -167,35 +169,56 @@ export class PropertyService {
       filterCategory,
       bathrooms,
       bedrooms,
+      sw_lng,
+      sw_lat,
+      ne_lng,
+      ne_lat,
     });
 
-    const hasGeo =
-      lng !== undefined && lat !== undefined && radius !== undefined;
-
+    // Sample query uchun
     if (sample) {
       return this.executeSampleQuery({
         match,
-        lng,
-        lat,
-        radius,
         limit,
         language,
         category,
-        hasGeo,
       });
     }
 
-    return this.executePaginationQuery({
+    // Pagination query uchun
+    const result = await this.executePaginationQuery({
       match,
-      lng,
-      lat,
-      radius,
       page,
       limit,
       language,
       category,
-      hasGeo,
     });
+
+    let areaKey: string | null = null;
+    if (
+      sw_lng !== undefined &&
+      sw_lat !== undefined &&
+      ne_lng !== undefined &&
+      ne_lat !== undefined
+    ) {
+      const centerLat = (sw_lat + ne_lat) / 2;
+      const centerLng = (sw_lng + ne_lng) / 2;
+      areaKey = this.getAreaKey(centerLat, centerLng);
+    }
+
+    return {
+      ...result,
+      areaKey: areaKey || null,
+    };
+  }
+
+  private areaKeyCache = new Map<string, string>();
+
+  private getAreaKey(lat: number, lng: number): string {
+    const AREA_SIZE = 0.2;
+    const latKey = (Math.floor(lat / AREA_SIZE) * AREA_SIZE).toFixed(1);
+    const lngKey = (Math.floor(lng / AREA_SIZE) * AREA_SIZE).toFixed(1);
+    return `${latKey}:${lngKey}`;
   }
 
   private buildMatchQuery({
@@ -207,6 +230,10 @@ export class PropertyService {
     filterCategory,
     bathrooms,
     bedrooms,
+    sw_lng,
+    sw_lat,
+    ne_lng,
+    ne_lat,
   }: {
     category?: string;
     is_premium?: boolean;
@@ -216,11 +243,31 @@ export class PropertyService {
     filterCategory?: string;
     bathrooms?: number[];
     bedrooms?: number[];
+    sw_lng?: number;
+    sw_lat?: number;
+    ne_lng?: number;
+    ne_lat?: number;
   }): FilterQuery<PropertyDocument> {
     const match: FilterQuery<PropertyDocument> = {
       status: EnumPropertyStatus.APPROVED,
       is_archived: false,
     };
+
+    if (
+      sw_lng !== undefined &&
+      sw_lat !== undefined &&
+      ne_lng !== undefined &&
+      ne_lat !== undefined
+    ) {
+      match.location = {
+        $geoWithin: {
+          $box: [
+            [sw_lng, sw_lat],
+            [ne_lng, ne_lat],
+          ],
+        },
+      };
+    }
 
     if (category) match.category = category;
     if (is_premium !== undefined) match.is_premium = is_premium;
@@ -275,36 +322,19 @@ export class PropertyService {
 
   private async executeSampleQuery({
     match,
-    lng,
-    lat,
-    radius,
     limit,
     language,
     category,
-    hasGeo,
   }: {
     match: FilterQuery<PropertyDocument>;
-    lng?: number;
-    lat?: number;
-    radius?: number;
     limit: number;
     language: EnumLanguage;
     category?: string;
-    hasGeo: boolean;
   }) {
     const pipeline: any[] = [];
 
-    if (hasGeo && lng !== undefined && lat !== undefined) {
-      pipeline.push({
-        $geoNear: {
-          near: { type: 'Point', coordinates: [lng, lat] },
-          distanceField: 'distance',
-          maxDistance: radius,
-          spherical: true,
-          query: match,
-        },
-      });
-    } else if (Object.keys(match).length > 0) {
+    // ✅ SODDA: $match dan keyin $sample — no $geoNear needed
+    if (Object.keys(match).length > 0) {
       pipeline.push({ $match: match });
     }
 
@@ -326,38 +356,21 @@ export class PropertyService {
 
   private async executePaginationQuery({
     match,
-    lng,
-    lat,
-    radius,
     page,
     limit,
     language,
     category,
-    hasGeo,
   }: {
     match: FilterQuery<PropertyDocument>;
-    lng?: number;
-    lat?: number;
-    radius?: number;
     page: number;
     limit: number;
     language: EnumLanguage;
     category?: string;
-    hasGeo: boolean;
   }) {
     const pipeline: any[] = [];
 
-    if (hasGeo && lng !== undefined && lat !== undefined) {
-      pipeline.push({
-        $geoNear: {
-          near: { type: 'Point', coordinates: [lng, lat] },
-          distanceField: 'distance',
-          maxDistance: radius,
-          spherical: true,
-          query: match,
-        },
-      });
-    } else if (Object.keys(match).length > 0) {
+    // ✅ SODDA: BOUNDS filtri match qatorida allaqachon mavjud
+    if (Object.keys(match).length > 0) {
       pipeline.push({ $match: match });
     }
 
@@ -370,7 +383,7 @@ export class PropertyService {
 
     const [properties, totalItems] = await Promise.all([
       this.propertyModel.aggregate(pipeline).exec(),
-      this.getCount(match, lng, lat, radius, hasGeo),
+      this.getCount(match),
     ]);
 
     return {
@@ -384,35 +397,8 @@ export class PropertyService {
 
   private async getCount(
     match: FilterQuery<PropertyDocument>,
-    lng?: number,
-    lat?: number,
-    radius?: number,
-    hasGeo?: boolean,
   ): Promise<number> {
-    if (
-      hasGeo &&
-      lng !== undefined &&
-      lat !== undefined &&
-      radius !== undefined
-    ) {
-      const result = await this.propertyModel
-        .aggregate([
-          {
-            $geoNear: {
-              near: { type: 'Point', coordinates: [lng, lat] },
-              distanceField: 'distance',
-              maxDistance: radius,
-              spherical: true,
-              query: match,
-            },
-          },
-          { $count: 'total' },
-        ])
-        .exec();
-
-      return (result[0]?.total as number) || 0;
-    }
-
+    // ✅ SODDA: countDocuments — BOUNDS filtri match qatorida
     return this.propertyModel.countDocuments(match).exec();
   }
 
