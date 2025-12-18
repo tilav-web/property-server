@@ -111,6 +111,18 @@ export class AiPropertyService {
     limit: number;
     properties: Property[];
   }> {
+    const languageCode =
+      language === EnumLanguage.EN
+        ? 'en'
+        : language === EnumLanguage.RU
+          ? 'ru'
+          : 'uz';
+    const languageNames: Record<string, string> = {
+      en: 'English',
+      ru: 'Russian',
+      uz: 'Uzbek',
+    };
+
     const aiPrompt = `Your task is to convert a user's natural language property search request into a MongoDB Mongoose FilterQuery JSON object.
 
 The base "Property" schema available for searching is as follows:
@@ -131,12 +143,12 @@ Create the JSON object based on the following rules:
 -   **The output MUST be only and exclusively a valid Mongoose FilterQuery JSON object.** No other text, comments, or explanations should be included.
 -   If the user uses terms like "apartment for sale" or similar in their search, set the "category" field to "APARTMENT_SALE".
 -   If the user uses terms like "apartment for rent" or similar in their search, set the "category" field to "APARTMENT_RENT". If the category is not clearly specified, do not include it.
--   For location-related keywords (e.g., "Yunusobod district", "Tashkent city"), search them in the "address.uz", "title.uz", or "description.uz" fields using the "$regex" operator with the "i" option. Example: \`{"address.uz": { "$regex": "Yunusobod", "$options": "i" }}\`
+-   For location-related keywords (e.g., "Yunusobod district", "Tashkent city"), search them in the "address.${languageCode}", "title.${languageCode}", or "description.${languageCode}" fields using the "$regex" operator with the "i" option. Example: \`{"address.${languageCode}": { "$regex": "Yunusobod", "$options": "i" }}\`
+-   The user is searching in ${languageNames[languageCode]} language, so prioritize matching terms to the '.${languageCode}' localized fields.
 -   For price ranges (e.g., "up to 50000 dollars", "above 10000 dollars"), use the \`$gte\` (greater than or equal to) and \`$lte\` (less than or equal to) operators.
 -   If the user specifies currency (e.g., "dollar", "soum"), set the "currency" field to the corresponding \`EnumPropertyCurrency\` value. If currency is not specified, assume UZS as default.
 -   For boolean fields (e.g., "furnished", "balcony", "mortgage_available"), use \`true\` or \`false\` values according to the user's request.
 -   For enum fields (e.g., "repair_type", "heating", "amenities"), use the exact enum values.
--   When translating user input to query conditions, prioritize matching terms to the '.uz' localized fields (e.g., 'address.uz', 'title.uz', 'description.uz').
 
 User's request: "${userPrompt}"
 
