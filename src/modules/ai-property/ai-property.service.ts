@@ -9,12 +9,13 @@ import {
   PropertyDocument,
 } from '../property/schemas/property.schema';
 import { InjectModel } from '@nestjs/mongoose';
-import { FilterQuery, Model } from 'mongoose';
+import { FilterQuery, Model, PipelineStage } from 'mongoose';
 import { EnumPropertyCategory } from '../property/enums/property-category.enum';
 import { EnumRepairType } from '../property/enums/repair-type.enum';
 import { EnumHeating } from '../property/enums/heating.enum';
 import { EnumAmenities } from '../../enums/amenities.enum';
 import { EnumPropertyCurrency } from '../../enums/property-currency.enum';
+import { EnumLanguage } from 'src/enums/language.enum';
 
 @Injectable()
 export class AiPropertyService {
@@ -93,16 +94,22 @@ export class AiPropertyService {
     private readonly propertyModel: Model<PropertyDocument>,
   ) {}
 
-  async findByPrompt(
-    userPrompt: string,
-    page: number = 1,
-    limit: number = 5,
-  ): Promise<{
+  async findByPrompt({
+    userPrompt,
+    page = 1,
+    limit = 5,
+    language = EnumLanguage.UZ,
+  }: {
+    userPrompt: string;
+    page: number;
+    limit: number;
+    language: EnumLanguage;
+  }): Promise<{
     totalItems: number;
     totalPages: number;
     page: number;
     limit: number;
-    properties: PropertyDocument[];
+    properties: Property[];
   }> {
     const aiPrompt = `Your task is to convert a user's natural language property search request into a MongoDB Mongoose FilterQuery JSON object.
 
@@ -140,7 +147,7 @@ Mongoose FilterQuery JSON object:`;
       const aiResponse = await this.openaiService.generateText(aiPrompt);
 
       const cleanedResponse = aiResponse.replace(/```json\n|\n```/g, '');
-      query = JSON.parse(cleanedResponse);
+      query = JSON.parse(cleanedResponse) as FilterQuery<PropertyDocument>;
       if (typeof query !== 'object' || query === null) {
         throw new Error('AI returned invalid JSON object type.');
       }
@@ -158,8 +165,21 @@ Mongoose FilterQuery JSON object:`;
     const skip = (page - 1) * limit;
 
     try {
+      const pipeline: PipelineStage[] = [
+        { $match: query },
+        { $sort: { createdAt: -1 } },
+        { $skip: skip },
+        { $limit: limit },
+        {
+          $project: this.getProjectionByCategory(
+            language,
+            query.category as string,
+          ),
+        },
+      ];
+
       const [properties, totalItems] = await Promise.all([
-        this.propertyModel.find(query).skip(skip).limit(limit).exec(),
+        this.propertyModel.aggregate<Property>(pipeline).exec(),
         this.propertyModel.countDocuments(query),
       ]);
 
@@ -178,5 +198,70 @@ Mongoose FilterQuery JSON object:`;
         'Failed to execute property search query. Please check the generated query or try again.',
       );
     }
+  }
+
+  private getProjectionByCategory(language: EnumLanguage, category?: string) {
+    const baseProjection = {
+      _id: 1,
+      author: 1,
+      title: { $ifNull: [`$title.${language}`, '$title.uz'] },
+      description: { $ifNull: [`$description.${language}`, '$description.uz'] },
+      address: { $ifNull: [`$address.${language}`, '$address.uz'] },
+      category: 1,
+      location: 1,
+      currency: 1,
+      price: 1,
+      is_premium: 1,
+      status: 1,
+      is_archived: 1,
+      rating: 1,
+      liked: 1,
+      saved: 1,
+      photos: 1,
+      videos: 1,
+      createdAt: 1,
+    };
+
+    if (!category) return baseProjection;
+
+    const categoryFields: Record<string, Record<string, number>> = {
+      APARTMENT_RENT: {
+        bedrooms: 1,
+        bathrooms: 1,
+        floor_level: 1,
+        total_floors: 1,
+        area: 1,
+        balcony: 1,
+        furnished: 1,
+        repair_type: 1,
+        heating: 1,
+        air_conditioning: 1,
+        parking: 1,
+        elevator: 1,
+        amenities: 1,
+        contract_duration_months: 1,
+      },
+      APARTMENT_SALE: {
+        bedrooms: 1,
+        bathrooms: 1,
+        floor_level: 1,
+        total_floors: 1,
+        area: 1,
+        balcony: 1,
+        furnished: 1,
+        repair_type: 1,
+        heating: 1,
+        air_conditioning: 1,
+        parking: 1,
+        elevator: 1,
+        amenities: 1,
+        mortgage_available: 1,
+      },
+    };
+
+    return {
+      ...baseProjection,
+      ...(categoryFields[category] || {}),
+    };
   }
 }
