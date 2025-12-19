@@ -26,6 +26,7 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
   }
 
   async validate(
+    req: Request, // Add this parameter
     accessToken: string,
     refreshToken: string,
     profile: any,

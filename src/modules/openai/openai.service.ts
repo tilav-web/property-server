@@ -142,11 +142,12 @@ Return ONLY valid JSON in this exact format:
 }
 
 Rules for tags:
-- Extract key features (bedrooms, location, property type, amenities)
-- Include variations in all 3 languages
-- Keep tags short (1-3 words each)
-- Include 10-20 relevant tags total
-- Mix of specific (location names) and general (property features) tags`;
+- Generate single-word tags for notable locations only (cities, regions, countries).
+- Include variations in all 3 languages where applicable.
+- Each tag must be a single word.
+- Examples: "Tashkent", "Uzbekistan", "Dubai", "Samarkand", "Andijan".
+- Do NOT include general property features like "3 bedroom", "luxury", "apartment".
+- Include 5-10 relevant location tags total.`;
 
         const response = await this.ai.chat.completions.create({
           model: 'gpt-4o-mini',
@@ -195,13 +196,15 @@ Rules for tags:
           }
         }
 
-        // Clean tags - remove duplicates and empty strings
+        // Clean tags - remove duplicates and empty strings, and ensure single word
         const tags = Array.from(
           new Set(
             parsed.tags
               .filter(
                 (tag): tag is string =>
-                  typeof tag === 'string' && tag.trim().length > 0,
+                  typeof tag === 'string' &&
+                  tag.trim().length > 0 &&
+                  !tag.includes(' '), // New condition: ensure no spaces
               )
               .map((tag) => tag.trim()),
           ),

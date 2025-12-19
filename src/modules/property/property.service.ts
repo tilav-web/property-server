@@ -170,8 +170,6 @@ export class PropertyService {
       ne_lat,
     } = dto;
 
-    console.log(dto);
-
     const match = this.buildMatchQuery({
       category,
       is_premium,
