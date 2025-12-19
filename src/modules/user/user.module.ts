@@ -7,6 +7,9 @@ import { JwtModule } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { JwtStrategy } from './guards/jwt.strategy';
 import { OtpModule } from '../otp/otp.module';
+import { GoogleStrategy } from './strategies/google.strategy';
+import { FacebookStrategy } from './strategies/facebook.strategy';
+import { AppleStrategy } from './strategies/apple.strategy';
 import { MailModule } from '../mailer/mail.module';
 import { FileModule } from '../file/file.module';
 
@@ -26,7 +29,13 @@ import { FileModule } from '../file/file.module';
     FileModule,
   ],
   controllers: [UserController],
-  providers: [UserService, JwtStrategy],
+  providers: [
+    UserService,
+    JwtStrategy,
+    GoogleStrategy,
+    FacebookStrategy,
+    AppleStrategy,
+  ],
   exports: [UserService],
 })
 export class UserModule {}

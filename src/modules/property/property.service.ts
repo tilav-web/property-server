@@ -35,6 +35,17 @@ export class PropertyService {
     private readonly messageService: MessageService,
   ) {}
 
+  async onModuleInit() {
+    const textIndexName =
+      'title.uz_text_title.ru_text_title.en_text_description.uz_text_description.ru_text_description.en_text_address.uz_text_address.ru_text_address.en_text';
+    try {
+      await this.propertyModel.collection.dropIndex(textIndexName);
+    } catch (error) {
+      console.error(error);
+    }
+    await this.propertyModel.createIndexes();
+  }
+
   async create({
     dto,
     files,

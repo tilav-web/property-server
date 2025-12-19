@@ -34,7 +34,6 @@ export class UserService {
   async login({ email, password }: { email: string; password: string }) {
     if (!email)
       throw new BadRequestException('Email-ni tekshiring. Email kiritilmagan!');
-    if (!password) throw new BadRequestException('Parol kiritilmagan!');
 
     const user = await this.model
       .findOne({
@@ -46,6 +45,9 @@ export class UserService {
       throw new BadRequestException(
         'Foydalanuvchi mavjut emas. Email-ni tekshiring!',
       );
+
+    if (!password || !user.password)
+      throw new BadRequestException('Parol kiritilmagan!');
 
     const isMatch = await bcrypt.compare(password, user.password);
 
@@ -218,6 +220,57 @@ export class UserService {
     });
 
     return access_token;
+  }
+
+  async socialLogin(req) {
+    if (!req.user) {
+      throw new BadRequestException('Foydalanuvchi topilmadi!');
+    }
+
+    const { email, firstName, lastName, picture, provider, providerId } =
+      req.user;
+
+    let user = await this.model.findOne({ 'email.value': email });
+
+    if (!user) {
+      user = await this.model.create({
+        email: {
+          value: email,
+          isVerified: true,
+        },
+        first_name: firstName,
+        last_name: lastName,
+        avatar: picture,
+        provider: provider,
+        socialAccounts: [{ provider, providerId, isVerified: true }],
+      });
+    } else {
+      const socialAccount = user.socialAccounts.find(
+        (sa) => sa.provider === provider,
+      );
+      if (!socialAccount) {
+        user.socialAccounts.push({ provider, providerId, isVerified: true });
+        await user.save();
+      }
+    }
+
+    const access_token = this.jwtService.sign(
+      {
+        _id: user._id,
+        role: user.role,
+      },
+      { expiresIn: '15m' },
+    );
+
+    const refresh_token = this.jwtService.sign(
+      {
+        _id: user._id,
+        role: user.role,
+      },
+      { expiresIn: '7d' },
+    );
+
+    return { user, access_token, refresh_token };
   }
 
   async update({

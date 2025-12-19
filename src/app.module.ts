@@ -35,7 +35,7 @@ import { AiPropertyModule } from './modules/ai-property/ai-property.module';
         if (!uri) {
           throw new Error('MONGODB_URL muhit o‘zgaruvchisi topilmadi');
         }
-        return { uri };
+        return { uri, autoIndex: true };
       },
     }),
     UserModule,

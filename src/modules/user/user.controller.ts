@@ -21,9 +21,72 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { Throttle } from '@nestjs/throttler';
 
-@Controller('users')
+@Controller('users/auth')
 export class UserController {
   constructor(private readonly service: UserService) {}
+
+  @Get('google')
+  @UseGuards(AuthGuard('google'))
+  async googleAuth(@Req() req: IRequestCustom) {}
+
+  @Get('google/callback')
+  @UseGuards(AuthGuard('google'))
+  async googleAuthRedirect(@Req() req: IRequestCustom, @Res() res: Response) {
+    const { user, access_token, refresh_token } =
+      await this.service.socialLogin(req);
+    res.cookie('refresh_token', refresh_token, {
+      httpOnly: process.env.NODE_ENV === 'production',
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+      path: '/',
+    });
+    res.redirect(
+      `${process.env.CLIENT_URL}/auth/social?access_token=${access_token}`,
+    );
+  }
+
+  @Get('facebook')
+  @UseGuards(AuthGuard('facebook'))
+  async facebookAuth(@Req() req) {}
+
+  @Get('facebook/callback')
+  @UseGuards(AuthGuard('facebook'))
+  async facebookAuthRedirect(@Req() req, @Res() res: Response) {
+    const { user, access_token, refresh_token } =
+      await this.service.socialLogin(req);
+    res.cookie('refresh_token', refresh_token, {
+      httpOnly: process.env.NODE_ENV === 'production',
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+      path: '/',
+    });
+    res.redirect(
+      `${process.env.CLIENT_URL}/auth/social?access_token=${access_token}`,
+    );
+  }
+
+  @Get('apple')
+  @UseGuards(AuthGuard('apple'))
+  async appleAuth(@Req() req) {}
+
+  @Get('apple/callback')
+  @UseGuards(AuthGuard('apple'))
+  async appleAuthRedirect(@Req() req, @Res() res: Response) {
+    const { user, access_token, refresh_token } =
+      await this.service.socialLogin(req);
+    res.cookie('refresh_token', refresh_token, {
+      httpOnly: process.env.NODE_ENV === 'production',
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+      path: '/',
+    });
+    res.redirect(
+      `${process.env.CLIENT_URL}/auth/social?access_token=${access_token}`,
+    );
+  }
 
   @Throttle({ default: { limit: 3, ttl: 10000 } })
   @Post('/login')
