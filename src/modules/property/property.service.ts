@@ -170,7 +170,8 @@ export class PropertyService {
       ne_lat,
     } = dto;
 
-    // ✅ BOUNDS ma'lumotlarini ham buildMatchQuery ga yuborish
+    console.log(dto);
+
     const match = this.buildMatchQuery({
       category,
       is_premium,
@@ -186,7 +187,6 @@ export class PropertyService {
       ne_lat,
     });
 
-    // Sample query uchun
     if (sample) {
       return this.executeSampleQuery({
         match,
@@ -196,7 +196,6 @@ export class PropertyService {
       });
     }
 
-    // Pagination query uchun
     const result = await this.executePaginationQuery({
       match,
       page,
@@ -226,10 +225,18 @@ export class PropertyService {
   private areaKeyCache = new Map<string, string>();
 
   private getAreaKey(lat: number, lng: number): string {
+    const cacheKey = `${lat}:${lng}`;
+    if (this.areaKeyCache.has(cacheKey)) {
+      return this.areaKeyCache.get(cacheKey)!;
+    }
+
     const AREA_SIZE = 0.2;
     const latKey = (Math.floor(lat / AREA_SIZE) * AREA_SIZE).toFixed(1);
     const lngKey = (Math.floor(lng / AREA_SIZE) * AREA_SIZE).toFixed(1);
-    return `${latKey}:${lngKey}`;
+    const areaKey = `${latKey}:${lngKey}`;
+
+    this.areaKeyCache.set(cacheKey, areaKey);
+    return areaKey;
   }
 
   private buildMatchQuery({
