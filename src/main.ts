@@ -11,7 +11,7 @@ async function bootstrap() {
   app.use('/uploads', express.static(join(__dirname, '..', 'uploads')));
 
   app.enableCors({
-    origin: ['http://localhost:5173'],
+    origin: [process.env.CLIENT_URL],
     credentials: true,
   });
 

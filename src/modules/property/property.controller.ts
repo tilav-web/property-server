@@ -13,6 +13,7 @@ import {
   UseGuards,
   UseInterceptors,
   Delete,
+  Res,
 } from '@nestjs/common';
 import { PropertyService } from './property.service';
 import { FindAllPropertiesDto } from './dto/find-all-properties.dto';
@@ -24,6 +25,7 @@ import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import type { CreatePropertyDto } from './dto/create-property.dto';
 import { CreateMessageDto } from '../message/dto/create-message.dto';
 import { FilterMyPropertiesDto } from './dto/filter-my-properties.dto';
+import { type Response } from 'express';
 
 @Controller('properties')
 export class PropertyController {
@@ -108,6 +110,56 @@ export class PropertyController {
       normalized.bathrooms = normalizeArrayParam('bathrooms');
 
     return this.service.findAll({ ...normalized, language });
+  }
+
+  @Get('share/:id')
+  async shareProperty(
+    @Param('id') id: string,
+    @Req() req: IRequestCustom,
+    @Res() res: Response,
+  ) {
+    const language =
+      (req.headers['accept-language'] as EnumLanguage) ?? EnumLanguage.UZ;
+
+    const property = await this.service.findById({ id, language });
+
+    if (!property) {
+      return res.status(404).send('Property not found');
+    }
+
+    const frontendUrl = `${process.env.CLIENT_URL}/property/${id}`;
+
+    const html = `
+<!DOCTYPE html>
+<html lang="${language}">
+<head>
+  <meta charset="UTF-8" />
+
+  <title>${property.title}</title>
+  <meta name="description" content="${property.description ?? ''}" />
+
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="${property.title}" />
+  <meta property="og:description" content="${property.description ?? ''}" />
+  <meta property="og:image" content="${property.photos[0]}" />
+  <meta property="og:url" content="${frontendUrl}" />
+  <meta property="telegram:channel" content="@Tilav_web" />
+  <meta name="twitter:card" content="summary" />
+
+  <script>
+    setTimeout(() => {
+      window.location.href = "${frontendUrl}";
+    }, 300);
+  </script>
+</head>
+<body>
+  <p>Loading...</p>
+</body>
+</html>
+`;
+
+    res.setHeader('Content-Type', 'text/html');
+    return res.send(html);
   }
 
   @Get('/my')
