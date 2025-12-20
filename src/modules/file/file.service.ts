@@ -1,7 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { promises as fs } from 'fs';
 import { join } from 'path';
-import { v4 as uuid } from 'uuid';
 
 @Injectable()
 export class FileService {
@@ -59,7 +58,8 @@ export class FileService {
     const ext = originalName.includes('.')
       ? '.' + originalName.split('.').pop()!
       : '';
-    return join(this.uploadRoot, folder, uuid() + ext);
+    const unique = `${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+    return join(this.uploadRoot, folder, `${unique}${ext}`);
   }
 
   private async ensureDir(filePath: string): Promise<void> {
