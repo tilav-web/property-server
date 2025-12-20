@@ -11,7 +11,7 @@ async function bootstrap() {
   app.use('/uploads', express.static(join(__dirname, '..', 'uploads')));
 
   app.enableCors({
-    origin: [process.env.CLIENT_URL],
+    origin: ['https://cashout.uz'],
     credentials: true,
   });
 
