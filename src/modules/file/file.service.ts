@@ -6,7 +6,7 @@ import { join } from 'path';
 export class FileService {
   private readonly logger = new Logger(FileService.name);
   private readonly baseUrl = (process.env.SERVER_URL || '').replace(/\/$/, '');
-  private readonly uploadRoot = join(process.cwd(), 'uploads');
+  private readonly uploadRoot = join(__dirname, '..', 'uploads');
 
   async saveFile({
     file,
@@ -37,13 +37,15 @@ export class FileService {
 
     try {
       const localPath = fileUrl.replace(this.baseUrl + '/', '');
-      const fullPath = join(process.cwd(), localPath);
-
+      const fullPath = join(
+        this.uploadRoot,
+        localPath.replace(/^uploads\//, ''),
+      );
       await fs.unlink(fullPath);
       this.logger.log(`Deleted: ${fullPath}`);
       return true;
     } catch (err: any) {
-      if (err) {
+      if (err.code === 'ENOENT') {
         this.logger.warn(`File not found: ${fileUrl}`);
       } else {
         this.logger.error(`Delete failed: ${fileUrl}`, err);
@@ -51,8 +53,6 @@ export class FileService {
       return false;
     }
   }
-
-  // ── Helpers ─────────────────────────────────────
 
   private getUniquePath(folder: string, originalName: string): string {
     const ext = originalName.includes('.')
