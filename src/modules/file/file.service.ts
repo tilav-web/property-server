@@ -6,7 +6,7 @@ import { join } from 'path';
 export class FileService {
   private readonly logger = new Logger(FileService.name);
   private readonly baseUrl = (process.env.SERVER_URL || '').replace(/\/$/, '');
-  private readonly uploadRoot = join(__dirname, '..', 'uploads');
+  private readonly uploadRoot = join(__dirname, '..', '..', '..', 'uploads');
 
   async saveFile({
     file,
