@@ -9,7 +9,7 @@ export class AdminUserService {
   constructor(@InjectModel(User.name) private userModel: Model<User>) {}
 
   async findUsers(dto: FindUsersDto) {
-    const { page = 1, limit = 10, role, status, search } = dto;
+    const { page = 1, limit = 10, role, search } = dto;
     const skip = (page - 1) * limit;
 
     const filter: FilterQuery<UserDocument> = {};
@@ -18,16 +18,13 @@ export class AdminUserService {
       filter.role = role;
     }
 
-    if (status) {
-      filter.status = status;
-    }
-
     if (search) {
       const searchRegex = new RegExp(search, 'i');
       filter.$or = [
-        { firstName: searchRegex },
-        { lastName: searchRegex },
-        { email: searchRegex },
+        { first_name: searchRegex },
+        { last_name: searchRegex },
+        { 'email.value': searchRegex },
+        { 'phone.value': searchRegex },
       ];
     }
 

@@ -9,10 +9,10 @@ import {
   UseGuards,
   Get,
 } from '@nestjs/common';
-import { AdminService } from '../admin.service';
 import { type Response } from 'express';
 import { AdminGuard } from '../guards/admin.guard';
 import { type IAdminRequestCustom } from '../../../interfaces/admin-request.interface';
+import { AdminService } from '../services/admin.service';
 
 @Controller('admins')
 export class AdminController {
