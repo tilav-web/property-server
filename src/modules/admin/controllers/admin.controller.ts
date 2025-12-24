@@ -56,7 +56,6 @@ export class AdminController {
   async refresh(
     @Req()
     req: IAdminRequestCustom & { cookies: { admin_refresh_token?: string } },
-    @Res() res: Response,
   ) {
     try {
       const admin_refresh_token = req.cookies['admin_refresh_token'];
@@ -65,7 +64,7 @@ export class AdminController {
       }
       const new_admin_access_token =
         await this.service.refresh(admin_refresh_token);
-      return res.json({ admin_access_token: new_admin_access_token });
+      return new_admin_access_token;
     } catch (error) {
       console.error(error);
 

@@ -96,11 +96,11 @@ export class AdminUserService {
 
     // Update nested phone identifier
     if (dto.phoneValue !== undefined) {
-      if (!user.phone) user.phone = { value: null, isVerified: false };
+      if (!user.phone) user.phone = { value: '', isVerified: false };
       user.phone.value = dto.phoneValue;
     }
     if (dto.phoneIsVerified !== undefined) {
-      if (!user.phone) user.phone = { value: null, isVerified: false };
+      if (!user.phone) user.phone = { value: '', isVerified: false };
       user.phone.isVerified = dto.phoneIsVerified;
     }
 

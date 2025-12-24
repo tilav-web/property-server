@@ -10,12 +10,19 @@ import { User, UserSchema } from '../user/user.schema';
 import { AdminUserService } from './services/admin-user.service';
 import { AdminUserController } from './controllers/admin-user.controller';
 import { FileModule } from '../file/file.module';
+import { Property, PropertySchema } from '../property/schemas/property.schema';
+import { AdminPropertyController } from './controllers/admin-property.controller';
+import { AdminPropertyService } from './services/admin-property.service';
 
 @Module({
   imports: [
     MongooseModule.forFeature([
       { name: Admin.name, schema: AdminSchema },
       { name: User.name, schema: UserSchema },
+      {
+        name: Property.name,
+        schema: PropertySchema,
+      },
     ]),
     JwtModule.registerAsync({
       inject: [ConfigService],
@@ -26,8 +33,13 @@ import { FileModule } from '../file/file.module';
     }),
     FileModule,
   ],
-  providers: [AdminService, AdminJwtStrategy, AdminUserService],
-  controllers: [AdminController, AdminUserController],
-  exports: [AdminService, AdminUserService],
+  providers: [
+    AdminService,
+    AdminJwtStrategy,
+    AdminUserService,
+    AdminPropertyService,
+  ],
+  controllers: [AdminController, AdminUserController, AdminPropertyController],
+  exports: [AdminService, AdminUserService, AdminPropertyService],
 })
 export class AdminModule {}
