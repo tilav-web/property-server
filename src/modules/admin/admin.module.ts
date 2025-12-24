@@ -9,6 +9,7 @@ import { AdminService } from './services/admin.service';
 import { User, UserSchema } from '../user/user.schema';
 import { AdminUserService } from './services/admin-user.service';
 import { AdminUserController } from './controllers/admin-user.controller';
+import { FileModule } from '../file/file.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { AdminUserController } from './controllers/admin-user.controller';
         signOptions: { expiresIn: '15m' }, // Access token expiration
       }),
     }),
+    FileModule,
   ],
   providers: [AdminService, AdminJwtStrategy, AdminUserService],
   controllers: [AdminController, AdminUserController],
