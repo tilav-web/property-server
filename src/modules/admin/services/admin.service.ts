@@ -6,11 +6,11 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { Admin, AdminDocument } from './admin.schema';
 import * as bcrypt from 'bcrypt';
 import * as process from 'process';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
+import { Admin, AdminDocument } from '../admin.schema';
 
 @Injectable()
 export class AdminService implements OnModuleInit {
