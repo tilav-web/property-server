@@ -1,32 +1,13 @@
-import { IsOptional, IsString, IsEnum, IsBoolean, ValidateNested } from 'class-validator';
-import { Type } from 'class-transformer';
+import {
+  IsOptional,
+  IsString,
+  IsEnum,
+  IsBoolean,
+  IsEmail,
+  IsPhoneNumber,
+} from 'class-validator';
 import { EnumRole } from 'src/enums/role.enum';
 import { EnumLanguage } from 'src/enums/language.enum';
-import { EnumAuthProvider } from 'src/enums/auth-provider.enum';
-
-export class UpdateIdentifierDto {
-  @IsOptional()
-  @IsString()
-  value?: string;
-
-  @IsOptional()
-  @IsBoolean()
-  isVerified?: boolean;
-}
-
-export class UpdateSocialAccountDto {
-  @IsOptional()
-  @IsEnum(EnumAuthProvider)
-  provider?: EnumAuthProvider;
-
-  @IsOptional()
-  @IsString()
-  providerId?: string;
-
-  @IsOptional()
-  @IsBoolean()
-  isVerified?: boolean;
-}
 
 export class UpdateUserDto {
   @IsOptional()
@@ -38,14 +19,20 @@ export class UpdateUserDto {
   last_name?: string;
 
   @IsOptional()
-  @ValidateNested()
-  @Type(() => UpdateIdentifierDto)
-  phone?: UpdateIdentifierDto;
+  @IsEmail()
+  emailValue?: string;
 
   @IsOptional()
-  @ValidateNested()
-  @Type(() => UpdateIdentifierDto)
-  email?: UpdateIdentifierDto; // Only allow updating isVerified for email
+  @IsBoolean()
+  emailIsVerified?: boolean;
+
+  @IsOptional()
+  @IsPhoneNumber('UZ')
+  phoneValue?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  phoneIsVerified?: boolean;
 
   @IsOptional()
   @IsString()
@@ -58,15 +45,4 @@ export class UpdateUserDto {
   @IsOptional()
   @IsEnum(EnumLanguage)
   lan?: EnumLanguage;
-
-  // Password update should ideally be a separate action for security
-  // @IsOptional()
-  // @IsString()
-  // password?: string;
-
-  // Social accounts are complex to update directly here, usually managed via OAuth flow
-  // @IsOptional()
-  // @ValidateNested({ each: true })
-  // @Type(() => UpdateSocialAccountDto)
-  // socialAccounts?: UpdateSocialAccountDto[];
 }

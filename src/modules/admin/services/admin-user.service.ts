@@ -77,7 +77,7 @@ export class AdminUserService {
       if (user.avatar) {
         await this.fileService.deleteFile(user.avatar);
       }
-      user.avatar = null;
+      user.avatar = '';
     }
 
     // Update basic fields
@@ -86,16 +86,22 @@ export class AdminUserService {
     if (dto.role !== undefined) user.role = dto.role;
     if (dto.lan !== undefined) user.lan = dto.lan;
 
-    // Update nested phone identifier
-    if (dto.phone) {
-      if (dto.phone.value !== undefined) user.phone.value = dto.phone.value;
-      if (dto.phone.isVerified !== undefined)
-        user.phone.isVerified = dto.phone.isVerified;
+    // Update nested email identifier
+    if (dto.emailValue !== undefined) {
+      user.email.value = dto.emailValue;
+    }
+    if (dto.emailIsVerified !== undefined) {
+      user.email.isVerified = dto.emailIsVerified;
     }
 
-    // Update nested email identifier (only isVerified, value is not changed here)
-    if (dto.email && dto.email.isVerified !== undefined) {
-      user.email.isVerified = dto.email.isVerified;
+    // Update nested phone identifier
+    if (dto.phoneValue !== undefined) {
+      if (!user.phone) user.phone = { value: null, isVerified: false };
+      user.phone.value = dto.phoneValue;
+    }
+    if (dto.phoneIsVerified !== undefined) {
+      if (!user.phone) user.phone = { value: null, isVerified: false };
+      user.phone.isVerified = dto.phoneIsVerified;
     }
 
     return user.save();

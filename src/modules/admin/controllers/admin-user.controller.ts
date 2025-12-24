@@ -3,7 +3,6 @@ import {
   Get,
   Query,
   UseGuards,
-  Patch,
   Param,
   Body,
   UploadedFile,
@@ -11,13 +10,13 @@ import {
   ParseFilePipe,
   MaxFileSizeValidator,
   FileTypeValidator,
+  Put,
 } from '@nestjs/common';
 import { AdminUserService } from '../services/admin-user.service';
 import { FindUsersDto } from '../dto/find-users.dto';
 import { AdminGuard } from '../guards/admin.guard';
 import { UpdateUserDto } from '../dto/update-user.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { Express } from 'express';
 
 @UseGuards(AdminGuard)
 @Controller('admins/users')
@@ -29,7 +28,7 @@ export class AdminUserController {
     return this.adminUserService.findUsers(dto);
   }
 
-  @Patch(':id')
+  @Put(':id')
   @UseInterceptors(FileInterceptor('avatar'))
   async update(
     @Param('id') userId: string,
