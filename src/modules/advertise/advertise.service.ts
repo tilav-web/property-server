@@ -27,7 +27,7 @@ export class AdvertiseService {
     files: { image: Express.Multer.File[] };
   }) {
     const { totalPrice } = this.priceCalculus(dto.days);
-    const image = this.fileService.saveFile({
+    const image = await this.fileService.saveFile({
       folder: EnumFilesFolder.PHOTOS,
       file: files.image[0],
     });
