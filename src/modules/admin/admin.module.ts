@@ -22,6 +22,8 @@ import {
 } from '../advertise/advertise.schema';
 import { AdminAdvertiseController } from './controllers/admin-advertise.controller';
 import { AdminAdvertiseService } from './services/admin-advertise.service';
+import { AdminStatisticService } from './services/admin-statistic.service'; // Import new service
+import { AdminStatisticController } from './controllers/admin-statistic.controller'; // Import new controller
 
 @Module({
   imports: [
@@ -48,6 +50,7 @@ import { AdminAdvertiseService } from './services/admin-advertise.service';
     AdminPropertyService,
     AdminSellerService,
     AdminAdvertiseService,
+    AdminStatisticService, // Add new service
   ],
   controllers: [
     AdminController,
@@ -55,6 +58,7 @@ import { AdminAdvertiseService } from './services/admin-advertise.service';
     AdminPropertyController,
     AdminSellerController,
     AdminAdvertiseController,
+    AdminStatisticController, // Add new controller
   ],
   exports: [
     AdminService,
@@ -62,6 +66,7 @@ import { AdminAdvertiseService } from './services/admin-advertise.service';
     AdminPropertyService,
     AdminSellerService,
     AdminAdvertiseService,
+    AdminStatisticService,
   ],
 })
 export class AdminModule {}
