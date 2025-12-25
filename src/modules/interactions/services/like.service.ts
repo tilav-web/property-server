@@ -7,6 +7,11 @@ import {
   Property,
   PropertyDocument,
 } from 'src/modules/property/schemas/property.schema';
+// Removed direct import of User and local interface definitions
+import {
+  PropertyWithAuthorAggregation,
+  LikeWithPropertyAndAuthorAggregation,
+} from '../interfaces/interaction-aggregation.interface';
 
 @Injectable()
 export class LikeService {
@@ -67,49 +72,55 @@ export class LikeService {
     ]);
 
     // ✅ Aggregation bilan bir query da property + author
-    const [propertyWithAuthor] = await this.propertyModel.aggregate([
-      { $match: { _id: propertyObjectId } },
-      {
-        $lookup: {
-          from: 'users',
-          localField: 'author',
-          foreignField: '_id',
-          as: 'author',
-          pipeline: [
-            {
-              $project: {
-                password: 0, // parolni exclude qilish
+    const [propertyWithAuthor] =
+      await this.propertyModel.aggregate<PropertyWithAuthorAggregation>([
+        // Explicitly type aggregation result
+        { $match: { _id: propertyObjectId } },
+        {
+          $lookup: {
+            from: 'users',
+            let: { authorId: '$author' }, // Use 'let' for variable
+            pipeline: [
+              {
+                $match: {
+                  $expr: { $eq: ['$_id', '$$authorId'] }, // Use $expr to match
+                },
               },
-            },
-          ],
-        },
-      },
-      { $unwind: '$author' },
-      {
-        $project: {
-          _id: 1,
-          author: 1,
-          title: { $ifNull: [`$title.${language}`, '$title.uz'] },
-          description: {
-            $ifNull: [`$description.${language}`, '$description.uz'],
+              {
+                $project: {
+                  password: 0, // parolni exclude qilish
+                },
+              },
+            ],
+            as: 'author',
           },
-          address: { $ifNull: [`$address.${language}`, '$address.uz'] },
-          category: 1,
-          location: 1,
-          currency: 1,
-          price: 1,
-          is_premium: 1,
-          status: 1,
-          is_archived: 1,
-          rating: 1,
-          liked: 1,
-          saved: 1,
-          photos: 1,
-          videos: 1,
-          createdAt: 1,
         },
-      },
-    ]);
+        { $unwind: '$author' },
+        {
+          $project: {
+            _id: 1,
+            author: 1,
+            title: { $ifNull: [`$title.${language}`, '$title.uz'] },
+            description: {
+              $ifNull: [`$description.${language}`, '$description.uz'],
+            },
+            address: { $ifNull: [`$address.${language}`, '$address.uz'] },
+            category: 1,
+            location: 1,
+            currency: 1,
+            price: 1,
+            is_premium: 1,
+            status: 1,
+            is_archived: 1,
+            rating: 1,
+            liked: 1,
+            saved: 1,
+            photos: 1,
+            videos: 1,
+            createdAt: 1,
+          },
+        },
+      ]);
 
     return {
       _id: likeResult?._id,
@@ -123,7 +134,8 @@ export class LikeService {
     const userObjectId = new Types.ObjectId(user);
 
     // ✅ Optimallashtirilgan aggregation
-    return this.likeModel.aggregate([
+    return this.likeModel.aggregate<LikeWithPropertyAndAuthorAggregation>([
+      // Explicitly type aggregation result
       { $match: { user: userObjectId } },
       {
         $lookup: {
@@ -137,10 +149,13 @@ export class LikeService {
       {
         $lookup: {
           from: 'users',
-          localField: 'property.author',
-          foreignField: '_id',
-          as: 'property.author',
+          let: { authorId: '$property.author' }, // Use 'let' for variable
           pipeline: [
+            {
+              $match: {
+                $expr: { $eq: ['$_id', '$$authorId'] }, // Use $expr to match
+              },
+            },
             {
               $project: {
                 _id: 1,
@@ -150,6 +165,7 @@ export class LikeService {
               },
             },
           ],
+          as: 'property.author',
         },
       },
       {
