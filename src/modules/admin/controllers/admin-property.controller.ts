@@ -5,7 +5,7 @@ import {
   UseGuards,
   Param,
   Body,
-  Patch,
+  Put,
 } from '@nestjs/common';
 import { AdminGuard } from '../guards/admin.guard';
 import { AdminPropertyService } from '../services/admin-property.service';
@@ -22,7 +22,7 @@ export class AdminPropertyController {
     return this.adminPropertyService.findAll(dto);
   }
 
-  @Patch(':id')
+  @Put(':id')
   async update(
     @Param('id') propertyId: string,
     @Body() dto: UpdatePropertyDto,
