@@ -209,7 +209,8 @@ export class PropertyController {
   }
 
   @Get(':id')
-  findById(@Param('id') id: string, @Query('language') language: EnumLanguage) {
+  findById(@Param('id') id: string, @Req() req: IRequestCustom) {
+    const language = req.headers['accept-language'] as EnumLanguage;
     return this.service.findById({ id, language });
   }
 
