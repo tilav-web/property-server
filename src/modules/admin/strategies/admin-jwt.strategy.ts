@@ -3,6 +3,7 @@ import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { ConfigService } from '@nestjs/config';
 import { AdminService } from '../services/admin.service';
+import { AdminDocument } from '../admin.schema';
 
 @Injectable()
 export class AdminJwtStrategy extends PassportStrategy(Strategy, 'admin-jwt') {
@@ -25,7 +26,7 @@ export class AdminJwtStrategy extends PassportStrategy(Strategy, 'admin-jwt') {
   async validate(payload: {
     _id: string;
     role: string;
-  }): Promise<{ _id: string }> {
+  }): Promise<AdminDocument> {
     if (!payload._id)
       throw new UnauthorizedException(
         'Admin: Invalid token payload. Missing _id.',
@@ -33,6 +34,6 @@ export class AdminJwtStrategy extends PassportStrategy(Strategy, 'admin-jwt') {
     const admin = await this.adminService.findById(payload._id);
     if (!admin)
       throw new UnauthorizedException('Admin: No admin found for this token.');
-    return { _id: admin._id as string };
+    return admin;
   }
 }

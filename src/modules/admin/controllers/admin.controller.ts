@@ -81,6 +81,18 @@ export class AdminController {
     }
   }
 
+  @Post('/logout')
+  logout(@Res() res: Response) {
+    return res
+      .clearCookie('admin_refresh_token', {
+        httpOnly: process.env.NODE_ENV === 'production',
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        path: '/',
+      })
+      .json({ message: 'Logout successful' });
+  }
+
   @Get('/profile')
   @UseGuards(AdminGuard)
   getProfile(@Req() req: IAdminRequestCustom) {
