@@ -104,7 +104,7 @@ export class OpenaiService implements OnModuleInit {
 
 Given these property fields, provide:
 1. Translations for each field in English, Russian, and Uzbek
-2. Relevant search tags/keywords in all three languages that users might search for
+2. Relevant search tags/keywords based on location.
 
 Input:
 ${textsJson}
@@ -130,24 +130,31 @@ Return ONLY valid JSON in this exact format:
   },
   "tags": [
     "Tashkent",
-    "Toshkent",
     "Ташкент",
-    "3 bedroom",
-    "3 xonali",
-    "3 комнатная",
-    "luxury",
-    "hashamatli",
-    "люкс"
+    "Toshkent",
+    "Uzbekistan",
+    "Узбекистан",
+    "O'zbekiston"
   ]
 }
 
-Rules for tags:
-- Generate single-word tags for notable locations only (cities, regions, countries).
-- Include variations in all 3 languages where applicable.
-- Each tag must be a single word.
-- Examples: "Tashkent", "Uzbekistan", "Dubai", "Samarkand", "Andijan".
-- Do NOT include general property features like "3 bedroom", "luxury", "apartment".
-- Include 5-10 relevant location tags total.`;
+**Rules for tags:**
+- **CRITICAL:** Tags MUST only contain a SINGLE word.
+- **CRITICAL:** Tags MUST be for a notable location (city, region, country).
+- **CRITICAL:** For each location, provide the name in English, Russian, and Uzbek.
+- **ABSOLUTELY NO** multi-word tags like "Tashkent city". Use "Tashkent" instead.
+- **DO NOT** include any tags that are not locations, such as "3 bedroom", "luxury", or "apartment".
+- Generate 5-10 location tags in total.
+
+Examples of correct tags:
+- "Tashkent", "Ташкент", "Toshkent"
+- "Samarkand", "Самарканд", "Samarqand"
+- "Dubai", "Дубай"
+
+Examples of INCORRECT tags:
+- "Tashkent city"
+- "3 bedroom"
+- "newly built"`;
 
         const response = await this.ai.chat.completions.create({
           model: 'gpt-4o-mini',
