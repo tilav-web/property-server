@@ -23,10 +23,7 @@ export class AdminSellerController {
   }
 
   @Patch(':id')
-  async update(
-    @Param('id') sellerId: string,
-    @Body() dto: UpdateSellerDto,
-  ) {
+  async update(@Param('id') sellerId: string, @Body() dto: UpdateSellerDto) {
     return this.adminSellerService.update(sellerId, dto);
   }
 }

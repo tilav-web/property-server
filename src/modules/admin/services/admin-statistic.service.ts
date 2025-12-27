@@ -15,7 +15,8 @@ export class AdminStatisticService {
     @InjectModel(Property.name) private readonly propertyModel: Model<Property>,
     @InjectModel(User.name) private readonly userModel: Model<User>,
     @InjectModel(Seller.name) private readonly sellerModel: Model<Seller>,
-    @InjectModel(Advertise.name) private readonly advertiseModel: Model<Advertise>,
+    @InjectModel(Advertise.name)
+    private readonly advertiseModel: Model<Advertise>,
   ) {}
 
   async getDashboardStatistics() {

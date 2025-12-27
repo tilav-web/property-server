@@ -16,10 +16,7 @@ import { AdminPropertyService } from './services/admin-property.service';
 import { Seller, SellerSchema } from '../seller/schemas/seller.schema';
 import { AdminSellerController } from './controllers/admin-seller.controller';
 import { AdminSellerService } from './services/admin-seller.service';
-import {
-  Advertise,
-  AdvertiseSchema,
-} from '../advertise/advertise.schema';
+import { Advertise, AdvertiseSchema } from '../advertise/advertise.schema';
 import { AdminAdvertiseController } from './controllers/admin-advertise.controller';
 import { AdminAdvertiseService } from './services/admin-advertise.service';
 import { AdminStatisticService } from './services/admin-statistic.service'; // Import new service

@@ -1,7 +1,10 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { FilterQuery, Model } from 'mongoose';
-import { Seller, SellerDocument } from 'src/modules/seller/schemas/seller.schema';
+import {
+  Seller,
+  SellerDocument,
+} from 'src/modules/seller/schemas/seller.schema';
 import { User, UserDocument } from 'src/modules/user/user.schema';
 import { FindSellersDto } from '../dto/find-sellers.dto';
 import { UpdateSellerDto } from '../dto/update-seller.dto';
@@ -28,18 +31,20 @@ export class AdminSellerService {
     }
 
     if (search) {
-        const searchRegex = new RegExp(search, 'i');
-        const users = await this.userModel.find({
-            $or: [
-                { first_name: searchRegex },
-                { last_name: searchRegex },
-                { 'email.value': searchRegex },
-                { 'phone.value': searchRegex },
-            ],
-        }).select('_id');
+      const searchRegex = new RegExp(search, 'i');
+      const users = await this.userModel
+        .find({
+          $or: [
+            { first_name: searchRegex },
+            { last_name: searchRegex },
+            { 'email.value': searchRegex },
+            { 'phone.value': searchRegex },
+          ],
+        })
+        .select('_id');
 
-        const userIds = users.map(u => u._id);
-        filter.user = { $in: userIds };
+      const userIds = users.map((u) => u._id);
+      filter.user = { $in: userIds };
     }
 
     const sellers = await this.sellerModel

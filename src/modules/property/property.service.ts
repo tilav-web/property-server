@@ -170,6 +170,12 @@ export class PropertyService {
       ne_lat,
     } = dto;
 
+    const isMapView =
+      sw_lng !== undefined &&
+      sw_lat !== undefined &&
+      ne_lng !== undefined &&
+      ne_lat !== undefined;
+
     const match = this.buildMatchQuery({
       category,
       is_premium,
@@ -191,6 +197,7 @@ export class PropertyService {
         limit,
         language,
         category,
+        isMapView,
       });
     }
 
@@ -200,15 +207,11 @@ export class PropertyService {
       limit,
       language,
       category,
+      isMapView,
     });
 
     let areaKey: string | null = null;
-    if (
-      sw_lng !== undefined &&
-      sw_lat !== undefined &&
-      ne_lng !== undefined &&
-      ne_lat !== undefined
-    ) {
+    if (isMapView) {
       const centerLat = (sw_lat + ne_lat) / 2;
       const centerLng = (sw_lng + ne_lng) / 2;
       areaKey = this.getAreaKey(centerLat, centerLng);
@@ -341,22 +344,23 @@ export class PropertyService {
     limit,
     language,
     category,
+    isMapView,
   }: {
     match: FilterQuery<PropertyDocument>;
     limit: number;
     language: EnumLanguage;
     category?: string;
+    isMapView?: boolean;
   }) {
     const pipeline: any[] = [];
 
-    // ✅ SODDA: $match dan keyin $sample — no $geoNear needed
     if (Object.keys(match).length > 0) {
       pipeline.push({ $match: match });
     }
 
     pipeline.push(
       { $sample: { size: limit } },
-      { $project: this.getProjectionByCategory(language, category) },
+      { $project: this.getProjectionByCategory(language, category, isMapView) },
     );
 
     const properties = await this.propertyModel.aggregate(pipeline).exec();
@@ -376,16 +380,17 @@ export class PropertyService {
     limit,
     language,
     category,
+    isMapView,
   }: {
     match: FilterQuery<PropertyDocument>;
     page: number;
     limit: number;
     language: EnumLanguage;
     category?: string;
+    isMapView?: boolean;
   }) {
     const pipeline: any[] = [];
 
-    // ✅ SODDA: BOUNDS filtri match qatorida allaqachon mavjud
     if (Object.keys(match).length > 0) {
       pipeline.push({ $match: match });
     }
@@ -394,7 +399,7 @@ export class PropertyService {
       { $sort: { createdAt: -1 } },
       { $skip: (page - 1) * limit },
       { $limit: limit },
-      { $project: this.getProjectionByCategory(language, category) },
+      { $project: this.getProjectionByCategory(language, category, isMapView) },
     );
 
     const [properties, totalItems] = await Promise.all([
@@ -414,12 +419,20 @@ export class PropertyService {
   private async getCount(
     match: FilterQuery<PropertyDocument>,
   ): Promise<number> {
-    // ✅ SODDA: countDocuments — BOUNDS filtri match qatorida
     return this.propertyModel.countDocuments(match).exec();
   }
 
-  private getProjectionByCategory(language: EnumLanguage, category?: string) {
-    const baseProjection = {
+  private getProjectionByCategory(
+    language: EnumLanguage,
+    category?: string,
+    isMapView?: boolean,
+  ) {
+    const baseProjection: {
+      [key: string]:
+        | 1
+        | { $ifNull: (string | { $slice: (string | number)[] })[] }
+        | { $slice: (string | number)[] };
+    } = {
       _id: 1,
       author: 1,
       title: { $ifNull: [`$title.${language}`, '$title.uz'] },
@@ -435,10 +448,15 @@ export class PropertyService {
       rating: 1,
       liked: 1,
       saved: 1,
-      photos: 1,
       videos: 1,
       createdAt: 1,
     };
+
+    if (isMapView) {
+      baseProjection.photos = { $slice: ['$photos', 1] };
+    } else {
+      baseProjection.photos = 1;
+    }
 
     if (!category) return baseProjection;
 

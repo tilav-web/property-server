@@ -16,13 +16,7 @@ export class AdminAdvertiseService {
   ) {}
 
   async findAll(dto: FindAdvertisesDto) {
-    const {
-      page = 1,
-      limit = 10,
-      status,
-      type,
-      payment_status,
-    } = dto;
+    const { page = 1, limit = 10, status, type, payment_status } = dto;
     const skip = (page - 1) * limit;
 
     const filter: FilterQuery<AdvertiseDocument> = {};
