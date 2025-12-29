@@ -22,6 +22,11 @@ export class AdminSellerController {
     return this.adminSellerService.findAll(dto);
   }
 
+  @Get(':id')
+  async findOne(@Param('id') id: string) {
+    return this.adminSellerService.findOne(id);
+  }
+
   @Patch(':id')
   async update(@Param('id') sellerId: string, @Body() dto: UpdateSellerDto) {
     return this.adminSellerService.update(sellerId, dto);

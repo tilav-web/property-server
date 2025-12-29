@@ -66,6 +66,25 @@ export class AdminSellerService {
     };
   }
 
+  async findOne(id: string) {
+    const seller = await this.sellerModel
+      .findById(id)
+      .populate('user')
+      .populate('ytt')
+      .populate('mchj')
+      .populate('self_employed')
+      .populate('physical')
+      .populate('bank_account')
+      .populate('commissioner')
+      .lean();
+
+    if (!seller) {
+      throw new NotFoundException(`Seller with ID ${id} not found`);
+    }
+
+    return seller;
+  }
+
   async update(sellerId: string, dto: UpdateSellerDto) {
     const seller = await this.sellerModel.findById(sellerId);
 

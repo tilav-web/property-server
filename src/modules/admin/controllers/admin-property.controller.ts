@@ -22,6 +22,16 @@ export class AdminPropertyController {
     return this.adminPropertyService.findAll(dto);
   }
 
+  @Get('/seller/:sellerId')
+  async findBySeller(@Param('sellerId') sellerId: string) {
+    return this.adminPropertyService.findBySeller(sellerId);
+  }
+
+  @Get(':id')
+  async findOne(@Param('id') id: string) {
+    return this.adminPropertyService.findOne(id);
+  }
+
   @Put(':id')
   async update(
     @Param('id') propertyId: string,

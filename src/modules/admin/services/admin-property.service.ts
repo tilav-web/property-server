@@ -5,13 +5,18 @@ import {
   Property,
   PropertyDocument,
 } from 'src/modules/property/schemas/property.schema';
+import {
+  Seller,
+  SellerDocument,
+} from 'src/modules/seller/schemas/seller.schema';
 import { FindPropertiesDto } from '../dto/find-properties.dto';
 import { UpdatePropertyDto } from '../dto/update-property.dto';
 
 @Injectable()
 export class AdminPropertyService {
   constructor(
-    @InjectModel(Property.name) private propertyModel: Model<Property>,
+    @InjectModel(Property.name) private propertyModel: Model<PropertyDocument>,
+    @InjectModel(Seller.name) private sellerModel: Model<SellerDocument>,
   ) {}
 
   async findAll(dto: FindPropertiesDto) {
@@ -60,6 +65,33 @@ export class AdminPropertyService {
       limit,
       hasMore,
     };
+  }
+
+  async findBySeller(sellerId: string) {
+    const seller = await this.sellerModel.findById(sellerId);
+    if (!seller) {
+      throw new NotFoundException(`Seller with ID ${sellerId} not found`);
+    }
+
+    const properties = await this.propertyModel
+      .find({ author: seller.user })
+      .populate('author', 'first_name last_name email phone')
+      .exec();
+
+    return properties;
+  }
+
+  async findOne(id: string) {
+    const property = await this.propertyModel
+      .findById(id)
+      .populate('author')
+      .exec();
+
+    if (!property) {
+      throw new NotFoundException(`Property with ID ${id} not found`);
+    }
+
+    return property;
   }
 
   async update(propertyId: string, dto: UpdatePropertyDto) {
