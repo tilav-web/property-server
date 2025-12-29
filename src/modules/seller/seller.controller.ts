@@ -5,7 +5,9 @@ import {
   Get,
   HttpException,
   InternalServerErrorException,
+  Param,
   Post,
+  Query,
   Req,
   UploadedFiles,
   UseGuards,
@@ -50,6 +52,53 @@ export class SellerController {
       return result;
     } catch (error) {
       console.error('Logout error:', error);
+
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
+      if (error instanceof Error) {
+        throw new InternalServerErrorException(error.message);
+      }
+
+      throw new InternalServerErrorException(
+        "Xatolik ketdi. Birozdan so'ng qayta urinib ko'ring!",
+      );
+    }
+  }
+
+  @Get()
+  async findAll(@Query('page') page: string, @Query('limit') limit: string) {
+    try {
+      const result = await this.service.findAll({
+        page: parseInt(page, 10),
+        limit: parseInt(limit, 10),
+      });
+      return result;
+    } catch (error) {
+      console.error('Find all sellers error:', error);
+
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
+      if (error instanceof Error) {
+        throw new InternalServerErrorException(error.message);
+      }
+
+      throw new InternalServerErrorException(
+        "Xatolik ketdi. Birozdan so'ng qayta urinib ko'ring!",
+      );
+    }
+  }
+
+  @Get(':id')
+  async findOne(@Param('id') id: string, @Query('language') language: string) {
+    try {
+      const result = await this.service.findOne(id, language);
+      return result;
+    } catch (error) {
+      console.error('Find one seller error:', error);
 
       if (error instanceof HttpException) {
         throw error;

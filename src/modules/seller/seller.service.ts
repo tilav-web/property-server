@@ -90,6 +90,109 @@ export class SellerService {
     return { user: hasUser, seller };
   }
 
+  async findAll({ page = 1, limit = 10 }: { page: number; limit: number }) {
+    const skip = (page - 1) * limit;
+
+    const sellers = await this.sellerModel.aggregate([
+      {
+        $match: { status: EnumSellerStatus.APPROVED },
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'user',
+          foreignField: '_id',
+          as: 'user',
+        },
+      },
+      {
+        $unwind: '$user',
+      },
+      {
+        $lookup: {
+          from: 'properties',
+          localField: 'user._id',
+          foreignField: 'author',
+          as: 'properties',
+        },
+      },
+      {
+        $addFields: {
+          totalProperties: { $size: '$properties' },
+          avgLikes: { $avg: '$properties.liked' },
+          avgSaves: { $avg: '$properties.saved' },
+        },
+      },
+      {
+        $project: {
+          properties: 0,
+        },
+      },
+      {
+        $skip: skip,
+      },
+      {
+        $limit: limit,
+      },
+    ]);
+
+    const total = await this.sellerModel.countDocuments({
+      status: EnumSellerStatus.APPROVED,
+    });
+    const hasMore = page * limit < total;
+
+    return {
+      sellers,
+      total,
+      page,
+      limit,
+      hasMore,
+    };
+  }
+
+  async findOne(id: string, language: string = 'uz') {
+    const [seller] = await this.sellerModel.aggregate([
+      {
+        $match: {
+          _id: new Types.ObjectId(id),
+          status: EnumSellerStatus.APPROVED,
+        },
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'user',
+          foreignField: '_id',
+          as: 'user',
+        },
+      },
+      {
+        $unwind: '$user',
+      },
+      {
+        $lookup: {
+          from: 'properties',
+          localField: 'user._id',
+          foreignField: 'author',
+          as: 'properties',
+        },
+      },
+    ]);
+
+    if (!seller) {
+      throw new NotFoundException('Seller not found');
+    }
+
+    seller.properties = seller.properties.map((p) => ({
+      ...p,
+      title: p.title?.[language] ?? p.title?.uz ?? '',
+      description: p.description?.[language] ?? p.description?.uz ?? '',
+      address: p.address?.[language] ?? p.address?.uz ?? '',
+    }));
+
+    return seller;
+  }
+
   async findSellerByUser(id: string) {
     const user = await this.userService.findById(id);
     if (!user) throw new BadRequestException('User not found!');
