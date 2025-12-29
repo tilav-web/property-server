@@ -16,6 +16,7 @@ import { AdvertiseModule } from './modules/advertise/advertise.module';
 import { GenaiModule } from './modules/openai/openai.module';
 import { AiPropertyModule } from './modules/ai-property/ai-property.module';
 import { AdminModule } from './modules/admin/admin.module';
+import { StatisticModule } from './modules/statistic/statistic.module';
 
 @Module({
   imports: [
@@ -52,6 +53,7 @@ import { AdminModule } from './modules/admin/admin.module';
     GenaiModule,
     AiPropertyModule,
     AdminModule,
+    StatisticModule,
   ],
   providers: [
     {
