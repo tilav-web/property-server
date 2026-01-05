@@ -6,7 +6,9 @@ import {
   HttpException,
   InternalServerErrorException,
   Param,
+  ParseEnumPipe,
   Post,
+  Put,
   Query,
   Req,
   UploadedFiles,
@@ -26,6 +28,8 @@ import { CreateSelfEmployedSellerDto } from './dto/self-employed-seller.dto';
 import { Throttle } from '@nestjs/throttler';
 import { CreatePhysicalSellerDto } from './dto/create-physical-seller.dto';
 import { Express } from 'express';
+import { UpdateSellerDto } from './dto/update-seller.dto';
+import { EnumLanguage } from 'src/enums/language.enum';
 
 @Controller('sellers')
 export class SellerController {
@@ -68,11 +72,16 @@ export class SellerController {
   }
 
   @Get()
-  async findAll(@Query('page') page: string, @Query('limit') limit: string) {
+  async findAll(
+    @Query('page') page: string,
+    @Query('limit') limit: string,
+    @Query('search') search: string,
+  ) {
     try {
       const result = await this.service.findAll({
         page: parseInt(page, 10),
         limit: parseInt(limit, 10),
+        search,
       });
       return result;
     } catch (error) {
@@ -92,13 +101,13 @@ export class SellerController {
     }
   }
 
-  @Get(':id')
-  async findOne(@Param('id') id: string, @Query('language') language: string) {
+  @Get('/top')
+  async findTop() {
     try {
-      const result = await this.service.findOne(id, language);
+      const result = await this.service.findTop();
       return result;
     } catch (error) {
-      console.error('Find one seller error:', error);
+      console.error('Find all sellers error:', error);
 
       if (error instanceof HttpException) {
         throw error;
@@ -124,6 +133,55 @@ export class SellerController {
       return result;
     } catch (error) {
       console.error('Logout error:', error);
+
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
+      if (error instanceof Error) {
+        throw new InternalServerErrorException(error.message);
+      }
+
+      throw new InternalServerErrorException(
+        "Xatolik ketdi. Birozdan so'ng qayta urinib ko'ring!",
+      );
+    }
+  }
+
+  @Get(':id')
+  async findOne(
+    @Param('id') id: string,
+    @Query('language', new ParseEnumPipe(EnumLanguage, { optional: true }))
+    language: EnumLanguage = EnumLanguage.UZ,
+  ) {
+    try {
+      const result = await this.service.findOne(id, language);
+      return result;
+    } catch (error) {
+      console.error('Find one seller error:', error);
+
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
+      if (error instanceof Error) {
+        throw new InternalServerErrorException(error.message);
+      }
+
+      throw new InternalServerErrorException(
+        "Xatolik ketdi. Birozdan so'ng qayta urinib ko'ring!",
+      );
+    }
+  }
+
+  @Put(':id')
+  @UseGuards(AuthGuard('jwt'))
+  async update(@Param('id') id: string, @Body() dto: UpdateSellerDto) {
+    try {
+      const result = await this.service.update(id, dto);
+      return result;
+    } catch (error) {
+      console.error('Update seller error:', error);
 
       if (error instanceof HttpException) {
         throw error;

@@ -27,6 +27,15 @@ export class Seller {
     default: EnumSellerStatus.IN_PROGRESS,
   })
   status: EnumSellerStatus;
+
+  @Prop({ type: String, default: null })
+  instagram: string;
+
+  @Prop({ type: String, default: null })
+  telegram: string;
+
+  @Prop({ type: String, default: null })
+  whatsapp: string;
 }
 
 export const SellerSchema = SchemaFactory.createForClass(Seller);

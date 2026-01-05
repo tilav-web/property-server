@@ -28,6 +28,10 @@ import { CreatePhysicalSellerDto } from './dto/create-physical-seller.dto';
 import { EnumSellerBusinessType } from 'src/enums/seller-business-type.enum';
 import { Express } from 'express';
 import { EnumFilesFolder } from '../file/enums/files-folder.enum';
+import { EnumLanguage } from 'src/enums/language.enum';
+import { UpdateSellerDto } from './dto/update-seller.dto';
+import { Property } from '../property/schemas/property.schema';
+import { User } from '../user/user.schema';
 
 @Injectable()
 export class SellerService {
@@ -90,13 +94,23 @@ export class SellerService {
     return { user: hasUser, seller };
   }
 
-  async findAll({ page = 1, limit = 10 }: { page: number; limit: number }) {
+  async findAll({
+    page = 1,
+    limit = 10,
+    search,
+  }: {
+    page: number;
+    limit: number;
+    search?: string;
+  }) {
     const skip = (page - 1) * limit;
 
+    const match: Record<string, any> = { status: EnumSellerStatus.APPROVED };
+    if (search) {
+      match['user.first_name'] = { $regex: search, $options: 'i' };
+    }
+
     const sellers = await this.sellerModel.aggregate([
-      {
-        $match: { status: EnumSellerStatus.APPROVED },
-      },
       {
         $lookup: {
           from: 'users',
@@ -121,6 +135,12 @@ export class SellerService {
           totalProperties: { $size: '$properties' },
           avgLikes: { $avg: '$properties.liked' },
           avgSaves: { $avg: '$properties.saved' },
+        },
+      },
+      {
+        $match: {
+          ...match,
+          totalProperties: { $gt: 0 },
         },
       },
       {
@@ -150,8 +170,65 @@ export class SellerService {
     };
   }
 
-  async findOne(id: string, language: string = 'uz') {
-    const [seller] = await this.sellerModel.aggregate([
+  async findTop() {
+    const sellers = await this.sellerModel.aggregate([
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'user',
+          foreignField: '_id',
+          as: 'user',
+        },
+      },
+      {
+        $unwind: '$user',
+      },
+      {
+        $lookup: {
+          from: 'properties',
+          localField: 'user._id',
+          foreignField: 'author',
+          as: 'properties',
+        },
+      },
+      {
+        $addFields: {
+          totalProperties: { $size: '$properties' },
+          avgLikes: { $avg: '$properties.liked' },
+          avgSaves: { $avg: '$properties.saved' },
+        },
+      },
+      {
+        $match: {
+          status: EnumSellerStatus.APPROVED,
+          totalProperties: { $gt: 0 },
+        },
+      },
+      {
+        $sort: {
+          totalProperties: -1,
+        },
+      },
+      {
+        $limit: 3,
+      },
+      {
+        $project: {
+          properties: 0,
+        },
+      },
+    ]);
+
+    return sellers as SellerDocument[];
+  }
+
+  async findOne(id: string, language: EnumLanguage = EnumLanguage.UZ) {
+    if (!Types.ObjectId.isValid(id)) {
+      throw new BadRequestException('Invalid seller ID');
+    }
+    const [seller] = await this.sellerModel.aggregate<
+      Seller & { user: User; properties: Property[] }
+    >([
       {
         $match: {
           _id: new Types.ObjectId(id),
@@ -183,13 +260,23 @@ export class SellerService {
       throw new NotFoundException('Seller not found');
     }
 
-    seller.properties = seller.properties.map((p) => ({
+    const properties = seller.properties.map((p) => ({
       ...p,
       title: p.title?.[language] ?? p.title?.uz ?? '',
       description: p.description?.[language] ?? p.description?.uz ?? '',
       address: p.address?.[language] ?? p.address?.uz ?? '',
     }));
 
+    return { ...seller, properties };
+  }
+
+  async update(id: string, dto: UpdateSellerDto) {
+    const seller = await this.sellerModel.findByIdAndUpdate(id, dto, {
+      new: true,
+    });
+    if (!seller) {
+      throw new NotFoundException('Seller not found');
+    }
     return seller;
   }
 
@@ -220,9 +307,6 @@ export class SellerService {
       throw new NotFoundException('Sotuvchi profili topilmadi');
     }
 
-    // ─────────────────────────────────────
-    // Majburiy fayllar (empty array bug fix)
-    // ─────────────────────────────────────
     if (!files?.passport_file?.[0]) {
       throw new BadRequestException('Pasport faylni yuborishingiz shart!');
     }
@@ -237,16 +321,10 @@ export class SellerService {
 
     const sellerId = new Types.ObjectId(dto.seller);
 
-    // ─────────────────────────────────────
-    // Eski YTT ma'lumotini olish
-    // ─────────────────────────────────────
     const existingYttSeller = await this.yttSellerModel.findOne({
       seller: sellerId,
     });
 
-    // ─────────────────────────────────────
-    // DTO → DB mapping (explicit, xavfsiz)
-    // ─────────────────────────────────────
     const updateData: Partial<YttSeller> = {
       seller: sellerId,
       company_name: dto.company_name,
@@ -257,9 +335,6 @@ export class SellerService {
       is_vat_payer: dto.is_vat_payer === true,
     };
 
-    // ─────────────────────────────────────
-    // PASSPORT FILE
-    // ─────────────────────────────────────
     if (files.passport_file?.[0]) {
       const newPassportUrl = await this.fileService.saveFile({
         file: files.passport_file[0],
@@ -273,9 +348,6 @@ export class SellerService {
       updateData.passport_file = newPassportUrl;
     }
 
-    // ─────────────────────────────────────
-    // YTT CERTIFICATE FILE
-    // ─────────────────────────────────────
     if (files.ytt_certificate_file?.[0]) {
       const newYttCertUrl = await this.fileService.saveFile({
         file: files.ytt_certificate_file[0],
