@@ -271,9 +271,17 @@ export class SellerService {
   }
 
   async update(id: string, dto: UpdateSellerDto) {
-    const seller = await this.sellerModel.findByIdAndUpdate(id, dto, {
-      new: true,
-    });
+    const seller = await this.sellerModel
+      .findByIdAndUpdate(id, dto, {
+        new: true,
+      })
+      .populate('user')
+      .populate('ytt')
+      .populate('mchj')
+      .populate('bank_account')
+      .populate('self_employed')
+      .populate('commissioner')
+      .populate('physical');
     if (!seller) {
       throw new NotFoundException('Seller not found');
     }
