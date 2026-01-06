@@ -17,6 +17,7 @@ import { GenaiModule } from './modules/openai/openai.module';
 import { AiPropertyModule } from './modules/ai-property/ai-property.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { StatisticModule } from './modules/statistic/statistic.module';
+import { TagModule } from './modules/tag/tag.module';
 
 @Module({
   imports: [
@@ -54,6 +55,7 @@ import { StatisticModule } from './modules/statistic/statistic.module';
     AiPropertyModule,
     AdminModule,
     StatisticModule,
+    TagModule,
   ],
   providers: [
     {

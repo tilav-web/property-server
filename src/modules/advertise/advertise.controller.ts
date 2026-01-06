@@ -6,6 +6,7 @@ import {
   InternalServerErrorException,
   Param,
   Post,
+  Put,
   Query,
   Req,
   UploadedFiles,
@@ -25,14 +26,27 @@ export class AdvertiseController {
 
   @Get('/public')
   async findPublic(
+    @Query('page') page?: string,
     @Query('limit') limit?: string,
     @Query('type') type?: EnumAdvertiseType,
+    @Query('sort') sort?: string,
   ) {
     try {
+      let sortOptions: Record<string, 1 | -1> | undefined;
+      if (sort) {
+        try {
+          sortOptions = JSON.parse(sort);
+        } catch (e) {
+          // ignore invalid sort json
+        }
+      }
+
       const result = await this.service.findAll({
+        page: page ? parseInt(page, 10) : 1,
         limit: limit ? parseInt(limit, 10) : 10,
         type,
         sample: true,
+        sort: sortOptions,
       });
       return result;
     } catch (error) {
@@ -50,6 +64,17 @@ export class AdvertiseController {
       );
     }
   }
+
+  @Put(':id/view')
+  async incrementView(@Param('id') id: string) {
+    return this.service.incrementView(id);
+  }
+
+  @Put(':id/click')
+  async incrementClick(@Param('id') id: string) {
+    return this.service.incrementClick(id);
+  }
+
 
   @Post('/')
   @UseGuards(AuthGuard('jwt'))

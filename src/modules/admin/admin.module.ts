@@ -19,8 +19,11 @@ import { AdminSellerService } from './services/admin-seller.service';
 import { Advertise, AdvertiseSchema } from '../advertise/advertise.schema';
 import { AdminAdvertiseController } from './controllers/admin-advertise.controller';
 import { AdminAdvertiseService } from './services/admin-advertise.service';
-import { AdminStatisticService } from './services/admin-statistic.service'; // Import new service
-import { AdminStatisticController } from './controllers/admin-statistic.controller'; // Import new controller
+import { AdminStatisticService } from './services/admin-statistic.service';
+import { AdminStatisticController } from './controllers/admin-statistic.controller';
+import { AdminTagController } from './controllers/admin-tag.controller';
+import { AdminTagService } from './services/admin-tag.service';
+import { Tag, TagSchema } from '../tag/schemas/tag.schema';
 
 @Module({
   imports: [
@@ -30,12 +33,13 @@ import { AdminStatisticController } from './controllers/admin-statistic.controll
       { name: Property.name, schema: PropertySchema },
       { name: Seller.name, schema: SellerSchema },
       { name: Advertise.name, schema: AdvertiseSchema },
+      { name: Tag.name, schema: TagSchema },
     ]),
     JwtModule.registerAsync({
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
         secret: configService.get<string>('ADMIN_JWT_SECRET'),
-        signOptions: { expiresIn: '15m' }, // Access token expiration
+        signOptions: { expiresIn: '15m' },
       }),
     }),
     FileModule,
@@ -47,7 +51,8 @@ import { AdminStatisticController } from './controllers/admin-statistic.controll
     AdminPropertyService,
     AdminSellerService,
     AdminAdvertiseService,
-    AdminStatisticService, // Add new service
+    AdminStatisticService,
+    AdminTagService,
   ],
   controllers: [
     AdminController,
@@ -55,7 +60,8 @@ import { AdminStatisticController } from './controllers/admin-statistic.controll
     AdminPropertyController,
     AdminSellerController,
     AdminAdvertiseController,
-    AdminStatisticController, // Add new controller
+    AdminStatisticController,
+    AdminTagController,
   ],
   exports: [
     AdminService,

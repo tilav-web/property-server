@@ -59,6 +59,12 @@ export class Advertise {
 
   @Prop({ type: String, required: true })
   image: string;
+
+  @Prop({ type: Number, default: 0 })
+  views: number;
+
+  @Prop({ type: Number, default: 0 })
+  clicks: number;
 }
 
 export const AdvertiseSchema = SchemaFactory.createForClass(Advertise);

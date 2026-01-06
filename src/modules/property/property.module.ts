@@ -13,7 +13,7 @@ import { EnumPropertyCategory } from './enums/property-category.enum';
 import { Seller, SellerSchema } from '../seller/schemas/seller.schema'; // Import Seller and SellerSchema
 
 import { GenaiModule } from '../openai/openai.module';
-import { Tag, TagSchema } from './schemas/tag.schema';
+import { TagModule } from '../tag/tag.module';
 
 @Module({
   imports: [
@@ -35,14 +35,11 @@ import { Tag, TagSchema } from './schemas/tag.schema';
       { name: Like.name, schema: LikeSchema },
       { name: Save.name, schema: SaveSchema },
       { name: Seller.name, schema: SellerSchema }, // Add SellerSchema
-      {
-        name: Tag.name,
-        schema: TagSchema,
-      },
     ]),
     FileModule,
     MessageModule,
     GenaiModule,
+    TagModule,
   ],
   providers: [PropertyService],
   controllers: [PropertyController],

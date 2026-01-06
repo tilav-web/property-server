@@ -36,6 +36,6 @@ import { FileModule } from '../file/file.module';
     FacebookStrategy,
     AppleStrategy,
   ],
-  exports: [UserService],
+  exports: [UserService, JwtModule],
 })
 export class UserModule {}

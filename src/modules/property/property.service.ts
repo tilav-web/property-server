@@ -17,8 +17,8 @@ import { FindAllPropertiesDto } from './dto/find-all-properties.dto';
 import { MessageService } from '../message/message.service';
 import { CreateMessageDto } from '../message/dto/create-message.dto';
 import { EnumPropertyStatus } from './enums/property-status.enum';
-import { Tag, TagDocument } from './schemas/tag.schema';
 import { Seller, SellerDocument } from '../seller/schemas/seller.schema';
+import { TagService } from '../tag/tag.service';
 
 @Injectable()
 export class PropertyService {
@@ -29,12 +29,11 @@ export class PropertyService {
     private readonly apartmentRentModel: Model<PropertyDocument>,
     @InjectModel(EnumPropertyCategory.APARTMENT_SALE)
     private readonly apartmentSaleModel: Model<PropertyDocument>,
-    @InjectModel(Tag.name)
-    private readonly tagModel: Model<TagDocument>,
     @InjectModel(Seller.name) private readonly sellerModel: Model<SellerDocument>,
     private readonly fileService: FileService,
     private readonly openaiService: OpenaiService,
     private readonly messageService: MessageService,
+    private readonly tagService: TagService,
   ) {}
 
   async onModuleInit() {
@@ -120,37 +119,13 @@ export class PropertyService {
     });
 
     if (tags.length > 0) {
-      await this.saveTags(tags);
+      await this.tagService.saveTags(tags);
     }
 
     return property;
   }
 
-  private async saveTags(tags: string[]): Promise<void> {
-    try {
-      // Har bir tagni lowercase va trim qilamiz
-      const uniqueTags = Array.from(
-        new Set(tags.map((tag) => tag.toLowerCase().trim())),
-      ).filter((tag) => tag.length > 0);
 
-      // Bulk upsert - agar tag mavjud bo'lsa o'tkazib yuboradi
-      const operations = uniqueTags.map((tag) => ({
-        updateOne: {
-          filter: { value: tag },
-          update: { $setOnInsert: { value: tag } },
-          upsert: true,
-        },
-      }));
-
-      if (operations.length > 0) {
-        await this.tagModel.bulkWrite(operations, {
-          ordered: false,
-        });
-      }
-    } catch (error) {
-      console.error(error);
-    }
-  }
 
   async findAll(dto: FindAllPropertiesDto & { language: EnumLanguage }) {
     const {
@@ -726,34 +701,5 @@ export class PropertyService {
     return categories;
   }
 
-  // ****************************************
-  async searchTags(query: string, limit = 20) {
-    if (!query || query.trim().length === 0) {
-      return [];
-    }
 
-    const regex = new RegExp(`^${query.trim()}`, 'i');
-
-    const tags = await this.tagModel
-      .find({ value: regex })
-      .limit(limit)
-      .lean()
-      .exec();
-
-    return tags.map((t) => ({
-      _id: t._id,
-      value: t.value,
-    }));
-  }
-
-  async getAllTags(limit = 100) {
-    const tags = await this.tagModel
-      .find()
-      .limit(limit)
-      .sort({ value: 1 })
-      .lean()
-      .exec();
-
-    return tags.map((t) => t.value);
-  }
 }

@@ -42,11 +42,13 @@ export class AdvertiseService {
   }
 
   async findAll(params: {
+    page?: number;
     limit?: number;
     type?: EnumAdvertiseType;
     sample?: boolean;
+    sort?: Record<string, 1 | -1>;
   }) {
-    const { limit = 10, type, sample = false } = params;
+    const { page = 1, limit = 10, type, sample = false, sort } = params;
 
     const filter: FilterQuery<AdvertiseDocument> = {
       status: EnumAdvertiseStatus.APPROVED,
@@ -59,34 +61,62 @@ export class AdvertiseService {
       filter.type = type;
     }
 
+    const query = this.advertiseModel.find(filter);
+
+    if (sort) {
+      query.sort(sort);
+    }
+
     if (sample) {
       const total = await this.advertiseModel.countDocuments(filter).exec();
       const sampleSize = Math.min(limit, total);
       let advertises: AdvertiseDocument[] = [];
 
       if (sampleSize > 0) {
-        const randomSkip = Math.max(
-          0,
-          Math.floor(Math.random() * (total - sampleSize)),
-        );
-        advertises = await this.advertiseModel
-          .find(filter)
-          .skip(randomSkip)
-          .limit(sampleSize)
-          .lean()
-          .exec();
+        advertises = await this.advertiseModel.aggregate([
+          { $match: filter },
+          { $sample: { size: sampleSize } },
+        ]);
       }
       return advertises;
-    } else {
-      const advertises = await this.advertiseModel
-        .find(filter)
-        .limit(limit)
-        .populate('image')
-        .lean()
-        .exec();
-      return advertises;
     }
+
+    const skip = (page - 1) * limit;
+    const advertises = await query
+      .skip(skip)
+      .limit(limit)
+      .populate('author', 'first_name last_name avatar')
+      .lean()
+      .exec();
+
+    const total = await this.advertiseModel.countDocuments(filter);
+    const totalPages = Math.ceil(total / limit);
+
+    return {
+      data: advertises,
+      total,
+      page,
+      limit,
+      totalPages,
+    };
   }
+
+  async incrementView(id: string) {
+    return this.advertiseModel.findByIdAndUpdate(
+      id,
+      { $inc: { views: 1 } },
+      { new: true },
+    );
+  }
+
+  async incrementClick(id: string) {
+    return this.advertiseModel.findByIdAndUpdate(
+      id,
+      { $inc: { clicks: 1 } },
+      { new: true },
+    );
+  }
+
 
   priceCalculus(days: number) {
     const dailyPrice = Number(process.env.ADVERTISE_DAILY_PRICE);
