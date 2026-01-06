@@ -18,6 +18,7 @@ import { MessageService } from '../message/message.service';
 import { CreateMessageDto } from '../message/dto/create-message.dto';
 import { EnumPropertyStatus } from './enums/property-status.enum';
 import { Tag, TagDocument } from './schemas/tag.schema';
+import { Seller, SellerDocument } from '../seller/schemas/seller.schema';
 
 @Injectable()
 export class PropertyService {
@@ -30,6 +31,7 @@ export class PropertyService {
     private readonly apartmentSaleModel: Model<PropertyDocument>,
     @InjectModel(Tag.name)
     private readonly tagModel: Model<TagDocument>,
+    @InjectModel(Seller.name) private readonly sellerModel: Model<SellerDocument>,
     private readonly fileService: FileService,
     private readonly openaiService: OpenaiService,
     private readonly messageService: MessageService,
@@ -575,8 +577,18 @@ export class PropertyService {
     if (!property) {
       throw new NotFoundException('Property not found!');
     }
+
+    const seller = await this.sellerModel
+      .findOne({ user: property.author._id })
+      .lean()
+      .exec();
+
     return {
       ...property,
+      author: {
+        ...property.author,
+        seller,
+      },
       title: property.title[language ?? 'uz'] ?? property.title.uz,
       description:
         property.description[language ?? 'uz'] ?? property.description.uz,

@@ -10,6 +10,7 @@ import { ApartmentSaleSchema } from './schemas/categories/apartment-sale.schema'
 import { ApartmentRentSchema } from './schemas/categories/apartment-rent.schema';
 import { Property, PropertySchema } from './schemas/property.schema';
 import { EnumPropertyCategory } from './enums/property-category.enum';
+import { Seller, SellerSchema } from '../seller/schemas/seller.schema'; // Import Seller and SellerSchema
 
 import { GenaiModule } from '../openai/openai.module';
 import { Tag, TagSchema } from './schemas/tag.schema';
@@ -33,6 +34,7 @@ import { Tag, TagSchema } from './schemas/tag.schema';
       },
       { name: Like.name, schema: LikeSchema },
       { name: Save.name, schema: SaveSchema },
+      { name: Seller.name, schema: SellerSchema }, // Add SellerSchema
       {
         name: Tag.name,
         schema: TagSchema,
