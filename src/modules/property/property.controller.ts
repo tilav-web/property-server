@@ -261,6 +261,4 @@ export class PropertyController {
   async getCategories() {
     return this.service.getCategories();
   }
-
-
 }

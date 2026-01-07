@@ -5,7 +5,9 @@ import { Tag, TagDocument } from './schemas/tag.schema';
 
 @Injectable()
 export class TagService {
-  constructor(@InjectModel(Tag.name) private readonly tagModel: Model<TagDocument>) {}
+  constructor(
+    @InjectModel(Tag.name) private readonly tagModel: Model<TagDocument>,
+  ) {}
 
   async saveTags(tags: string[]): Promise<void> {
     try {
@@ -28,6 +30,21 @@ export class TagService {
       }
     } catch (error) {
       console.error(error);
+    }
+  }
+
+  async findTags(query: string): Promise<TagDocument[]> {
+    try {
+      if (!query) {
+        return [];
+      }
+      return this.tagModel
+        .find({ value: { $regex: query, $options: 'i' } })
+        .limit(10)
+        .exec();
+    } catch (error) {
+      console.error(error);
+      return [];
     }
   }
 }
