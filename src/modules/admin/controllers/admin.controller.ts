@@ -13,6 +13,7 @@ import { type Response } from 'express';
 import { AdminGuard } from '../guards/admin.guard';
 import { type IAdminRequestCustom } from '../../../interfaces/admin-request.interface';
 import { AdminService } from '../services/admin.service';
+import { ChangePasswordDto } from '../dto/change-password.dto';
 
 @Controller('admins')
 export class AdminController {
@@ -91,6 +92,29 @@ export class AdminController {
         path: '/',
       })
       .json({ message: 'Logout successful' });
+  }
+
+  @Post('/change-password')
+  @UseGuards(AdminGuard)
+  async changePassword(
+    @Req() req: IAdminRequestCustom,
+    @Body() dto: ChangePasswordDto,
+  ) {
+    try {
+      const adminId = req.admin?._id;
+      return await this.service.changePassword(adminId, dto);
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
+      if (error instanceof Error) {
+        throw new InternalServerErrorException(error.message);
+      }
+      throw new InternalServerErrorException(
+        "Xatolik ketdi. Birozdan so'ng qayta urinib ko'ring!",
+      );
+    }
   }
 
   @Get('/profile')

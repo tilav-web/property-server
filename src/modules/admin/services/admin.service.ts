@@ -24,6 +24,39 @@ export class AdminService implements OnModuleInit {
     return this.adminModel.findById(id).exec();
   }
 
+  async changePassword(
+    id: string | undefined,
+    {
+      newPassword,
+      oldPassword,
+    }: {
+      oldPassword: string;
+      newPassword: string;
+    },
+  ) {
+    if (!id) {
+      throw new BadRequestException('Admin ID is required');
+    }
+    const admin = await this.adminModel.findById(id).select('+password');
+    if (!admin) {
+      throw new BadRequestException('Admin not found');
+    }
+
+    if (!oldPassword || !admin.password) {
+      throw new BadRequestException('Old password is required');
+    }
+
+    const isMatch = await bcrypt.compare(oldPassword, admin.password);
+
+    if (!isMatch) {
+      throw new BadRequestException('Invalid credentials');
+    }
+
+    admin.password = await bcrypt.hash(newPassword, 10);
+    await admin.save();
+    return { message: 'Password changed successfully' };
+  }
+
   async login({ email, password }: { email: string; password: string }) {
     if (!email) throw new BadRequestException('Admin: Email is required!');
 
