@@ -34,4 +34,8 @@ export class CreateApartmentSaleDto extends CreatePropertyBaseDto {
   @IsEnum(EnumAmenities, { each: true })
   @IsOptional()
   amenities?: EnumAmenities[];
+
+  @IsBoolean()
+  @IsOptional()
+  mortgage_available?: boolean;
 }
