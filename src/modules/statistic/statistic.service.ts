@@ -5,7 +5,7 @@ import {
   Property,
   PropertyDocument,
 } from '../property/schemas/property.schema';
-import { Inquiry, InquiryDocument } from '../inquiry/inquiry.schema';
+import { Inquiry, InquiryDocument } from '../inquiry/schemas/inquiry.schema';
 
 @Injectable()
 export class StatisticService {

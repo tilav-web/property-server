@@ -10,7 +10,7 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { EnumInquiryType } from '../inquiry.schema';
+import { EnumInquiryType } from '../schemas/inquiry.schema';
 import { Types } from 'mongoose';
 
 class RentalPeriodDto {

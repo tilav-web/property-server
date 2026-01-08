@@ -117,7 +117,6 @@ export class AdvertiseService {
     );
   }
 
-
   priceCalculus(days: number) {
     const dailyPrice = Number(process.env.ADVERTISE_DAILY_PRICE);
     if (!dailyPrice || Number.isNaN(dailyPrice) || dailyPrice < 0) {

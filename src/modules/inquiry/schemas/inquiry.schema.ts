@@ -9,9 +9,6 @@ export enum EnumInquiryType {
   MORTGAGE = 'mortgage', // Ipoteka orqali olish
 }
 
-/**
- * Inquiry Status — seller tomonidan qayta ishlash jarayoni
- */
 export enum EnumInquiryStatus {
   PENDING = 'pending', // Yuborilgan, hali ko'rilmagan
   VIEWED = 'viewed', // Ko'rib chiqilgan
@@ -21,9 +18,6 @@ export enum EnumInquiryStatus {
   CANCELED = 'canceled', // Foydalanuvchi bekor qilgan
 }
 
-/**
- * 🗓️ RentalPeriod — ijara muddati (Propertydagi Location kabi alohida sub-schema)
- */
 @Schema({ _id: false })
 export class RentalPeriod {
   @Prop({ type: Date, required: true })
@@ -35,9 +29,6 @@ export class RentalPeriod {
 
 export const RentalPeriodSchema = SchemaFactory.createForClass(RentalPeriod);
 
-/**
- * 🏠 Inquiry — foydalanuvchi tomonidan yuborilgan so‘rov (Property uchun)
- */
 @Schema({ timestamps: true })
 export class Inquiry {
   // 👤 Kim yuborgan

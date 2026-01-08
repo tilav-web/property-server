@@ -29,7 +29,8 @@ export class PropertyService {
     private readonly apartmentRentModel: Model<PropertyDocument>,
     @InjectModel(EnumPropertyCategory.APARTMENT_SALE)
     private readonly apartmentSaleModel: Model<PropertyDocument>,
-    @InjectModel(Seller.name) private readonly sellerModel: Model<SellerDocument>,
+    @InjectModel(Seller.name)
+    private readonly sellerModel: Model<SellerDocument>,
     private readonly fileService: FileService,
     private readonly openaiService: OpenaiService,
     private readonly messageService: MessageService,
@@ -124,8 +125,6 @@ export class PropertyService {
 
     return property;
   }
-
-
 
   async findAll(dto: FindAllPropertiesDto & { language: EnumLanguage }) {
     const {
@@ -700,6 +699,4 @@ export class PropertyService {
 
     return categories;
   }
-
-
 }

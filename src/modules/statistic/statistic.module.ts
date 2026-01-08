@@ -5,7 +5,7 @@ import { PropertyModule } from '../property/property.module';
 import { InquiryModule } from '../inquiry/inquiry.module';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Property, PropertySchema } from '../property/schemas/property.schema';
-import { Inquiry, InquirySchema } from '../inquiry/inquiry.schema';
+import { Inquiry, InquirySchema } from '../inquiry/schemas/inquiry.schema';
 
 @Module({
   imports: [

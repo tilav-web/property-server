@@ -75,7 +75,6 @@ export class AdvertiseController {
     return this.service.incrementClick(id);
   }
 
-
   @Post('/')
   @UseGuards(AuthGuard('jwt'))
   @UseInterceptors(FileFieldsInterceptor([{ name: 'image', maxCount: 1 }]))

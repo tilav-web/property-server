@@ -8,11 +8,11 @@ import {
   InternalServerErrorException,
   Get,
 } from '@nestjs/common';
-import { InquiryService } from './inquiry.service';
-import { CreateInquiryDto } from './dto/create-inquiry.dto';
 import { AuthGuard } from '@nestjs/passport';
 import type { IRequestCustom } from 'src/interfaces/custom-request.interface';
 import { EnumLanguage } from 'src/enums/language.enum';
+import { InquiryService } from '../services/inquiry.service';
+import { CreateInquiryDto } from '../dto/create-inquiry.dto';
 
 @Controller('inquiry')
 export class InquiryController {
@@ -37,6 +37,29 @@ export class InquiryController {
       }
       throw new InternalServerErrorException(
         "So'rovlarni yuklashda xatolik yuz berdi",
+      );
+    }
+  }
+
+  @UseGuards(AuthGuard('jwt'))
+  @Get('my-responses')
+  findMyResponses(@Req() req: IRequestCustom) {
+    try {
+      const language = (req.headers['accept-language'] || 'uz')
+        .toLowerCase()
+        .split(',')[0] as EnumLanguage;
+      const user = req.user;
+      return this.inquiryService.findMyInquiryResponses(
+        user?._id as string,
+        language,
+      );
+    } catch (error) {
+      console.error(error);
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new InternalServerErrorException(
+        "Foydalanuvchi so'rov javoblarini yuklashda xatolik yuz berdi",
       );
     }
   }
