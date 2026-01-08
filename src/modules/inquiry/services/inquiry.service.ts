@@ -194,10 +194,12 @@ export class InquiryService {
             },
             seller: {
               _id: '$seller._id',
-              first_name: '$seller_user.first_name',
-              last_name: '$seller_user.last_name',
-              email: '$seller_user.email',
-              avatar: '$seller_user.avatar',
+              user: {
+                _id: '$seller_user._id',
+                first_name: '$seller_user.first_name',
+                last_name: '$seller_user.last_name',
+                avatar: '$seller_user.avatar',
+              },
             },
           },
         },

@@ -9,7 +9,10 @@ import {
 import { CreateInquiryResponseDto } from '../dto/create-inquiry-response.dto';
 import { InquiryService } from './inquiry.service';
 import { EnumInquiryStatus } from '../schemas/inquiry.schema';
-import { Seller, SellerDocument } from 'src/modules/seller/schemas/seller.schema';
+import {
+  Seller,
+  SellerDocument,
+} from 'src/modules/seller/schemas/seller.schema';
 
 @Injectable()
 export class InquiryResponseService {
