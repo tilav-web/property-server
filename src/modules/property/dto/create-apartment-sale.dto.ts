@@ -9,13 +9,33 @@ import { EnumAmenities } from 'src/enums/amenities.enum';
 import { CreatePropertyBaseDto } from './create-property.dto';
 import { EnumRepairType } from '../enums/repair-type.enum';
 import { EnumHeating } from '../enums/heating.enum';
+import { Type } from 'class-transformer';
 
 export class CreateApartmentSaleDto extends CreatePropertyBaseDto {
-  @IsNumber() bedrooms: number;
-  @IsNumber() bathrooms: number;
-  @IsNumber() floor_level: number;
-  @IsNumber() total_floors: number;
-  @IsNumber() area: number;
+  @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
+  bedrooms?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
+  bathrooms?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
+  floor_level?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
+  total_floors?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
+  area?: number;
 
   @IsBoolean() @IsOptional() balcony?: boolean;
   @IsBoolean() @IsOptional() furnished?: boolean;
