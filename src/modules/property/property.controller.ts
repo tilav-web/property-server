@@ -35,7 +35,7 @@ export class PropertyController {
   @UseGuards(AuthGuard('jwt'))
   @UseInterceptors(
     FileFieldsInterceptor([
-      { name: 'photos', maxCount: 10 },
+      { name: 'photos', maxCount: 25 },
       { name: 'videos', maxCount: 2 },
     ]),
   )
