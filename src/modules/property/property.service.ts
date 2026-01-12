@@ -640,14 +640,6 @@ export class PropertyService {
       throw new NotFoundException('Property not found!');
     }
 
-    const hasMessage = await this.messageService.findByUser(user);
-
-    if (hasMessage.length > 0) {
-      throw new BadRequestException(
-        'You have left feedback for this property.',
-      );
-    }
-
     const { message, rating } = await this.messageService.create({
       ...dto,
       user,
