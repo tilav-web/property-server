@@ -35,7 +35,7 @@ export class PropertyService {
     private readonly openaiService: OpenaiService,
     private readonly messageService: MessageService,
     private readonly tagService: TagService,
-  ) {}
+  ) { }
 
   async onModuleInit() {
     const textIndexName =
@@ -72,16 +72,16 @@ export class PropertyService {
     // Fayllarni saqlash
     const photos = files?.photos?.length
       ? await this.fileService.saveFiles({
-          files: files.photos,
-          folder: EnumFilesFolder.PHOTOS,
-        })
+        files: files.photos,
+        folder: EnumFilesFolder.PHOTOS,
+      })
       : [];
 
     const videos = files?.videos?.length
       ? await this.fileService.saveFiles({
-          files: files.videos,
-          folder: EnumFilesFolder.VIDEOS,
-        })
+        files: files.videos,
+        folder: EnumFilesFolder.VIDEOS,
+      })
       : [];
 
     let Model: Model<PropertyDocument>;
@@ -405,9 +405,9 @@ export class PropertyService {
   ) {
     const baseProjection: {
       [key: string]:
-        | 1
-        | { $ifNull: (string | { $slice: (string | number)[] })[] }
-        | { $slice: (string | number)[] };
+      | 1
+      | { $ifNull: (string | { $slice: (string | number)[] })[] }
+      | { $slice: (string | number)[] };
     } = {
       _id: 1,
       author: 1,
@@ -641,7 +641,8 @@ export class PropertyService {
     }
 
     const hasMessage = await this.messageService.findByUser(user);
-    if (hasMessage) {
+
+    if (hasMessage.length > 0) {
       throw new BadRequestException(
         'You have left feedback for this property.',
       );

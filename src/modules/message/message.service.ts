@@ -26,7 +26,7 @@ export class MessageService {
     @InjectModel(Message.name) private messageModel: Model<MessageDocument>,
     @InjectModel(MessageStatus.name)
     private messageStatusModel: Model<MessageStatusDocument>,
-  ) {}
+  ) { }
 
   async findById(id: string) {
     return this.messageModel.findById(id).populate('user').populate('property');

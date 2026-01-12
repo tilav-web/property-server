@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document, HydratedDocument, Types } from 'mongoose';
+import { HydratedDocument, Types } from 'mongoose';
 import { EnumPropertyCategory } from 'src/modules/property/enums/property-category.enum';
 import { EnumPropertyCurrency } from 'src/enums/property-currency.enum';
 import { Language } from 'src/common/language/language.schema';
