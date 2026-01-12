@@ -34,7 +34,7 @@ export class AiPropertyService {
     currency: `EnumPropertyCurrency (e.g., "${EnumPropertyCurrency.UZS}")`,
     price: 'number',
     is_premium: 'boolean',
-    is_verified: 'boolean',
+    status: 'string (EnumPropertyStatus)',
     rating: 'number',
     liked: 'number',
     saved: 'number',
@@ -78,6 +78,7 @@ export class AiPropertyService {
     elevator: 'boolean (Lift mavjudligi)',
     amenities: `EnumAmenities[] (e.g., ["${EnumAmenities.POOL}"])`,
     contract_duration_months: 'number (Kontrakt muddati (oylar))',
+    rental_target: 'EnumRentalTarget[]',
   };
 
   private readonly ENUM_DEFINITIONS = {

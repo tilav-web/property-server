@@ -3,6 +3,7 @@ import {
   Injectable,
   OnModuleInit,
   UnauthorizedException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
@@ -11,6 +12,9 @@ import * as process from 'process';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { Admin, AdminDocument } from '../admin.schema';
+import { CreateAdminDto } from '../dto/create-admin.dto';
+import { UpdateAdminDto } from '../dto/update-admin.dto';
+import { UpdateAdminPasswordDto } from '../dto/update-admin-password.dto';
 
 @Injectable()
 export class AdminService implements OnModuleInit {
@@ -18,21 +22,86 @@ export class AdminService implements OnModuleInit {
     @InjectModel(Admin.name) private readonly adminModel: Model<AdminDocument>,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
-  ) {}
+  ) { }
+
+  async onModuleInit() {
+    await this.createDefaultAdmin();
+  }
+
+  async create(dto: CreateAdminDto): Promise<Admin> {
+    const { email, password, first_name, last_name } = dto;
+
+    const existingAdmin = await this.adminModel.findOne({ email });
+    if (existingAdmin) {
+      throw new BadRequestException('Admin with this email already exists');
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const newAdmin = new this.adminModel({
+      email,
+      password: hashedPassword,
+      first_name,
+      last_name,
+    });
+
+    return newAdmin.save();
+  }
+
+  async findAll(): Promise<Admin[]> {
+    return this.adminModel.find().select('-password').exec();
+  }
 
   async findById(id: string): Promise<AdminDocument | null> {
     return this.adminModel.findById(id).exec();
   }
 
-  async changePassword(
+  async update(id: string, dto: UpdateAdminDto): Promise<Admin> {
+    const admin = await this.adminModel.findById(id);
+    if (!admin) {
+      throw new BadRequestException('Admin not found');
+    }
+
+    if (dto.email && dto.email !== admin.email) {
+      const existingAdmin = await this.adminModel.findOne({ email: dto.email });
+      if (existingAdmin) {
+        throw new BadRequestException('Admin with this email already exists');
+      }
+      admin.email = dto.email;
+    }
+
+    if (dto.password) {
+      admin.password = await bcrypt.hash(dto.password, 10);
+    }
+
+    if (dto.first_name) {
+      admin.first_name = dto.first_name;
+    }
+
+    if (dto.last_name) {
+      admin.last_name = dto.last_name;
+    }
+
+    return admin.save();
+  }
+
+  async remove(id: string): Promise<{ message: string }> {
+    const admin = await this.adminModel.findById(id);
+    if (!admin) {
+      throw new BadRequestException('Admin not found');
+    }
+
+    const superAdminEmail = this.configService.get<string>('ADMIN_EMAIL');
+    if (admin.email === superAdminEmail) {
+      throw new ForbiddenException('You cannot delete the super admin');
+    }
+
+    await this.adminModel.findByIdAndDelete(id);
+    return { message: 'Admin deleted successfully' };
+  }
+
+  async updatePassword(
     id: string | undefined,
-    {
-      newPassword,
-      oldPassword,
-    }: {
-      oldPassword: string;
-      newPassword: string;
-    },
+    { old_password, new_password }: UpdateAdminPasswordDto,
   ) {
     if (!id) {
       throw new BadRequestException('Admin ID is required');
@@ -42,17 +111,17 @@ export class AdminService implements OnModuleInit {
       throw new BadRequestException('Admin not found');
     }
 
-    if (!oldPassword || !admin.password) {
+    if (!old_password || !admin.password) {
       throw new BadRequestException('Old password is required');
     }
 
-    const isMatch = await bcrypt.compare(oldPassword, admin.password);
+    const isMatch = await bcrypt.compare(old_password, admin.password);
 
     if (!isMatch) {
       throw new BadRequestException('Invalid credentials');
     }
 
-    admin.password = await bcrypt.hash(newPassword, 10);
+    admin.password = await bcrypt.hash(new_password, 10);
     await admin.save();
     return { message: 'Password changed successfully' };
   }
@@ -76,6 +145,7 @@ export class AdminService implements OnModuleInit {
       {
         _id: admin._id,
         role: 'admin', // Assuming a fixed role for admin
+        email: admin.email,
       },
       { expiresIn: '15m', secret: adminJwtSecret },
     );
@@ -84,6 +154,7 @@ export class AdminService implements OnModuleInit {
       {
         _id: admin._id,
         role: 'admin',
+        email: admin.email,
       },
       { expiresIn: '7d', secret: adminJwtSecret },
     );
@@ -121,13 +192,11 @@ export class AdminService implements OnModuleInit {
     }
   }
 
-  async onModuleInit() {
-    await this.createDefaultAdmin();
-  }
-
   async createDefaultAdmin(): Promise<void> {
     const adminEmail = process.env.ADMIN_EMAIL;
     const adminPassword = process.env.ADMIN_PASSWORD;
+    const adminFirstName = process.env.ADMIN_FIRST_NAME || 'Super';
+    const adminLastName = process.env.ADMIN_LAST_NAME || 'Admin';
 
     if (!adminEmail || !adminPassword) {
       console.warn(
@@ -145,6 +214,8 @@ export class AdminService implements OnModuleInit {
       await this.adminModel.create({
         email: adminEmail,
         password: hashedPassword,
+        first_name: adminFirstName,
+        last_name: adminLastName,
       });
       console.log('Default admin created successfully.');
     } else {
@@ -152,3 +223,4 @@ export class AdminService implements OnModuleInit {
     }
   }
 }
+

@@ -8,12 +8,18 @@ import {
   Req,
   UseGuards,
   Get,
+  Patch,
+  Delete,
+  Param,
 } from '@nestjs/common';
 import { type Response } from 'express';
 import { AdminGuard } from '../guards/admin.guard';
 import { type IAdminRequestCustom } from '../../../interfaces/admin-request.interface';
 import { AdminService } from '../services/admin.service';
-import { ChangePasswordDto } from '../dto/change-password.dto';
+import { SuperAdminGuard } from '../guards/super-admin.guard';
+import { CreateAdminDto } from '../dto/create-admin.dto';
+import { UpdateAdminDto } from '../dto/update-admin.dto';
+import { UpdateAdminPasswordDto } from '../dto/update-admin-password.dto';
 
 @Controller('admins')
 export class AdminController {
@@ -67,8 +73,6 @@ export class AdminController {
         await this.service.refresh(admin_refresh_token);
       return new_admin_access_token;
     } catch (error) {
-      console.error(error);
-
       if (error instanceof HttpException) {
         throw error;
       }
@@ -94,27 +98,38 @@ export class AdminController {
       .json({ message: 'Logout successful' });
   }
 
-  @Post('/change-password')
-  @UseGuards(AdminGuard)
-  async changePassword(
-    @Req() req: IAdminRequestCustom,
-    @Body() dto: ChangePasswordDto,
-  ) {
-    try {
-      const adminId = req.admin?._id;
-      return await this.service.changePassword(adminId, dto);
-    } catch (error) {
-      if (error instanceof HttpException) {
-        throw error;
-      }
+  @Post('/')
+  @UseGuards(AdminGuard, SuperAdminGuard)
+  create(@Body() dto: CreateAdminDto) {
+    return this.service.create(dto);
+  }
 
-      if (error instanceof Error) {
-        throw new InternalServerErrorException(error.message);
-      }
-      throw new InternalServerErrorException(
-        "Xatolik ketdi. Birozdan so'ng qayta urinib ko'ring!",
-      );
-    }
+  @Get('/')
+  @UseGuards(AdminGuard, SuperAdminGuard)
+  findAll() {
+    return this.service.findAll();
+  }
+
+  @Patch('/password')
+  @UseGuards(AdminGuard)
+  updatePassword(
+    @Req() req: IAdminRequestCustom,
+    @Body() dto: UpdateAdminPasswordDto,
+  ) {
+    const adminId = req.admin?._id;
+    return this.service.updatePassword(adminId, dto);
+  }
+
+  @Patch('/:id')
+  @UseGuards(AdminGuard, SuperAdminGuard)
+  update(@Param('id') id: string, @Body() dto: UpdateAdminDto) {
+    return this.service.update(id, dto);
+  }
+
+  @Delete('/:id')
+  @UseGuards(AdminGuard, SuperAdminGuard)
+  remove(@Param('id') id: string) {
+    return this.service.remove(id);
   }
 
   @Get('/profile')

@@ -5,6 +5,12 @@ export type AdminDocument = Document & Admin;
 
 @Schema({ timestamps: true })
 export class Admin {
+  @Prop({ type: String, required: true })
+  first_name: string;
+
+  @Prop({ type: String, required: true })
+  last_name: string;
+
   @Prop({ type: String, required: true, unique: true })
   email: string;
 
