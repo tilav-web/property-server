@@ -70,9 +70,12 @@ export class MessageService {
     }
 
     const hasMessage = await this.messageModel.findOne({
-      property: dto.property.toString(),
-      user: dto.user.toString(),
+      property: new Types.ObjectId(dto.property),
+      user: new Types.ObjectId(dto.user),
     });
+
+    console.log(dto);
+
 
     if (hasMessage)
       throw new BadRequestException('Bu property uchun fikr bildirgansiz!');
@@ -82,6 +85,8 @@ export class MessageService {
       property: new Types.ObjectId(dto.property),
       user: new Types.ObjectId(dto.user),
     });
+
+
 
     const ratings = await this.messageModel.aggregate<RatingsAggResult>([
       { $match: { property: message.property } },
