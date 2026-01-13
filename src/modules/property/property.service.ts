@@ -10,8 +10,8 @@ import { FilterQuery, Model, PipelineStage, Types } from 'mongoose';
 import { FileService } from '../file/file.service';
 import { OpenaiService } from '../openai/openai.service';
 import { CreatePropertyDto } from './dto/create-property.dto';
+import { UpdatePropertyDto } from './dto/update-property.dto';
 import { EnumPropertyCategory } from './enums/property-category.enum';
-import { EnumFilesFolder } from '../file/enums/files-folder.enum';
 import { EnumLanguage } from 'src/enums/language.enum';
 import { FindAllPropertiesDto } from './dto/find-all-properties.dto';
 import { MessageService } from '../message/message.service';
@@ -19,6 +19,7 @@ import { CreateMessageDto } from '../message/dto/create-message.dto';
 import { EnumPropertyStatus } from './enums/property-status.enum';
 import { Seller, SellerDocument } from '../seller/schemas/seller.schema';
 import { TagService } from '../tag/tag.service';
+import { EnumFilesFolder } from '../file/enums/files-folder.enum';
 
 @Injectable()
 export class PropertyService {
@@ -691,5 +692,116 @@ export class PropertyService {
       await this.propertyModel.aggregate<CategoryCountResult>(pipeline);
 
     return categories;
+  }
+
+  async findOnePropertyForUpdate({ propertyId, authorId }: { propertyId: string; authorId: string }) {
+    const property = await this.propertyModel.findById(propertyId).lean().exec();
+    if (!property) {
+      throw new NotFoundException('Property not found!');
+    }
+    if (property.author.toString() !== authorId.toString()) {
+      throw new ForbiddenException("You don't have permission to update this property.");
+    }
+    return property;
+  }
+
+  async update({
+    id,
+    userId,
+    dto,
+    files,
+  }: {
+    id: string;
+    userId: string;
+    dto: UpdatePropertyDto;
+    files?: {
+      new_photos?: Express.Multer.File[];
+      new_videos?: Express.Multer.File[];
+    };
+  }) {
+    const property = await this.propertyModel.findById(id).exec();
+
+    if (!property) {
+      throw new NotFoundException('Property not found!');
+    }
+
+    if (property.author.toString() !== userId.toString()) {
+      throw new ForbiddenException(
+        "You don't have permission to update this property.",
+      );
+    }
+
+    // 1. Handle File Deletions
+    if (dto.photos_to_delete?.length) {
+      await Promise.all(dto.photos_to_delete.map(url => this.fileService.deleteFile(url)));
+      property.photos = property.photos.filter(
+        (url) => !dto.photos_to_delete?.includes(url),
+      );
+    }
+    if (dto.videos_to_delete?.length) {
+      await Promise.all(dto.videos_to_delete.map(url => this.fileService.deleteFile(url)));
+      property.videos = property.videos.filter(
+        (url) => !dto.videos_to_delete?.includes(url),
+      );
+    }
+
+    // 2. Handle File Uploads
+    if (files?.new_photos?.length) {
+      const newPhotoUrls = await this.fileService.saveFiles({
+        files: files.new_photos,
+        folder: EnumFilesFolder.PHOTOS,
+      });
+      property.photos.push(...newPhotoUrls);
+    }
+    if (files?.new_videos?.length) {
+      const newVideoUrls = await this.fileService.saveFiles({
+        files: files.new_videos,
+        folder: EnumFilesFolder.VIDEOS,
+      });
+      property.videos.push(...newVideoUrls);
+    }
+
+    // 3. Assemble nested fields and update the property document
+    const {
+      title_uz, title_ru, title_en,
+      description_uz, description_ru, description_en,
+      address_uz, address_ru, address_en,
+      location_lat, location_lng,
+      photos_to_delete, videos_to_delete, // Exclude these from Object.assign
+      ...restDto
+    } = dto;
+
+    // Update language fields
+    if (title_uz) property.title.uz = title_uz;
+    if (title_ru) property.title.ru = title_ru;
+    if (title_en) property.title.en = title_en;
+
+    if (description_uz) property.description.uz = description_uz;
+    if (description_ru) property.description.ru = description_ru;
+    if (description_en) property.description.en = description_en;
+
+    if (address_uz) property.address.uz = address_uz;
+    if (address_ru) property.address.ru = address_ru;
+    if (address_en) property.address.en = address_en;
+
+    // Update location
+    if (location_lat !== undefined && location_lng !== undefined) {
+      property.location = {
+        type: 'Point',
+        coordinates: [location_lng, location_lat]
+      };
+    }
+
+    // 4. Update remaining simple fields
+    Object.assign(property, restDto);
+
+    // Mark language and location fields as modified if they were changed
+    if (dto.title_uz || dto.title_ru || dto.title_en) property.markModified('title');
+    if (dto.description_uz || dto.description_ru || dto.description_en) property.markModified('description');
+    if (dto.address_uz || dto.address_ru || dto.address_en) property.markModified('address');
+    if (dto.location_lat || dto.location_lng) property.markModified('location');
+
+
+    return property.save();
   }
 }

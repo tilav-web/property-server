@@ -14,6 +14,7 @@ import {
   UseInterceptors,
   Delete,
   Res,
+  Patch,
 } from '@nestjs/common';
 import { PropertyService } from './property.service';
 import { FindAllPropertiesDto } from './dto/find-all-properties.dto';
@@ -26,10 +27,12 @@ import type { CreatePropertyDto } from './dto/create-property.dto';
 import { CreateMessageDto } from '../message/dto/create-message.dto';
 import { FilterMyPropertiesDto } from './dto/filter-my-properties.dto';
 import { type Response } from 'express';
+import { UpdatePropertyDto } from './dto/update-property.dto';
+
 
 @Controller('properties')
 export class PropertyController {
-  constructor(private readonly service: PropertyService) {}
+  constructor(private readonly service: PropertyService) { }
 
   @Post()
   @UseGuards(AuthGuard('jwt'))
@@ -179,6 +182,36 @@ export class PropertyController {
     return result;
   }
 
+  @Patch(':id')
+  @UseGuards(AuthGuard('jwt'))
+  @UseInterceptors(
+    FileFieldsInterceptor([
+      { name: 'new_photos', maxCount: 25 },
+      { name: 'new_videos', maxCount: 2 },
+    ]),
+  )
+  update(
+    @Param('id') id: string,
+    @Body() dto: UpdatePropertyDto,
+    @UploadedFiles()
+    files: {
+      new_photos?: Express.Multer.File[];
+      new_videos?: Express.Multer.File[];
+    },
+    @Req() req: IRequestCustom,
+  ) {
+    const user = req.user;
+    if (!user) {
+      throw new HttpException('Unauthorized', 401);
+    }
+    return this.service.update({
+      id,
+      userId: user._id,
+      dto,
+      files,
+    });
+  }
+
   @Delete('/:id')
   @UseGuards(AuthGuard('jwt'))
   async deleteById(@Param('id') id: string, @Req() req: IRequestCustom) {
@@ -260,5 +293,15 @@ export class PropertyController {
   @Get('/categories/list')
   async getCategories() {
     return this.service.getCategories();
+  }
+
+  @Get('/update/:id')
+  @UseGuards(AuthGuard('jwt'))
+  async findOnePropertyForUpdate(@Param('id') id: string, @Req() req: IRequestCustom) {
+    const user = req.user;
+    if (!user) {
+      throw new HttpException('Unauthorized', 401);
+    }
+    return this.service.findOnePropertyForUpdate({ propertyId: id, authorId: user._id });
   }
 }
