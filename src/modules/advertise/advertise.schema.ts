@@ -40,7 +40,7 @@ export class Advertise {
   @Prop({
     type: String,
     required: true,
-    default: EnumPropertyCurrency.UZS,
+    default: EnumPropertyCurrency.RM,
   })
   currency: string;
 

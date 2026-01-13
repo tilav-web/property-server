@@ -1,3 +1,3 @@
 export enum EnumPropertyCurrency {
-  UZS = 'uzs',
+  RM = 'rm',
 }

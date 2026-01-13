@@ -31,7 +31,7 @@ export class AiPropertyService {
     category: `EnumPropertyCategory (e.g., "${EnumPropertyCategory.APARTMENT_SALE}")`,
     location:
       "{ type: 'Point', coordinates: [longitude: number, latitude: number] }",
-    currency: `EnumPropertyCurrency (e.g., "${EnumPropertyCurrency.UZS}")`,
+    currency: `EnumPropertyCurrency (e.g., "${EnumPropertyCurrency.RM}")`,
     price: 'number',
     is_premium: 'boolean',
     status: 'string (EnumPropertyStatus)',
@@ -147,7 +147,7 @@ Create the JSON object based on the following rules:
 -   For location-related keywords (e.g., "Yunusobod district", "Tashkent city"), search them in the "address.${languageCode}", "title.${languageCode}", or "description.${languageCode}" fields using the "$regex" operator with the "i" option. Example: \`{"address.${languageCode}": { "$regex": "Yunusobod", "$options": "i" }}\`
 -   The user is searching in ${languageNames[languageCode]} language, so prioritize matching terms to the '.${languageCode}' localized fields.
 -   For price ranges (e.g., "up to 50000 dollars", "above 10000 dollars"), use the \`$gte\` (greater than or equal to) and \`$lte\` (less than or equal to) operators.
--   If the user specifies currency (e.g., "dollar", "soum"), set the "currency" field to the corresponding \`EnumPropertyCurrency\` value. If currency is not specified, assume UZS as default.
+-   If the user specifies currency (e.g., "dollar", "soum"), set the "currency" field to the corresponding \`EnumPropertyCurrency\` value. If currency is not specified, assume RM as default.
 -   For boolean fields (e.g., "furnished", "balcony", "mortgage_available"), use \`true\` or \`false\` values according to the user's request.
 -   For enum fields (e.g., "repair_type", "heating", "amenities"), use the exact enum values.
 

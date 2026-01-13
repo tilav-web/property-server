@@ -128,7 +128,7 @@ export class AdvertiseService {
     return {
       days,
       totalPrice,
-      currency: process.env.ADVERTISE_CURRENCY || 'UZS',
+      currency: process.env.ADVERTISE_CURRENCY || 'RM',
     };
   }
 
