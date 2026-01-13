@@ -17,7 +17,7 @@ export class AdminPropertyService {
   constructor(
     @InjectModel(Property.name) private propertyModel: Model<PropertyDocument>,
     @InjectModel(Seller.name) private sellerModel: Model<SellerDocument>,
-  ) {}
+  ) { }
 
   async findAll(dto: FindPropertiesDto) {
     const { page = 1, limit = 10, search, status, category } = dto;
@@ -50,6 +50,7 @@ export class AdminPropertyService {
 
     const properties = await this.propertyModel
       .find(filter)
+      .sort({ createdAt: -1 })
       .populate('author', 'first_name last_name email phone')
       .skip(skip)
       .limit(limit)
