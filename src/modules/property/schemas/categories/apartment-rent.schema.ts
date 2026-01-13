@@ -10,23 +10,23 @@ export type ApartmentRentDocument = Document & ApartmentRent;
 @Schema()
 export class ApartmentRent {
   // 🛏️ Xonalar soni
-  @Prop({ type: Number, min: 0, required: true })
+  @Prop({ type: Number, min: 0 })
   bedrooms: number;
 
   // 🛁 Hammomlar soni
-  @Prop({ type: Number, min: 0, required: true })
+  @Prop({ type: Number, min: 0 })
   bathrooms: number;
 
   // 🏢 Qaysi qavatda joylashgan
-  @Prop({ type: Number, min: 0, required: true })
+  @Prop({ type: Number, min: 0 })
   floor_level: number;
 
   // 🏢 Binodagi umumiy qavatlar soni
-  @Prop({ type: Number, min: 0, required: true })
+  @Prop({ type: Number, min: 0 })
   total_floors: number;
 
   // 📏 Kvadrat metr, maydon
-  @Prop({ type: Number, min: 0, required: true })
+  @Prop({ type: Number, min: 0 })
   area: number;
 
   // 🌇 Balkon borligi (true/false)
