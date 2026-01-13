@@ -792,6 +792,8 @@ export class PropertyService {
       };
     }
 
+    property.status = EnumPropertyStatus.PENDING; // Set status to PENDING on update
+
     // 4. Update remaining simple fields
     Object.assign(property, restDto);
 
