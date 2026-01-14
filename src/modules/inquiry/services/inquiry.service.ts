@@ -78,8 +78,22 @@ export class InquiryService {
             as: 'property',
           },
         },
+        {
+          $lookup: {
+            from: 'inquiryresponses',
+            localField: '_id',
+            foreignField: 'inquiry',
+            as: 'response',
+          },
+        },
         { $unwind: '$user' },
         { $unwind: '$property' },
+        {
+          $unwind: {
+            path: '$response',
+            preserveNullAndEmptyArrays: true,
+          },
+        },
         {
           $addFields: {
             'property.title': `$property.title.${language}`,
@@ -105,6 +119,11 @@ export class InquiryService {
             property: {
               _id: '$property._id',
               title: '$property.title',
+            },
+            response: {
+              _id: '$response._id',
+              status: '$response.status',
+              description: '$response.description',
             },
           },
         },
