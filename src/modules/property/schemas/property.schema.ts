@@ -86,4 +86,6 @@ PropertySchema.index({
   'address.uz': 'text',
   'address.ru': 'text',
   'address.en': 'text',
+}, {
+  default_language: 'none'
 });
