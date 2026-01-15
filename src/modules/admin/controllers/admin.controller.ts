@@ -67,7 +67,7 @@ export class AdminController {
     try {
       const admin_refresh_token = req.cookies['admin_refresh_token'];
       if (!admin_refresh_token) {
-        throw new HttpException('No refresh token provided', 401);
+        throw new HttpException('No refresh token provided', 403);
       }
       const new_admin_access_token =
         await this.service.refresh(admin_refresh_token);
