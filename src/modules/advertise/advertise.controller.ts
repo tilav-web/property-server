@@ -5,6 +5,7 @@ import {
   Get,
   HttpException,
   InternalServerErrorException,
+  NotAcceptableException,
   Param,
   Patch,
   Post,
@@ -27,7 +28,7 @@ import { Types } from 'mongoose';
 
 @Controller('advertise')
 export class AdvertiseController {
-  constructor(private readonly service: AdvertiseService) {}
+  constructor(private readonly service: AdvertiseService) { }
 
   @Get('/public')
   async findPublic(
@@ -100,7 +101,7 @@ export class AdvertiseController {
       return await this.service.update(
         id,
         dto,
-        new Types.ObjectId(user._id),
+        user._id as string,
         files,
       );
     } catch (error) {
@@ -127,7 +128,7 @@ export class AdvertiseController {
       if (!user) {
         throw new UnauthorizedException('Ruxsat berilmagan');
       }
-      return await this.service.remove(id, new Types.ObjectId(user._id));
+      return await this.service.remove(id, user._id as string);
     } catch (error) {
       console.error(error);
 
@@ -214,6 +215,7 @@ export class AdvertiseController {
 
   @Get(':id')
   async findOne(@Param('id') id: string) {
-    return this.service.findOne(id);
+    if (!id) throw new NotAcceptableException('Ads not found!')
+    return this.service.findById(id);
   }
 }

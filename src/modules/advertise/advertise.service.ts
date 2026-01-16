@@ -20,7 +20,7 @@ export class AdvertiseService {
     @InjectModel(Advertise.name)
     private readonly advertiseModel: Model<AdvertiseDocument>,
     private readonly fileService: FileService,
-  ) {}
+  ) { }
 
   async create({
     dto,
@@ -111,11 +111,8 @@ export class AdvertiseService {
     return advertises;
   }
 
-  async findOne(id: string, author?: string) {
-    const advertise = await this.advertiseModel.findOne({
-      _id: id,
-      ...(author && { author }),
-    });
+  async findById(id: string) {
+    const advertise = await this.advertiseModel.findById(id)
     if (!advertise) {
       throw new NotFoundException('Eʼlon topilmadi');
     }
@@ -125,16 +122,20 @@ export class AdvertiseService {
   async update(
     id: string,
     dto: UpdateAdvertiseDto,
-    author: Types.ObjectId,
+    author: string,
     files?: { image: Express.Multer.File[] },
   ) {
-    const advertise = await this.findOne(id, author.toString());
-    
+    const advertise = await this.advertiseModel.findOne({ _id: id, author })
+
+    if (!advertise) {
+      throw new NotFoundException()
+    }
+
     // Handle image deletion
-      if (dto.image_to_delete && advertise.image) {
-        await this.fileService.deleteFile(advertise.image);
-        advertise.image = undefined;
-      }
+    if (dto.image_to_delete && advertise.image) {
+      await this.fileService.deleteFile(advertise.image);
+      advertise.image = undefined;
+    }
 
     // Handle image upload
     let image: string | undefined;
@@ -148,7 +149,9 @@ export class AdvertiseService {
       });
       advertise.image = image;
     }
-    
+
+    advertise.status = EnumAdvertiseStatus.PENDING
+
     // remove image_to_delete from dto
     const { image_to_delete, ...restDto } = dto;
 
@@ -157,8 +160,16 @@ export class AdvertiseService {
     return advertise.save();
   }
 
-  async remove(id: string, author: Types.ObjectId) {
-    const advertise = await this.findOne(id, author.toString());
+  async remove(id: string, author: string) {
+    const advertise = await this.advertiseModel.findOne({
+      _id: id,
+      author
+    });
+
+    if (!advertise) {
+      throw new NotFoundException()
+    }
+
     if (advertise.image) {
       await this.fileService.deleteFile(advertise.image);
     }
