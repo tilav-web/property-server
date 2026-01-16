@@ -1,6 +1,10 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { FilterQuery, Model } from 'mongoose';
+import { FilterQuery, Model, Types } from 'mongoose';
 import { Advertise, AdvertiseDocument } from './advertise.schema';
 import { CreateAdvertiseDto } from './dto/create-advertise.dto';
 import { FileService } from '../file/file.service';
@@ -8,6 +12,7 @@ import { EnumAdvertiseStatus } from 'src/enums/advertise-status.enum';
 import { EnumAdvertiseType } from 'src/enums/advertise-type.enum';
 import { EnumPaymentStatus } from 'src/enums/advertise-payment-status.enum';
 import { EnumFilesFolder } from '../file/enums/files-folder.enum';
+import { UpdateAdvertiseDto } from './dto/update-advertise.dto';
 
 @Injectable()
 export class AdvertiseService {
@@ -101,6 +106,66 @@ export class AdvertiseService {
     };
   }
 
+  async findMy(author: string) {
+    const advertises = await this.advertiseModel.find({ author });
+    return advertises;
+  }
+
+  async findOne(id: string, author?: string) {
+    const advertise = await this.advertiseModel.findOne({
+      _id: id,
+      ...(author && { author }),
+    });
+    if (!advertise) {
+      throw new NotFoundException('Eʼlon topilmadi');
+    }
+    return advertise;
+  }
+
+  async update(
+    id: string,
+    dto: UpdateAdvertiseDto,
+    author: Types.ObjectId,
+    files?: { image: Express.Multer.File[] },
+  ) {
+    const advertise = await this.findOne(id, author.toString());
+    
+    // Handle image deletion
+      if (dto.image_to_delete && advertise.image) {
+        await this.fileService.deleteFile(advertise.image);
+        advertise.image = undefined;
+      }
+
+    // Handle image upload
+    let image: string | undefined;
+    if (files && files.image) {
+      if (advertise.image) {
+        await this.fileService.deleteFile(advertise.image);
+      }
+      image = await this.fileService.saveFile({
+        folder: EnumFilesFolder.PHOTOS,
+        file: files.image[0],
+      });
+      advertise.image = image;
+    }
+    
+    // remove image_to_delete from dto
+    const { image_to_delete, ...restDto } = dto;
+
+    Object.assign(advertise, restDto);
+
+    return advertise.save();
+  }
+
+  async remove(id: string, author: Types.ObjectId) {
+    const advertise = await this.findOne(id, author.toString());
+    if (advertise.image) {
+      await this.fileService.deleteFile(advertise.image);
+    }
+    await advertise.deleteOne();
+    return { message: 'Eʼlon muvaffaqiyatli oʻchirildi' };
+  }
+
   async incrementView(id: string) {
     return this.advertiseModel.findByIdAndUpdate(
       id,
@@ -130,11 +195,6 @@ export class AdvertiseService {
       totalPrice,
       currency: process.env.ADVERTISE_CURRENCY || 'RM',
     };
-  }
-
-  async findMy(author: string) {
-    const advertises = await this.advertiseModel.find({ author });
-    return advertises;
   }
 
   async findOneByType(type: EnumAdvertiseType) {

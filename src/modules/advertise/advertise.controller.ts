@@ -1,14 +1,17 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpException,
   InternalServerErrorException,
   Param,
+  Patch,
   Post,
   Put,
   Query,
   Req,
+  UnauthorizedException,
   UploadedFiles,
   UseGuards,
   UseInterceptors,
@@ -19,6 +22,8 @@ import { CreateAdvertiseDto } from './dto/create-advertise.dto';
 import { type IRequestCustom } from 'src/interfaces/custom-request.interface';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { EnumAdvertiseType } from 'src/enums/advertise-type.enum';
+import { UpdateAdvertiseDto } from './dto/update-advertise.dto';
+import { Types } from 'mongoose';
 
 @Controller('advertise')
 export class AdvertiseController {
@@ -73,6 +78,70 @@ export class AdvertiseController {
   @Put(':id/click')
   async incrementClick(@Param('id') id: string) {
     return this.service.incrementClick(id);
+  }
+
+  @UseGuards(AuthGuard('jwt'))
+  @Patch(':id')
+  @UseInterceptors(FileFieldsInterceptor([{ name: 'image', maxCount: 1 }]))
+  async update(
+    @Param('id') id: string,
+    @Body() dto: UpdateAdvertiseDto,
+    @Req() req: IRequestCustom,
+    @UploadedFiles()
+    files?: {
+      image: Express.Multer.File[];
+    },
+  ) {
+    try {
+      const user = req.user;
+      if (!user) {
+        throw new UnauthorizedException('Ruxsat berilmagan');
+      }
+      return await this.service.update(
+        id,
+        dto,
+        new Types.ObjectId(user._id),
+        files,
+      );
+    } catch (error) {
+      console.error(error);
+
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
+      if (error instanceof Error) {
+        throw new InternalServerErrorException(error.message);
+      }
+      throw new InternalServerErrorException(
+        "Tizimda xatolik ketdi. Iltimos birozdan so'ng qayta urinib ko'ring!",
+      );
+    }
+  }
+
+  @UseGuards(AuthGuard('jwt'))
+  @Delete(':id')
+  async remove(@Param('id') id: string, @Req() req: IRequestCustom) {
+    try {
+      const user = req.user;
+      if (!user) {
+        throw new UnauthorizedException('Ruxsat berilmagan');
+      }
+      return await this.service.remove(id, new Types.ObjectId(user._id));
+    } catch (error) {
+      console.error(error);
+
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
+      if (error instanceof Error) {
+        throw new InternalServerErrorException(error.message);
+      }
+      throw new InternalServerErrorException(
+        "Tizimda xatolik ketdi. Iltimos birozdan so'ng qayta urinib ko'ring!",
+      );
+    }
   }
 
   @Post('/')
@@ -141,5 +210,10 @@ export class AdvertiseController {
   @Get('type/:type')
   async findOneByType(@Param('type') type: EnumAdvertiseType) {
     return this.service.findOneByType(type);
+  }
+
+  @Get(':id')
+  async findOne(@Param('id') id: string) {
+    return this.service.findOne(id);
   }
 }

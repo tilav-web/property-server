@@ -57,8 +57,8 @@ export class Advertise {
   @Prop({ type: Date, required: false, default: null })
   to: Date;
 
-  @Prop({ type: String, required: true })
-  image: string;
+  @Prop({ type: String, required: false })
+  image?: string;
 
   @Prop({ type: Number, default: 0 })
   views: number;
