@@ -21,17 +21,13 @@ export class AdminTagController {
   async findAll(
     @Query('page') page?: string,
     @Query('limit') limit?: string,
+    @Query('q') query?: string,
   ): Promise<PaginatedTags> {
-    // Use PaginatedTags here
-    return this.adminTagService.findAll(page ? +page : 1, limit ? +limit : 10);
-  }
-
-  @Get('/search')
-  async searchTags(
-    @Query('q') query: string,
-    @Query('limit') limit?: number,
-  ): Promise<{ _id: any; value: string }[]> {
-    return this.adminTagService.searchTags(query, limit ? +limit : 20);
+    return this.adminTagService.findAll(
+      page ? +page : 1,
+      limit ? +limit : 10,
+      query,
+    );
   }
 
   @Post()

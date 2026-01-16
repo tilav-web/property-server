@@ -18,23 +18,31 @@ export class AdminTagService {
     @InjectModel(Tag.name) private readonly tagModel: Model<TagDocument>,
   ) {}
 
-  async findAll(page = 1, limit = 10): Promise<PaginatedTags> {
+  async findAll(
+    page = 1,
+    limit = 10,
+    query?: string,
+  ): Promise<PaginatedTags> {
     const skip = (page - 1) * limit;
+    const findQuery = query
+      ? { value: new RegExp(`^${query.trim()}`, 'i') }
+      : {};
+
     const [tags, total] = await Promise.all([
       this.tagModel
-        .find()
+        .find(findQuery)
         .sort({ value: 1 })
         .skip(skip)
         .limit(limit)
         .lean()
         .exec(),
-      this.tagModel.countDocuments(),
+      this.tagModel.countDocuments(findQuery),
     ]);
 
     const totalPages = Math.ceil(total / limit);
 
     return {
-      data: tags as Tag[], // Cast to Tag[] as lean() returns plain objects
+      data: tags as Tag[],
       total,
       page,
       limit,
@@ -54,27 +62,5 @@ export class AdminTagService {
     }
     await tag.deleteOne();
     return { message: 'Tag successfully deleted' };
-  }
-
-  async searchTags(
-    query: string,
-    limit = 20,
-  ): Promise<{ _id: any; value: string }[]> {
-    if (!query || query.trim().length === 0) {
-      return [];
-    }
-
-    const regex = new RegExp(`^${query.trim()}`, 'i');
-
-    const tags = await this.tagModel
-      .find({ value: regex })
-      .limit(limit)
-      .lean()
-      .exec();
-
-    return tags.map((t) => ({
-      _id: t._id,
-      value: t.value,
-    }));
   }
 }
