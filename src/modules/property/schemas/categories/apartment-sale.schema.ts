@@ -1,10 +1,10 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
 import { EnumAmenities } from 'src/enums/amenities.enum';
 import { EnumRepairType } from '../../enums/repair-type.enum';
 import { EnumHeating } from '../../enums/heating.enum';
+import { PropertyDocument } from '../property.schema';
 
-export type ApartmentSaleDocument = Document & ApartmentSale;
+export type ApartmentSaleDocument = PropertyDocument & ApartmentSale;
 
 @Schema()
 export class ApartmentSale {

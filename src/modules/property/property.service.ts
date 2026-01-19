@@ -20,6 +20,8 @@ import { EnumPropertyStatus } from './enums/property-status.enum';
 import { Seller, SellerDocument } from '../seller/schemas/seller.schema';
 import { TagService } from '../tag/tag.service';
 import { EnumFilesFolder } from '../file/enums/files-folder.enum';
+import { ApartmentRentDocument } from './schemas/categories/apartment-rent.schema';
+import { ApartmentSaleDocument } from './schemas/categories/apartment-sale.schema';
 
 @Injectable()
 export class PropertyService {
@@ -719,6 +721,7 @@ export class PropertyService {
       new_videos?: Express.Multer.File[];
     };
   }) {
+    // Avval base modeldan topamiz
     const property = await this.propertyModel.findById(id).exec();
 
     if (!property) {
@@ -731,16 +734,50 @@ export class PropertyService {
       );
     }
 
+    // Agar kategoriya o'zgarsa, xatolik beramiz
+    if (dto.category && dto.category !== property.category) {
+      throw new BadRequestException(
+        "Kategoriyani o'zgartirish mumkin emas. Yangi e'lon yarating.",
+      );
+    }
+
+    // Kategoriyaga qarab to'g'ri modelni tanlaymiz va TO'G'RI TURLANGAN document olamiz
+    const category = property.category;
+    let typedProperty: ApartmentRentDocument | ApartmentSaleDocument;
+
+    switch (category) {
+      case EnumPropertyCategory.APARTMENT_RENT:
+        typedProperty = (await this.apartmentRentModel
+          .findById(id)
+          .exec()) as unknown as ApartmentRentDocument;
+        break;
+      case EnumPropertyCategory.APARTMENT_SALE:
+        typedProperty = (await this.apartmentSaleModel
+          .findById(id)
+          .exec()) as unknown as ApartmentSaleDocument;
+        break;
+      default:
+        throw new BadRequestException("Qo'llab-quvvatlanmaydigan kategoriya");
+    }
+
+    if (!typedProperty) {
+      throw new NotFoundException('Property not found with specific model!');
+    }
+
     // 1. Handle File Deletions
     if (dto.photos_to_delete?.length) {
-      await Promise.all(dto.photos_to_delete.map(url => this.fileService.deleteFile(url)));
-      property.photos = property.photos.filter(
+      await Promise.all(
+        dto.photos_to_delete.map((url) => this.fileService.deleteFile(url)),
+      );
+      typedProperty.photos = typedProperty.photos.filter(
         (url) => !dto.photos_to_delete?.includes(url),
       );
     }
     if (dto.videos_to_delete?.length) {
-      await Promise.all(dto.videos_to_delete.map(url => this.fileService.deleteFile(url)));
-      property.videos = property.videos.filter(
+      await Promise.all(
+        dto.videos_to_delete.map((url) => this.fileService.deleteFile(url)),
+      );
+      typedProperty.videos = typedProperty.videos.filter(
         (url) => !dto.videos_to_delete?.includes(url),
       );
     }
@@ -751,59 +788,89 @@ export class PropertyService {
         files: files.new_photos,
         folder: EnumFilesFolder.PHOTOS,
       });
-      property.photos.push(...newPhotoUrls);
+      typedProperty.photos.push(...newPhotoUrls);
     }
     if (files?.new_videos?.length) {
       const newVideoUrls = await this.fileService.saveFiles({
         files: files.new_videos,
         folder: EnumFilesFolder.VIDEOS,
       });
-      property.videos.push(...newVideoUrls);
+      typedProperty.videos.push(...newVideoUrls);
     }
 
-    // 3. Assemble nested fields and update the property document
-    const {
-      title_uz, title_ru, title_en,
-      description_uz, description_ru, description_en,
-      address_uz, address_ru, address_en,
-      location_lat, location_lng,
-      photos_to_delete, videos_to_delete, // Exclude these from Object.assign
-      ...restDto
-    } = dto;
+    // 3. Update language fields
+    if (dto.title_uz !== undefined) typedProperty.title.uz = dto.title_uz;
+    if (dto.title_ru !== undefined) typedProperty.title.ru = dto.title_ru;
+    if (dto.title_en !== undefined) typedProperty.title.en = dto.title_en;
 
-    // Update language fields
-    if (title_uz) property.title.uz = title_uz;
-    if (title_ru) property.title.ru = title_ru;
-    if (title_en) property.title.en = title_en;
+    if (dto.description_uz !== undefined)
+      typedProperty.description.uz = dto.description_uz;
+    if (dto.description_ru !== undefined)
+      typedProperty.description.ru = dto.description_ru;
+    if (dto.description_en !== undefined)
+      typedProperty.description.en = dto.description_en;
 
-    if (description_uz) property.description.uz = description_uz;
-    if (description_ru) property.description.ru = description_ru;
-    if (description_en) property.description.en = description_en;
+    if (dto.address_uz !== undefined) typedProperty.address.uz = dto.address_uz;
+    if (dto.address_ru !== undefined) typedProperty.address.ru = dto.address_ru;
+    if (dto.address_en !== undefined) typedProperty.address.en = dto.address_en;
 
-    if (address_uz) property.address.uz = address_uz;
-    if (address_ru) property.address.ru = address_ru;
-    if (address_en) property.address.en = address_en;
-
-    // Update location
-    if (location_lat !== undefined && location_lng !== undefined) {
-      property.location = {
+    // 4. Update location
+    if (dto.location_lat !== undefined && dto.location_lng !== undefined) {
+      typedProperty.location = {
         type: 'Point',
-        coordinates: [location_lng, location_lat]
+        coordinates: [dto.location_lng, dto.location_lat],
       };
     }
 
-    property.status = EnumPropertyStatus.PENDING; // Set status to PENDING on update
+    // 5. Update common fields
+    if (dto.currency !== undefined) typedProperty.currency = dto.currency;
+    if (dto.price !== undefined) typedProperty.price = dto.price;
+    if (dto.is_archived !== undefined)
+      typedProperty.is_archived = dto.is_archived;
 
-    // 4. Update remaining simple fields
-    Object.assign(property, restDto);
+    // 6. Update category-specific fields
+    if (dto.bedrooms !== undefined) typedProperty.bedrooms = dto.bedrooms;
+    if (dto.bathrooms !== undefined) typedProperty.bathrooms = dto.bathrooms;
+    if (dto.floor_level !== undefined)
+      typedProperty.floor_level = dto.floor_level;
+    if (dto.total_floors !== undefined)
+      typedProperty.total_floors = dto.total_floors;
+    if (dto.area !== undefined) typedProperty.area = dto.area;
+    if (dto.balcony !== undefined) typedProperty.balcony = dto.balcony;
+    if (dto.furnished !== undefined) typedProperty.furnished = dto.furnished;
+    if (dto.repair_type !== undefined)
+      typedProperty.repair_type = dto.repair_type;
+    if (dto.heating !== undefined) typedProperty.heating = dto.heating;
+    if (dto.air_conditioning !== undefined)
+      typedProperty.air_conditioning = dto.air_conditioning;
+    if (dto.parking !== undefined) typedProperty.parking = dto.parking;
+    if (dto.elevator !== undefined) typedProperty.elevator = dto.elevator;
+    if (dto.amenities !== undefined)
+      typedProperty.amenities = dto.amenities as any;
 
-    // Mark language and location fields as modified if they were changed
-    if (dto.title_uz || dto.title_ru || dto.title_en) property.markModified('title');
-    if (dto.description_uz || dto.description_ru || dto.description_en) property.markModified('description');
-    if (dto.address_uz || dto.address_ru || dto.address_en) property.markModified('address');
-    if (dto.location_lat || dto.location_lng) property.markModified('location');
+    // A type guard is needed for fields that are not common
+    if (typedProperty.category === EnumPropertyCategory.APARTMENT_RENT) {
+      if (dto.contract_duration_months !== undefined) {
+        (typedProperty as ApartmentRentDocument).contract_duration_months =
+          dto.contract_duration_months;
+      }
+    } else if (typedProperty.category === EnumPropertyCategory.APARTMENT_SALE) {
+      if (dto.mortgage_available !== undefined) {
+        (typedProperty as ApartmentSaleDocument).mortgage_available =
+          dto.mortgage_available;
+      }
+    }
 
+    typedProperty.status = EnumPropertyStatus.PENDING;
 
-    return property.save();
+    // Mark nested fields as modified
+    typedProperty.markModified('title');
+    typedProperty.markModified('description');
+    typedProperty.markModified('address');
+    if (dto.location_lat !== undefined || dto.location_lng !== undefined) {
+      typedProperty.markModified('location');
+    }
+
+    return typedProperty.save();
   }
 }

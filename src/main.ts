@@ -24,7 +24,7 @@ async function bootstrap() {
       forbidNonWhitelisted: false, // Bu false bo'lishi kerak
       transform: true,
       transformOptions: {
-        enableImplicitConversion: true,
+        enableImplicitConversion: false,
       },
     }),
   );

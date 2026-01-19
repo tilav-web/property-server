@@ -6,11 +6,29 @@ import {
   IsArray,
   IsBoolean,
 } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Transform } from 'class-transformer';
 import { EnumPropertyCategory } from '../enums/property-category.enum';
 import { EnumPropertyCurrency } from 'src/enums/property-currency.enum';
 import { EnumRepairType } from '../enums/repair-type.enum';
 import { EnumHeating } from '../enums/heating.enum';
+
+const valueToBoolean = (value: any) => {
+  console.log(value);
+
+  if (value === null || value === undefined) {
+    return undefined;
+  }
+  if (typeof value === 'boolean') {
+    return value;
+  }
+  if (['true', 'on', 'yes', '1'].includes(String(value).toLowerCase())) {
+    return true;
+  }
+  if (['false', 'off', 'no', '0'].includes(String(value).toLowerCase())) {
+    return false;
+  }
+  return undefined;
+};
 
 export class UpdatePropertyDto {
   @IsString()
@@ -50,12 +68,12 @@ export class UpdatePropertyDto {
   address_en?: string;
 
   @IsNumber()
-  @Type(() => Number)
+  @Transform(({ value }) => Number(value))
   @IsOptional()
   location_lat?: number;
 
   @IsNumber()
-  @Type(() => Number)
+  @Transform(({ value }) => Number(value))
   @IsOptional()
   location_lng?: number;
 
@@ -69,12 +87,12 @@ export class UpdatePropertyDto {
 
   @IsOptional()
   @IsNumber()
-  @Type(() => Number)
+  @Transform(({ value }) => Number(value))
   price?: number;
 
   @IsOptional()
   @IsBoolean()
-  @Type(() => Boolean)
+  @Transform(({ value }) => valueToBoolean(value))
   is_archived?: boolean;
 
   @IsOptional()
@@ -90,37 +108,37 @@ export class UpdatePropertyDto {
   // Fields for Apartment Rent/Sale
   @IsOptional()
   @IsNumber()
-  @Type(() => Number)
+  @Transform(({ value }) => Number(value))
   bedrooms?: number;
 
   @IsOptional()
   @IsNumber()
-  @Type(() => Number)
+  @Transform(({ value }) => Number(value))
   bathrooms?: number;
 
   @IsOptional()
   @IsNumber()
-  @Type(() => Number)
+  @Transform(({ value }) => Number(value))
   floor_level?: number;
 
   @IsOptional()
   @IsNumber()
-  @Type(() => Number)
+  @Transform(({ value }) => Number(value))
   total_floors?: number;
 
   @IsOptional()
   @IsNumber()
-  @Type(() => Number)
+  @Transform(({ value }) => Number(value))
   area?: number;
 
   @IsOptional()
   @IsBoolean()
-  @Type(() => Boolean)
+  @Transform(({ value }) => valueToBoolean(value))
   balcony?: boolean;
 
   @IsOptional()
   @IsBoolean()
-  @Type(() => Boolean)
+  @Transform(({ value }) => valueToBoolean(value))
   furnished?: boolean;
 
   @IsOptional()
@@ -133,17 +151,17 @@ export class UpdatePropertyDto {
 
   @IsOptional()
   @IsBoolean()
-  @Type(() => Boolean)
+  @Transform(({ value }) => valueToBoolean(value))
   air_conditioning?: boolean;
 
   @IsOptional()
   @IsBoolean()
-  @Type(() => Boolean)
+  @Transform(({ value }) => valueToBoolean(value))
   parking?: boolean;
 
   @IsOptional()
   @IsBoolean()
-  @Type(() => Boolean)
+  @Transform(({ value }) => valueToBoolean(value))
   elevator?: boolean;
 
   @IsOptional()
@@ -154,12 +172,12 @@ export class UpdatePropertyDto {
   // Apartment Rent specific
   @IsOptional()
   @IsNumber()
-  @Type(() => Number)
+  @Transform(({ value }) => Number(value))
   contract_duration_months?: number;
 
   // Apartment Sale specific
   @IsOptional()
   @IsBoolean()
-  @Type(() => Boolean)
+  @Transform(({ value }) => valueToBoolean(value))
   mortgage_available?: boolean;
 }
