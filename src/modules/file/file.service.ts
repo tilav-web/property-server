@@ -36,6 +36,18 @@ export class FileService {
     if (!fileUrl) return false;
 
     try {
+      if (
+        fileUrl.startsWith('http://') &&
+        !fileUrl.includes(this.baseUrl)
+      ) {
+        this.logger.warn(`External URL, skipping delete: ${fileUrl}`);
+        return true;
+      }
+      if (fileUrl.startsWith('https://') && !fileUrl.includes(this.baseUrl)) {
+        this.logger.warn(`External URL, skipping delete: ${fileUrl}`);
+        return true;
+      }
+
       const localPath = fileUrl.replace(this.baseUrl + '/', '');
       const fullPath = join(
         this.uploadRoot,
