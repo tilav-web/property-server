@@ -5,6 +5,7 @@ import {
   IsEnum,
   IsArray,
   IsBoolean,
+  ValidateIf,
 } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { EnumPropertyCategory } from '../enums/property-category.enum';
@@ -78,10 +79,14 @@ export class UpdatePropertyDto {
   location_lng?: number;
 
   @IsOptional()
+  @ValidateIf((_, value) => value !== '')
+  @Transform(({ value }) => (value === '' ? undefined : value))
   @IsEnum(EnumPropertyCategory)
   category?: EnumPropertyCategory;
 
   @IsOptional()
+  @ValidateIf((_, value) => value !== '')
+  @Transform(({ value }) => (value === '' ? undefined : value))
   @IsEnum(EnumPropertyCurrency)
   currency?: string;
 
@@ -142,10 +147,14 @@ export class UpdatePropertyDto {
   furnished?: boolean;
 
   @IsOptional()
+  @ValidateIf((_, value) => value !== '')
+  @Transform(({ value }) => (value === '' ? undefined : value))
   @IsEnum(EnumRepairType)
   repair_type?: EnumRepairType;
 
   @IsOptional()
+  @ValidateIf((_, value) => value !== '')
+  @Transform(({ value }) => (value === '' ? undefined : value))
   @IsEnum(EnumHeating)
   heating?: EnumHeating;
 

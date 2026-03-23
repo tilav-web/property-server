@@ -1,13 +1,18 @@
-import { IsEnum, IsMongoId, IsOptional } from 'class-validator';
+import { IsEnum, IsMongoId, IsOptional, ValidateIf } from 'class-validator';
+import { Transform } from 'class-transformer';
 import { EnumAdvertiseStatus } from 'src/enums/advertise-status.enum';
 import { EnumPaymentStatus } from 'src/enums/advertise-payment-status.enum';
 
 export class UpdateAdvertiseStatusDto {
+  @IsOptional()
+  @ValidateIf((_, value) => value !== '')
+  @Transform(({ value }) => (value === '' ? undefined : value))
   @IsEnum(EnumAdvertiseStatus)
-  @IsOptional()
-  status: EnumAdvertiseStatus;
+  status?: EnumAdvertiseStatus;
 
-  @IsEnum(EnumPaymentStatus)
   @IsOptional()
-  paymentStatus: EnumPaymentStatus;
+  @ValidateIf((_, value) => value !== '')
+  @Transform(({ value }) => (value === '' ? undefined : value))
+  @IsEnum(EnumPaymentStatus)
+  paymentStatus?: EnumPaymentStatus;
 }

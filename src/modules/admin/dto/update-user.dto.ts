@@ -5,7 +5,9 @@ import {
   IsBoolean,
   IsEmail,
   IsPhoneNumber,
+  ValidateIf,
 } from 'class-validator';
+import { Transform } from 'class-transformer';
 import { EnumRole } from 'src/enums/role.enum';
 import { EnumLanguage } from 'src/enums/language.enum';
 
@@ -39,10 +41,14 @@ export class UpdateUserDto {
   avatar?: string;
 
   @IsOptional()
+  @ValidateIf((_, value) => value !== '')
+  @Transform(({ value }) => (value === '' ? undefined : value))
   @IsEnum(EnumRole)
   role?: EnumRole;
 
   @IsOptional()
+  @ValidateIf((_, value) => value !== '')
+  @Transform(({ value }) => (value === '' ? undefined : value))
   @IsEnum(EnumLanguage)
   lan?: EnumLanguage;
 }

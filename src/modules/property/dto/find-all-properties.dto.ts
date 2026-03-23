@@ -5,7 +5,9 @@ import {
   IsBoolean,
   IsEnum,
   IsArray,
+  ValidateIf,
 } from 'class-validator';
+import { Transform as ClassTransformerTransform } from 'class-transformer';
 import { Type, Transform } from 'class-transformer';
 import { EnumPropertyCategory } from '../enums/property-category.enum';
 import { EnumPropertyCategoryFilter } from '../enums/property-category-filter.enum';
@@ -107,10 +109,14 @@ export class FindAllPropertiesDto {
   lat?: number;
 
   @IsOptional()
+  @ValidateIf((_, value) => value !== '')
+  @ClassTransformerTransform(({ value }) => (value === '' ? undefined : value))
   @IsEnum(EnumPropertyCategory)
   category?: EnumPropertyCategory;
 
   @IsOptional()
+  @ValidateIf((_, value) => value !== '')
+  @ClassTransformerTransform(({ value }) => (value === '' ? undefined : value))
   @IsEnum(EnumPropertyCategoryFilter)
   filterCategory?: EnumPropertyCategoryFilter;
 
@@ -124,6 +130,8 @@ export class FindAllPropertiesDto {
   is_premium?: boolean;
 
   @IsOptional()
+  @ValidateIf((_, value) => value !== '')
+  @ClassTransformerTransform(({ value }) => (value === '' ? undefined : value))
   @IsEnum(EnumPropertyStatus)
   status?: EnumPropertyStatus;
 

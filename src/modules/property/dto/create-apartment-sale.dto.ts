@@ -4,7 +4,9 @@ import {
   IsEnum,
   IsOptional,
   IsArray,
+  ValidateIf,
 } from 'class-validator';
+import { Transform } from 'class-transformer';
 import { EnumAmenities } from 'src/enums/amenities.enum';
 import { CreatePropertyBaseDto } from './create-property.dto';
 import { EnumRepairType } from '../enums/repair-type.enum';
@@ -40,11 +42,17 @@ export class CreateApartmentSaleDto extends CreatePropertyBaseDto {
   @IsBoolean() @IsOptional() balcony?: boolean;
   @IsBoolean() @IsOptional() furnished?: boolean;
 
+  @IsOptional()
+  @ValidateIf((_, value) => value !== '')
+  @Transform(({ value }) => (value === '' ? undefined : value))
   @IsEnum(EnumRepairType)
-  repair_type: EnumRepairType;
+  repair_type?: EnumRepairType;
 
+  @IsOptional()
+  @ValidateIf((_, value) => value !== '')
+  @Transform(({ value }) => (value === '' ? undefined : value))
   @IsEnum(EnumHeating)
-  heating: EnumHeating;
+  heating?: EnumHeating;
 
   @IsBoolean() @IsOptional() air_conditioning?: boolean;
   @IsBoolean() @IsOptional() parking?: boolean;

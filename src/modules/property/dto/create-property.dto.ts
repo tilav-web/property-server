@@ -1,4 +1,5 @@
-import { IsEnum, IsNumber, IsOptional, IsString } from 'class-validator';
+import { IsEnum, IsNumber, IsOptional, IsString, ValidateIf } from 'class-validator';
+import { Transform } from 'class-transformer';
 import { EnumPropertyCategory } from '../enums/property-category.enum';
 import { CreateApartmentRentDto } from './create-apartment-rent.dto';
 import { CreateApartmentSaleDto } from './create-apartment-sale.dto';
@@ -23,8 +24,11 @@ export class CreatePropertyBaseDto {
   @IsNumber()
   price: number;
 
+  @IsOptional()
+  @ValidateIf((_, value) => value !== '')
+  @Transform(({ value }) => (value === '' ? undefined : value))
   @IsEnum(EnumPropertyCategory)
-  category: EnumPropertyCategory;
+  category?: EnumPropertyCategory;
 
   @IsOptional()
   @IsEnum(EnumPropertyCurrency)

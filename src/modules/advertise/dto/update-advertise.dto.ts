@@ -1,5 +1,5 @@
-import { IsEnum, IsNotEmpty, IsNumber, IsOptional, IsString, IsBoolean } from 'class-validator';
-import { Type } from 'class-transformer';
+import { IsEnum, IsNotEmpty, IsNumber, IsOptional, IsString, IsBoolean, ValidateIf } from 'class-validator';
+import { Type, Transform } from 'class-transformer';
 import { EnumAdvertiseType } from 'src/enums/advertise-type.enum';
 
 export class UpdateAdvertiseDto {
@@ -8,9 +8,10 @@ export class UpdateAdvertiseDto {
   @IsOptional()
   target?: string;
 
-  @IsEnum(EnumAdvertiseType)
-  @IsNotEmpty()
   @IsOptional()
+  @ValidateIf((_, value) => value !== '')
+  @Transform(({ value }) => (value === '' ? undefined : value))
+  @IsEnum(EnumAdvertiseType)
   type?: EnumAdvertiseType;
 
   @Type(() => Number)
