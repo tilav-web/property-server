@@ -295,7 +295,7 @@ export class SellerService {
       return seller;
     }
     
-    const { socialAccounts, phone, email, passport, commission_rate, ...publicData } = seller.user as any;
+    const { socialAccounts, passport, commission_rate, ...publicData } = seller.user as any;
     
     return {
       ...seller,
@@ -304,6 +304,8 @@ export class SellerService {
         first_name: seller.user.first_name,
         last_name: seller.user.last_name,
         avatar: seller.user.avatar,
+        phone: seller.user.phone,
+        email: seller.user.email,
       },
     };
   }
