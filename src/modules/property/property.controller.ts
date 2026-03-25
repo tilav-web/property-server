@@ -28,6 +28,7 @@ import { CreateMessageDto } from '../message/dto/create-message.dto';
 import { FilterMyPropertiesDto } from './dto/filter-my-properties.dto';
 import { type Response } from 'express';
 import { UpdatePropertyDto } from './dto/update-property.dto';
+import { AdminGuard } from '../admin/guards/admin.guard';
 
 
 @Controller('properties')
@@ -248,9 +249,8 @@ export class PropertyController {
   }
 
   @Put(':id/status')
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(AuthGuard('jwt'), AdminGuard)
   updateStatus(@Param('id') id: string, @Body() dto: UpdatePropertyStatusDto) {
-    // The service method already checks for ADMIN role
     return this.service.updateStatus({
       id,
       status: dto.status,

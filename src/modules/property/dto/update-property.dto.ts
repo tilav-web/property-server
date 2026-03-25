@@ -6,6 +6,8 @@ import {
   IsArray,
   IsBoolean,
   ValidateIf,
+  Min,
+  Max,
 } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { EnumPropertyCategory } from '../enums/property-category.enum';
@@ -14,8 +16,6 @@ import { EnumRepairType } from '../enums/repair-type.enum';
 import { EnumHeating } from '../enums/heating.enum';
 
 const valueToBoolean = (value: any) => {
-  console.log(value);
-
   if (value === null || value === undefined) {
     return undefined;
   }
@@ -71,11 +71,15 @@ export class UpdatePropertyDto {
   @IsNumber()
   @Transform(({ value }) => Number(value))
   @IsOptional()
+  @Min(-90, { message: 'Latitude noto\'g\'ri!' })
+  @Max(90, { message: 'Latitude noto\'g\'ri!' })
   location_lat?: number;
 
   @IsNumber()
   @Transform(({ value }) => Number(value))
   @IsOptional()
+  @Min(-180, { message: 'Longitude noto\'g\'ri!' })
+  @Max(180, { message: 'Longitude noto\'g\'ri!' })
   location_lng?: number;
 
   @IsOptional()
@@ -88,10 +92,11 @@ export class UpdatePropertyDto {
   @ValidateIf((_, value) => value !== '')
   @Transform(({ value }) => (value === '' ? undefined : value))
   @IsEnum(EnumPropertyCurrency)
-  currency?: string;
+  currency?: EnumPropertyCurrency;
 
   @IsOptional()
   @IsNumber()
+  @Min(0, { message: 'Narx manfiy bo\'lishi mumkin emas!' })
   @Transform(({ value }) => Number(value))
   price?: number;
 

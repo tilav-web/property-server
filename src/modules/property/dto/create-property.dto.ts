@@ -6,22 +6,22 @@ import { CreateApartmentSaleDto } from './create-apartment-sale.dto';
 import { EnumPropertyCurrency } from 'src/enums/property-currency.enum';
 
 export class CreatePropertyBaseDto {
-  @IsString()
+  @IsString({ message: 'Sarlavha kiritilmagan!' })
   title: string;
 
-  @IsString()
+  @IsString({ message: 'Tavsif kiritilmagan!' })
   description: string;
 
-  @IsString()
+  @IsString({ message: 'Manzil kiritilmagan!' })
   address: string;
 
-  @IsNumber()
+  @IsNumber({}, { message: 'Latitude kiritilmagan!' })
   location_lat: number;
 
-  @IsNumber()
+  @IsNumber({}, { message: 'Longitude kiritilmagan!' })
   location_lng: number;
 
-  @IsNumber()
+  @IsNumber({}, { message: 'Narx kiritilmagan!' })
   price: number;
 
   @IsOptional()

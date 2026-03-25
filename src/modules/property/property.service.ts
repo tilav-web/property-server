@@ -17,6 +17,7 @@ import { FindAllPropertiesDto } from './dto/find-all-properties.dto';
 import { MessageService } from '../message/message.service';
 import { CreateMessageDto } from '../message/dto/create-message.dto';
 import { EnumPropertyStatus } from './enums/property-status.enum';
+import { EnumSellerStatus } from 'src/enums/seller-status.enum';
 import { Seller, SellerDocument } from '../seller/schemas/seller.schema';
 import { TagService } from '../tag/tag.service';
 import { EnumFilesFolder } from '../file/enums/files-folder.enum';
@@ -643,20 +644,34 @@ export class PropertyService {
       throw new NotFoundException('Property not found!');
     }
 
+    if (property.author?.toString() === user) {
+      throw new BadRequestException('O\'zingizning e\'loningizga xabar yubora olmaysiz!');
+    }
+
     const { message, rating } = await this.messageService.create({
       ...dto,
       user,
     });
 
     if (message && property.author) {
-      await this.messageService.createMessageStatus({
-        message: message?._id as string,
-        seller: property.author.toString(),
-      });
+      const seller = await this.sellerModel.findOne({
+        user: property.author,
+        status: { $in: [EnumSellerStatus.COMPLETED, EnumSellerStatus.APPROVED] },
+      }).lean();
+
+      if (seller) {
+        await this.messageService.createMessageStatus({
+          message: message?._id as string,
+          seller: seller._id.toString(),
+        });
+      }
     }
 
-    property.rating = rating ?? property.rating;
-    await property.save();
+    if (rating !== undefined) {
+      await this.propertyModel.findByIdAndUpdate(dto.property, {
+        $set: { rating },
+      });
+    }
 
     return message;
   }

@@ -160,7 +160,6 @@ export class AdminService implements OnModuleInit {
     );
 
     const { password: _, ...adminWithoutPassword } = admin.toObject();
-    void _;
 
     return {
       admin: adminWithoutPassword,

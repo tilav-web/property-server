@@ -3,12 +3,10 @@ import { HydratedDocument, Types } from 'mongoose';
 import { EnumPropertyCategory } from 'src/modules/property/enums/property-category.enum';
 import { EnumPropertyCurrency } from 'src/enums/property-currency.enum';
 import { Language } from 'src/common/language/language.schema';
-import { Location } from 'src/common/location/location.schema';
+import { Location, LocationSchema } from 'src/common/location/location.schema';
 import { EnumPropertyStatus } from '../enums/property-status.enum';
 
 export type PropertyDocument = HydratedDocument<Property>;
-
-export const LocationSchema = SchemaFactory.createForClass(Location);
 
 @Schema({ timestamps: true, discriminatorKey: 'category' })
 export class Property {

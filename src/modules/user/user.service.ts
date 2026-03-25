@@ -57,6 +57,7 @@ export class UserService {
       {
         _id: user._id,
         role: user.role,
+        tokenType: 'access',
       },
       { expiresIn: '15m' },
     );
@@ -65,12 +66,12 @@ export class UserService {
       {
         _id: user._id,
         role: user.role,
+        tokenType: 'refresh',
       },
       { expiresIn: '7d' },
     );
 
     const { password: _, ...userWithoutPassword } = user.toObject();
-    void _;
     return { user: userWithoutPassword, access_token, refresh_token };
   }
 
@@ -161,6 +162,7 @@ export class UserService {
       {
         _id: user._id,
         role: user.role,
+        tokenType: 'access',
       },
       { expiresIn: '15m' },
     );
@@ -169,6 +171,7 @@ export class UserService {
       {
         _id: user._id,
         role: user.role,
+        tokenType: 'refresh',
       },
       { expiresIn: '7d' },
     );
@@ -212,11 +215,17 @@ export class UserService {
     const payload = await this.jwtService.verifyAsync<{
       _id: string;
       role: EnumRole;
+      tokenType: string;
     }>(refresh_token);
+
+    if (payload.tokenType !== 'refresh') {
+      throw new BadRequestException('Noto\'g\'ri token turi!');
+    }
 
     const access_token = this.jwtService.sign({
       _id: payload._id,
       role: payload.role,
+      tokenType: 'access',
     });
 
     return access_token;
@@ -258,6 +267,7 @@ export class UserService {
       {
         _id: user._id,
         role: user.role,
+        tokenType: 'access',
       },
       { expiresIn: '15m' },
     );
@@ -266,6 +276,7 @@ export class UserService {
       {
         _id: user._id,
         role: user.role,
+        tokenType: 'refresh',
       },
       { expiresIn: '7d' },
     );

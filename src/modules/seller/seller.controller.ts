@@ -148,24 +148,22 @@ export class SellerController {
     }
   }
 
-  @Get(':id')
+@Get(':id')
   async findOne(
     @Param('id') id: string,
+    @Req() req: IRequestCustom,
     @Query('language', new ParseEnumPipe(EnumLanguage, { optional: true }))
     language: EnumLanguage = EnumLanguage.UZ,
   ) {
     try {
-      const result = await this.service.findOne(id, language);
+      const userId = req.user?._id as string;
+      const result = await this.service.findOneWithAuth(id, language, userId);
       return result;
     } catch (error) {
       console.error('Find one seller error:', error);
 
       if (error instanceof HttpException) {
         throw error;
-      }
-
-      if (error instanceof Error) {
-        throw new InternalServerErrorException(error.message);
       }
 
       throw new InternalServerErrorException(

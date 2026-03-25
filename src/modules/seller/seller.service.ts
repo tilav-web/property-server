@@ -270,6 +270,44 @@ export class SellerService {
     return { ...seller, properties };
   }
 
+  async isOwner(sellerId: string, userId: string): Promise<boolean> {
+    if (!userId || !Types.ObjectId.isValid(sellerId)) {
+      return false;
+    }
+    
+    const seller = await this.sellerModel.findById(sellerId).lean();
+    if (!seller) {
+      return false;
+    }
+    
+    return seller.user.toString() === userId;
+  }
+
+  async findOneWithAuth(
+    id: string,
+    language: EnumLanguage = EnumLanguage.UZ,
+    userId?: string,
+  ) {
+    const isOwner = userId ? await this.isOwner(id, userId) : false;
+    const seller = await this.findOne(id, language);
+    
+    if (isOwner) {
+      return seller;
+    }
+    
+    const { socialAccounts, phone, email, passport, commission_rate, ...publicData } = seller.user as any;
+    
+    return {
+      ...seller,
+      user: {
+        _id: seller.user._id,
+        first_name: seller.user.first_name,
+        last_name: seller.user.last_name,
+        avatar: seller.user.avatar,
+      },
+    };
+  }
+
   async update(id: string, dto: UpdateSellerDto) {
     const seller = await this.sellerModel
       .findByIdAndUpdate(id, dto, {
