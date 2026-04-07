@@ -17,12 +17,12 @@ import { AuthGuard } from '@nestjs/passport';
 import { type IRequestCustom } from 'src/interfaces/custom-request.interface';
 import { EnumLanguage } from 'src/enums/language.enum';
 
-@UseGuards(AuthGuard('jwt'))
 @Controller('messages')
 export class MessageController {
   constructor(private readonly service: MessageService) {}
 
   @Get('/id/:id')
+  @UseGuards(AuthGuard('jwt'))
   async findById(@Param('id') id: string) {
     try {
       const result = await this.service.findById(id);
@@ -92,6 +92,7 @@ export class MessageController {
   }
 
   @Delete('/:id')
+  @UseGuards(AuthGuard('jwt'))
   async delete(@Param('id') id: string, @Req() req: IRequestCustom) {
     try {
       const user = req.user;
