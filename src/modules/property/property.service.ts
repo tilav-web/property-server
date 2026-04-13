@@ -556,13 +556,18 @@ export class PropertyService {
     };
   }
 
-  async findById({ id, language }: { id: string; language?: EnumLanguage }) {
+  async findById({ id, language, userId }: { id: string; language?: EnumLanguage; userId?: string }) {
     const property = await this.propertyModel
       .findById(id)
       .populate('author')
       .lean()
       .exec();
     if (!property) {
+      throw new NotFoundException('Property not found!');
+    }
+
+    const isOwner = userId && property.author?._id?.toString() === userId.toString();
+    if (!isOwner && (property.is_archived || property.status !== EnumPropertyStatus.APPROVED)) {
       throw new NotFoundException('Property not found!');
     }
 
@@ -863,7 +868,44 @@ export class PropertyService {
       }
     }
 
-    typedProperty.status = EnumPropertyStatus.PENDING;
+    // Agar faqat is_archived o'zgargan bo'lsa, statusni o'zgartirmaymiz
+    const hasContentChanges =
+      dto.title_uz !== undefined ||
+      dto.title_ru !== undefined ||
+      dto.title_en !== undefined ||
+      dto.description_uz !== undefined ||
+      dto.description_ru !== undefined ||
+      dto.description_en !== undefined ||
+      dto.address_uz !== undefined ||
+      dto.address_ru !== undefined ||
+      dto.address_en !== undefined ||
+      dto.location_lat !== undefined ||
+      dto.location_lng !== undefined ||
+      dto.currency !== undefined ||
+      dto.price !== undefined ||
+      dto.bedrooms !== undefined ||
+      dto.bathrooms !== undefined ||
+      dto.floor_level !== undefined ||
+      dto.total_floors !== undefined ||
+      dto.area !== undefined ||
+      dto.balcony !== undefined ||
+      dto.furnished !== undefined ||
+      dto.repair_type !== undefined ||
+      dto.heating !== undefined ||
+      dto.air_conditioning !== undefined ||
+      dto.parking !== undefined ||
+      dto.elevator !== undefined ||
+      dto.amenities !== undefined ||
+      dto.contract_duration_months !== undefined ||
+      dto.mortgage_available !== undefined ||
+      dto.photos_to_delete?.length ||
+      dto.videos_to_delete?.length ||
+      files?.new_photos?.length ||
+      files?.new_videos?.length;
+
+    if (hasContentChanges) {
+      typedProperty.status = EnumPropertyStatus.PENDING;
+    }
 
     // Mark nested fields as modified
     typedProperty.markModified('title');

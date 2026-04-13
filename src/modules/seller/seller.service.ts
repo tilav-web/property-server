@@ -169,8 +169,16 @@ export class SellerService {
       {
         $lookup: {
           from: 'properties',
-          localField: 'user._id',
-          foreignField: 'author',
+          let: { userId: '$user._id' },
+          pipeline: [
+            {
+              $match: {
+                $expr: { $eq: ['$author', '$$userId'] },
+                status: 'APPROVED',
+                is_archived: false,
+              },
+            },
+          ],
           as: 'properties',
         },
       },
@@ -230,8 +238,16 @@ export class SellerService {
       {
         $lookup: {
           from: 'properties',
-          localField: 'user._id',
-          foreignField: 'author',
+          let: { userId: '$user._id' },
+          pipeline: [
+            {
+              $match: {
+                $expr: { $eq: ['$author', '$$userId'] },
+                status: 'APPROVED',
+                is_archived: false,
+              },
+            },
+          ],
           as: 'properties',
         },
       },
@@ -293,8 +309,16 @@ export class SellerService {
       {
         $lookup: {
           from: 'properties',
-          localField: 'user._id',
-          foreignField: 'author',
+          let: { userId: '$user._id' },
+          pipeline: [
+            {
+              $match: {
+                $expr: { $eq: ['$author', '$$userId'] },
+                status: 'APPROVED',
+                is_archived: false,
+              },
+            },
+          ],
           as: 'properties',
         },
       },
@@ -306,9 +330,9 @@ export class SellerService {
 
     const properties = seller.properties.map((p) => ({
       ...p,
-      title: p.title?.[language] ?? p.title?.en ?? '',
-      description: p.description?.[language] ?? p.description?.en ?? '',
-      address: p.address?.[language] ?? p.address?.en ?? '',
+      title: p.title?.[language] ?? p.title?.uz ?? '',
+      description: p.description?.[language] ?? p.description?.uz ?? '',
+      address: p.address?.[language] ?? p.address?.uz ?? '',
     }));
 
     return { ...seller, properties };
