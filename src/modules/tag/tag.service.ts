@@ -38,8 +38,10 @@ export class TagService {
       if (!query) {
         return [];
       }
+
+      const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       return this.tagModel
-        .find({ value: { $regex: query, $options: 'i' } })
+        .find({ value: { $regex: escapedQuery, $options: 'i' } })
         .limit(10)
         .exec();
     } catch (error) {

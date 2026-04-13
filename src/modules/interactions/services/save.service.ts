@@ -24,7 +24,7 @@ export class SaveService {
   async saveProperty({
     userId,
     propertyId,
-    language = EnumLanguage.UZ,
+    language = EnumLanguage.EN,
   }: {
     userId: string;
     propertyId: string;
@@ -100,11 +100,11 @@ export class SaveService {
           $project: {
             _id: 1,
             author: 1,
-            title: { $ifNull: [`$title.${language}`, '$title.uz'] },
+            title: { $ifNull: [`$title.${language}`, '$title.en'] },
             description: {
-              $ifNull: [`$description.${language}`, '$description.uz'],
+              $ifNull: [`$description.${language}`, '$description.en'],
             },
-            address: { $ifNull: [`$address.${language}`, '$address.uz'] },
+            address: { $ifNull: [`$address.${language}`, '$address.en'] },
             category: 1,
             location: 1,
             currency: 1,
@@ -130,7 +130,7 @@ export class SaveService {
     };
   }
 
-  async findMySaves(user: string, language: EnumLanguage = EnumLanguage.UZ) {
+  async findMySaves(user: string, language: EnumLanguage = EnumLanguage.EN) {
     const userObjectId = new Types.ObjectId(user);
 
     // ✅ Optimallashtirilgan aggregation
@@ -182,16 +182,16 @@ export class SaveService {
           'property._id': 1,
           'property.author': 1,
           'property.title': {
-            $ifNull: [`$property.title.${language}`, '$property.title.uz'],
+            $ifNull: [`$property.title.${language}`, '$property.title.en'],
           },
           'property.description': {
             $ifNull: [
               `$property.description.${language}`,
-              '$property.description.uz',
+              '$property.description.en',
             ],
           },
           'property.address': {
-            $ifNull: [`$property.address.${language}`, '$property.address.uz'],
+            $ifNull: [`$property.address.${language}`, '$property.address.en'],
           },
           'property.category': 1,
           'property.location': 1,

@@ -37,12 +37,18 @@ export class CommissionerService {
     if (!dto.contract_file)
       throw new BadRequestException('Shartnoma faylni yuborishingiz shart!');
 
+    const existing = await this.model.findOne({ seller: seller._id });
+
     const contractUrl = await this.fileService.saveFile({
       file: dto.contract_file,
       folder: EnumFilesFolder.FILES,
     });
 
-    const commissioner = await this.model.findOneAndUpdate(
+    if (existing?.contract_file && existing.contract_file !== contractUrl) {
+      await this.fileService.deleteFile(existing.contract_file);
+    }
+
+    await this.model.findOneAndUpdate(
       { seller: seller._id },
       {
         ...dto,
@@ -55,13 +61,6 @@ export class CommissionerService {
         setDefaultsOnInsert: true,
       },
     );
-
-    if (
-      commissioner.contract_file &&
-      commissioner.contract_file !== contractUrl
-    ) {
-      await this.fileService.deleteFile(commissioner.contract_file);
-    }
 
     await this.sellerService.updateSellerStatus({
       id: seller._id as string,

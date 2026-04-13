@@ -17,4 +17,20 @@ export class OtpService {
   async findByUser(user: string) {
     return this.model.findOne({ user: new Types.ObjectId(user) });
   }
+
+  async incrementAttempts(user: string) {
+    return this.model.findOneAndUpdate(
+      { user: new Types.ObjectId(user) },
+      { $inc: { attempts: 1 } },
+      { new: true },
+    );
+  }
+
+  async lock(user: string, lockedUntil: Date) {
+    return this.model.findOneAndUpdate(
+      { user: new Types.ObjectId(user) },
+      { $set: { lockedUntil } },
+      { new: true },
+    );
+  }
 }

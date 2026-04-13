@@ -99,7 +99,7 @@ export class AiPropertyService {
     userPrompt,
     page = 1,
     limit = 5,
-    language = EnumLanguage.UZ,
+    language = EnumLanguage.EN,
   }: {
     userPrompt: string;
     page: number;
@@ -144,7 +144,7 @@ Create the JSON object based on the following rules:
 -   **The output MUST be only and exclusively a valid Mongoose FilterQuery JSON object.** No other text, comments, or explanations should be included.
 -   If the user uses terms like "apartment for sale" or similar in their search, set the "category" field to "APARTMENT_SALE".
 -   If the user uses terms like "apartment for rent" or similar in their search, set the "category" field to "APARTMENT_RENT". If the category is not clearly specified, do not include it.
--   For location-related keywords (e.g., "Yunusobod district", "Tashkent city"), search them in the "address.${languageCode}", "title.${languageCode}", or "description.${languageCode}" fields using the "$regex" operator with the "i" option. Example: \`{"address.${languageCode}": { "$regex": "Yunusobod", "$options": "i" }}\`
+-   For location-related keywords (e.g., "Bukit Bintang district", "Kuala Lumpur city"), search them in the "address.${languageCode}", "title.${languageCode}", or "description.${languageCode}" fields using the "$regex" operator with the "i" option. Example: \`{"address.${languageCode}": { "$regex": "Bukit Bintang", "$options": "i" }}\`
 -   The user is searching in ${languageNames[languageCode]} language, so prioritize matching terms to the '.${languageCode}' localized fields.
 -   For price ranges (e.g., "up to 50000 dollars", "above 10000 dollars"), use the \`$gte\` (greater than or equal to) and \`$lte\` (less than or equal to) operators.
 -   If the user specifies currency (e.g., "dollar", "soum"), set the "currency" field to the corresponding \`EnumPropertyCurrency\` value. If currency is not specified, assume RM as default.
@@ -217,9 +217,9 @@ Mongoose FilterQuery JSON object:`;
     const baseProjection = {
       _id: 1,
       author: 1,
-      title: { $ifNull: [`$title.${language}`, '$title.uz'] },
-      description: { $ifNull: [`$description.${language}`, '$description.uz'] },
-      address: { $ifNull: [`$address.${language}`, '$address.uz'] },
+      title: { $ifNull: [`$title.${language}`, '$title.en'] },
+      description: { $ifNull: [`$description.${language}`, '$description.en'] },
+      address: { $ifNull: [`$address.${language}`, '$address.en'] },
       category: 1,
       location: 1,
       currency: 1,

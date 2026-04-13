@@ -1,12 +1,14 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { ForbiddenException, Injectable, Logger } from '@nestjs/common';
 import { promises as fs } from 'fs';
-import { join } from 'path';
+import { join, resolve, sep } from 'path';
 
 @Injectable()
 export class FileService {
   private readonly logger = new Logger(FileService.name);
   private readonly baseUrl = (process.env.SERVER_URL || '').replace(/\/$/, '');
-  private readonly uploadRoot = join(__dirname, '..', '..', '..', 'uploads');
+  private readonly uploadRoot = resolve(
+    join(__dirname, '..', '..', '..', 'uploads'),
+  );
 
   async saveFile({
     file,
@@ -36,27 +38,37 @@ export class FileService {
     if (!fileUrl) return false;
 
     try {
+      const isHttpUrl = /^https?:\/\//i.test(fileUrl);
+
       if (
-        fileUrl.startsWith('http://') &&
-        !fileUrl.includes(this.baseUrl)
+        isHttpUrl &&
+        (!this.baseUrl || !fileUrl.startsWith(`${this.baseUrl}/`))
       ) {
         this.logger.warn(`External URL, skipping delete: ${fileUrl}`);
         return true;
       }
-      if (fileUrl.startsWith('https://') && !fileUrl.includes(this.baseUrl)) {
-        this.logger.warn(`External URL, skipping delete: ${fileUrl}`);
-        return true;
+
+      const localPath = decodeURIComponent(
+        isHttpUrl ? fileUrl.slice(this.baseUrl.length + 1) : fileUrl,
+      );
+      const relativePath = localPath
+        .replace(/^\/+/, '')
+        .replace(/^uploads[\\/]/, '');
+      const fullPath = resolve(this.uploadRoot, relativePath);
+      const root = resolve(this.uploadRoot);
+
+      if (fullPath !== root && !fullPath.startsWith(`${root}${sep}`)) {
+        throw new ForbiddenException('Invalid file path');
       }
 
-      const localPath = fileUrl.replace(this.baseUrl + '/', '');
-      const fullPath = join(
-        this.uploadRoot,
-        localPath.replace(/^uploads\//, ''),
-      );
       await fs.unlink(fullPath);
       this.logger.log(`Deleted: ${fullPath}`);
       return true;
     } catch (err: any) {
+      if (err instanceof ForbiddenException) {
+        throw err;
+      }
+
       if (err.code === 'ENOENT') {
         this.logger.warn(`File not found: ${fileUrl}`);
       } else {

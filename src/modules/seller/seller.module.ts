@@ -16,6 +16,14 @@ import {
   PhysicalSeller,
   PhysicalSellerSchema,
 } from './schemas/physical-seller.schema';
+import {
+  Commissioner,
+  CommissionerSchema,
+} from '../commissioner/commissioner.schema';
+import {
+  BankAccount,
+  BankAccountSchema,
+} from '../bank-account/bank-account.schema';
 
 @Module({
   imports: [
@@ -25,6 +33,8 @@ import {
       { name: MchjSeller.name, schema: MchjSellerSchema },
       { name: SelfEmployedSeller.name, schema: SelfEmployedSellerSchema },
       { name: PhysicalSeller.name, schema: PhysicalSellerSchema },
+      { name: Commissioner.name, schema: CommissionerSchema },
+      { name: BankAccount.name, schema: BankAccountSchema },
     ]),
     UserModule,
     FileModule,

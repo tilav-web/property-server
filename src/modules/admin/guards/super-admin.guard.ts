@@ -12,7 +12,7 @@ export class SuperAdminGuard implements CanActivate {
 
   canActivate(context: ExecutionContext): boolean {
     const request = context.switchToHttp().getRequest();
-    const user = request.user;
+    const user = request.admin;
 
     if (!user) {
       throw new ForbiddenException('Access denied');

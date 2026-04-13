@@ -17,7 +17,7 @@ export class AdminPropertyService {
   constructor(
     @InjectModel(Property.name) private propertyModel: Model<PropertyDocument>,
     @InjectModel(Seller.name) private sellerModel: Model<SellerDocument>,
-  ) { }
+  ) {}
 
   async findAll(dto: FindPropertiesDto) {
     const { page = 1, limit = 10, search, status, category } = dto;
@@ -102,7 +102,18 @@ export class AdminPropertyService {
       throw new NotFoundException(`Property with ID ${propertyId} not found`);
     }
 
-    Object.assign(property, dto);
+    if (dto.title !== undefined) property.title = dto.title;
+    if (dto.description !== undefined) property.description = dto.description;
+    if (dto.address !== undefined) property.address = dto.address;
+    if (dto.category !== undefined) property.category = dto.category;
+    if (dto.location !== undefined) property.location = dto.location;
+    if (dto.currency !== undefined) property.currency = dto.currency;
+    if (dto.price !== undefined) property.price = dto.price;
+    if (dto.is_premium !== undefined) property.is_premium = dto.is_premium;
+    if (dto.status !== undefined) property.status = dto.status;
+    if (dto.is_archived !== undefined) property.is_archived = dto.is_archived;
+    if (dto.photos !== undefined) property.photos = dto.photos;
+    if (dto.videos !== undefined) property.videos = dto.videos;
 
     return property.save();
   }

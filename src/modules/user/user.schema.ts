@@ -63,7 +63,7 @@ export class User {
   @Prop({ type: String, required: true, default: EnumRole.PHYSICAL })
   role: EnumRole;
 
-  @Prop({ type: String, required: true, default: EnumLanguage.UZ })
+  @Prop({ type: String, required: true, default: EnumLanguage.EN })
   lan: EnumLanguage;
 
   @Prop({

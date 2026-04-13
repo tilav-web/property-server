@@ -11,6 +11,12 @@ export class Otp {
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
   user: Types.ObjectId;
 
+  @Prop({ type: Number, default: 0 })
+  attempts: number;
+
+  @Prop({ type: Date, default: null })
+  lockedUntil?: Date | null;
+
   @Prop({ type: Date, default: Date.now, expires: 60 })
   createdAt: Date;
 }

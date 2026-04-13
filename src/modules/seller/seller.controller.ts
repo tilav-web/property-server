@@ -14,6 +14,7 @@ import {
   UploadedFiles,
   UseGuards,
   UseInterceptors,
+  Delete,
 } from '@nestjs/common';
 import { SellerService } from './seller.service';
 import { AuthGuard } from '@nestjs/passport';
@@ -55,7 +56,7 @@ export class SellerController {
       });
       return result;
     } catch (error) {
-      console.error('Logout error:', error);
+      console.error('Create seller error:', error);
 
       if (error instanceof HttpException) {
         throw error;
@@ -132,7 +133,7 @@ export class SellerController {
       const result = await this.service.findSellerByUser(user?._id as string);
       return result;
     } catch (error) {
-      console.error('Logout error:', error);
+      console.error('Find seller by user error:', error);
 
       if (error instanceof HttpException) {
         throw error;
@@ -148,12 +149,12 @@ export class SellerController {
     }
   }
 
-@Get(':id')
+  @Get(':id')
   async findOne(
     @Param('id') id: string,
     @Req() req: IRequestCustom,
     @Query('language', new ParseEnumPipe(EnumLanguage, { optional: true }))
-    language: EnumLanguage = EnumLanguage.UZ,
+    language: EnumLanguage = EnumLanguage.EN,
   ) {
     try {
       const userId = req.user?._id as string;
@@ -174,9 +175,17 @@ export class SellerController {
 
   @Put(':id')
   @UseGuards(AuthGuard('jwt'))
-  async update(@Param('id') id: string, @Body() dto: UpdateSellerDto) {
+  async update(
+    @Param('id') id: string,
+    @Body() dto: UpdateSellerDto,
+    @Req() req: IRequestCustom,
+  ) {
     try {
-      const result = await this.service.update(id, dto);
+      const result = await this.service.update(
+        id,
+        dto,
+        req.user?._id as string,
+      );
       return result;
     } catch (error) {
       console.error('Update seller error:', error);
@@ -214,11 +223,12 @@ export class SellerController {
       ytt_certificate_file?: Express.Multer.File[];
       vat_file?: Express.Multer.File[];
     },
+    @Req() req: IRequestCustom,
   ) {
     try {
-      return this.service.createYttSeller(dto, files);
+      return this.service.createYttSeller(dto, files, req.user?._id as string);
     } catch (error) {
-      console.error('Logout error:', error);
+      console.error('Create YTT seller error:', error);
 
       if (error instanceof HttpException) {
         throw error;
@@ -261,11 +271,12 @@ export class SellerController {
       kadastr_file?: Express.Multer.File[];
       vat_file?: Express.Multer.File[];
     },
+    @Req() req: IRequestCustom,
   ) {
     try {
-      return this.service.createMchjSeller(dto, files);
+      return this.service.createMchjSeller(dto, files, req.user?._id as string);
     } catch (error) {
-      console.error('Logout error:', error);
+      console.error('Create MCHJ seller error:', error);
 
       if (error instanceof HttpException) {
         throw error;
@@ -306,7 +317,7 @@ export class SellerController {
       }
       return this.service.createSelfEmployedSeller(dto, files, req.user._id);
     } catch (error) {
-      console.error('Logout error:', error);
+      console.error('Create self-employed seller error:', error);
 
       if (error instanceof HttpException) {
         throw error;
@@ -343,7 +354,29 @@ export class SellerController {
       }
       return this.service.createPhysicalSeller(dto, files, req.user._id);
     } catch (error) {
-      console.error('Logout error:', error);
+      console.error('Create physical seller error:', error);
+
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
+      if (error instanceof Error) {
+        throw new InternalServerErrorException(error.message);
+      }
+
+      throw new InternalServerErrorException(
+        "Xatolik ketdi. Birozdan so'ng qayta urinib ko'ring!",
+      );
+    }
+  }
+
+  @Delete(':id')
+  @UseGuards(AuthGuard('jwt'))
+  async remove(@Param('id') id: string, @Req() req: IRequestCustom) {
+    try {
+      return await this.service.remove(id, req.user?._id as string);
+    } catch (error) {
+      console.error('Delete seller error:', error);
 
       if (error instanceof HttpException) {
         throw error;

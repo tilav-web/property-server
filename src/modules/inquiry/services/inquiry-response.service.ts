@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import {
@@ -8,7 +13,11 @@ import {
 } from '../schemas/inquiry-response.schema';
 import { CreateInquiryResponseDto } from '../dto/create-inquiry-response.dto';
 import { InquiryService } from './inquiry.service';
-import { EnumInquiryStatus } from '../schemas/inquiry.schema';
+import {
+  EnumInquiryStatus,
+  Inquiry,
+  InquiryDocument,
+} from '../schemas/inquiry.schema';
 import {
   Seller,
   SellerDocument,
@@ -21,6 +30,8 @@ export class InquiryResponseService {
     private readonly inquiryResponseModel: Model<InquiryResponseDocument>,
     @InjectModel(Seller.name)
     private readonly sellerModel: Model<SellerDocument>,
+    @InjectModel(Inquiry.name)
+    private readonly inquiryModel: Model<InquiryDocument>,
     private readonly inquiryService: InquiryService,
   ) {}
 
@@ -34,6 +45,22 @@ export class InquiryResponseService {
 
     if (!seller) {
       throw new NotFoundException('Sotuvchi topilmadi');
+    }
+
+    const inquiry = await this.inquiryModel.findById(dto.inquiry);
+    if (!inquiry) {
+      throw new NotFoundException("So'rov topilmadi");
+    }
+
+    if (inquiry.seller.toString() !== id.toString()) {
+      throw new ForbiddenException("Bu so'rovga javob berish huquqi yo'q");
+    }
+
+    if (
+      inquiry.user.toString() !== dto.user.toString() ||
+      inquiry.property.toString() !== dto.property.toString()
+    ) {
+      throw new BadRequestException("So'rov ma'lumotlari mos kelmadi");
     }
 
     const newInquiryResponse = new this.inquiryResponseModel({

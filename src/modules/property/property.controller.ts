@@ -30,10 +30,9 @@ import { type Response } from 'express';
 import { UpdatePropertyDto } from './dto/update-property.dto';
 import { AdminGuard } from '../admin/guards/admin.guard';
 
-
 @Controller('properties')
 export class PropertyController {
-  constructor(private readonly service: PropertyService) { }
+  constructor(private readonly service: PropertyService) {}
 
   @Post()
   @UseGuards(AuthGuard('jwt'))
@@ -123,7 +122,7 @@ export class PropertyController {
     @Res() res: Response,
   ) {
     const language =
-      (req.headers['accept-language'] as EnumLanguage) ?? EnumLanguage.UZ;
+      (req.headers['accept-language'] as EnumLanguage) ?? EnumLanguage.EN;
 
     const property = await this.service.findById({ id, language });
 
@@ -132,6 +131,8 @@ export class PropertyController {
     }
 
     const frontendUrl = `${process.env.CLIENT_URL}/property/${id}`;
+    const fallbackImage = `${process.env.CLIENT_URL}/images/hero/home-hero-800.webp`;
+    const shareImage = property.photos?.[0] || fallbackImage;
 
     const html = `
 <!DOCTYPE html>
@@ -145,7 +146,7 @@ export class PropertyController {
   <meta property="og:type" content="website" />
   <meta property="og:title" content="${property.title}" />
   <meta property="og:description" content="${property.description ?? ''}" />
-  <meta property="og:image" content="${property.photos[0]}" />
+  <meta property="og:image" content="${shareImage}" />
   <meta property="og:url" content="${frontendUrl}" />
   <meta property="telegram:channel" content="@Tilav_web" />
   <meta name="twitter:card" content="summary" />
@@ -172,7 +173,7 @@ export class PropertyController {
     @Req() req: IRequestCustom,
     @Query() filter: FilterMyPropertiesDto,
   ) {
-    const language = (req.headers['accept-language'] || 'uz')
+    const language = (req.headers['accept-language'] || 'en')
       .toLowerCase()
       .split(',')[0] as EnumLanguage;
     const result = await this.service.findMyProperties({
@@ -242,12 +243,6 @@ export class PropertyController {
     }
   }
 
-  @Get(':id')
-  findById(@Param('id') id: string, @Req() req: IRequestCustom) {
-    const language = req.headers['accept-language'] as EnumLanguage;
-    return this.service.findById({ id, language });
-  }
-
   @Put(':id/status')
   @UseGuards(AuthGuard('jwt'), AdminGuard)
   updateStatus(@Param('id') id: string, @Body() dto: UpdatePropertyStatusDto) {
@@ -297,11 +292,23 @@ export class PropertyController {
 
   @Get('/update/:id')
   @UseGuards(AuthGuard('jwt'))
-  async findOnePropertyForUpdate(@Param('id') id: string, @Req() req: IRequestCustom) {
+  async findOnePropertyForUpdate(
+    @Param('id') id: string,
+    @Req() req: IRequestCustom,
+  ) {
     const user = req.user;
     if (!user) {
       throw new HttpException('Unauthorized', 401);
     }
-    return this.service.findOnePropertyForUpdate({ propertyId: id, authorId: user._id });
+    return this.service.findOnePropertyForUpdate({
+      propertyId: id,
+      authorId: user._id,
+    });
+  }
+
+  @Get(':id')
+  findById(@Param('id') id: string, @Req() req: IRequestCustom) {
+    const language = req.headers['accept-language'] as EnumLanguage;
+    return this.service.findById({ id, language });
   }
 }

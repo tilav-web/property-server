@@ -8,6 +8,7 @@ import {
   InternalServerErrorException,
   Param,
   ParseIntPipe,
+  Post,
   Query,
   Req,
   UseGuards,
@@ -16,10 +17,37 @@ import { MessageService } from './message.service';
 import { AuthGuard } from '@nestjs/passport';
 import { type IRequestCustom } from 'src/interfaces/custom-request.interface';
 import { EnumLanguage } from 'src/enums/language.enum';
+import { CreateMessageDto } from './dto/create-message.dto';
 
 @Controller('messages')
 export class MessageController {
   constructor(private readonly service: MessageService) {}
+
+  @Post()
+  @UseGuards(AuthGuard('jwt'))
+  async create(@Body() dto: CreateMessageDto, @Req() req: IRequestCustom) {
+    try {
+      const user = req.user;
+      const result = await this.service.createForProperty({
+        dto,
+        user: user?._id as string,
+      });
+      return result;
+    } catch (error) {
+      console.error(error);
+
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
+      if (error instanceof Error) {
+        throw new InternalServerErrorException(error.message);
+      }
+      throw new InternalServerErrorException(
+        "Tizimda xatolik ketdi. Iltimos birozdan so'ng qayta urinib ko'ring!",
+      );
+    }
+  }
 
   @Get('/id/:id')
   @UseGuards(AuthGuard('jwt'))
@@ -121,7 +149,7 @@ export class MessageController {
   @UseGuards(AuthGuard('jwt'))
   async findMessageStatusBySeller(@Req() req: IRequestCustom) {
     try {
-      const language = (req.headers['accept-language'] || 'uz')
+      const language = (req.headers['accept-language'] || 'en')
         .toLowerCase()
         .split(',')[0] as EnumLanguage;
       const user = req.user;
@@ -245,7 +273,7 @@ export class MessageController {
   async findMessageUnread(@Req() req: IRequestCustom) {
     try {
       const user = req.user;
-      const result = this.service.findMessageUnread(user?._id as string);
+      const result = await this.service.findMessageUnread(user?._id as string);
       return result;
     } catch (error) {
       console.error(error);

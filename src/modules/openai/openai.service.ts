@@ -129,12 +129,12 @@ Return ONLY valid JSON in this exact format:
     }
   },
   "tags": [
-    "Tashkent",
-    "Ташкент",
-    "Toshkent",
-    "Uzbekistan",
-    "Узбекистан",
-    "O'zbekiston"
+    "Malaysia",
+    "Малайзия",
+    "Malayziya",
+    "Selangor",
+    "Penang",
+    "Johor"
   ]
 }
 
@@ -142,17 +142,17 @@ Return ONLY valid JSON in this exact format:
 - **CRITICAL:** Tags MUST only contain a SINGLE word.
 - **CRITICAL:** Tags MUST be for a notable location (city, region, country).
 - **CRITICAL:** For each location, provide the name in English, Russian, and Uzbek.
-- **ABSOLUTELY NO** multi-word tags like "Tashkent city". Use "Tashkent" instead.
+- **ABSOLUTELY NO** multi-word tags like "Kuala Lumpur city". Use a single-word location such as "Selangor" instead.
 - **DO NOT** include any tags that are not locations, such as "3 bedroom", "luxury", or "apartment".
 - Generate 5-10 location tags in total.
 
 Examples of correct tags:
-- "Tashkent", "Ташкент", "Toshkent"
-- "Samarkand", "Самарканд", "Samarqand"
+- "Malaysia", "Малайзия", "Malayziya"
+- "Selangor", "Селангор"
 - "Dubai", "Дубай"
 
 Examples of INCORRECT tags:
-- "Tashkent city"
+- "Kuala Lumpur city"
 - "3 bedroom"
 - "newly built"`;
 

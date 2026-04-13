@@ -32,18 +32,22 @@ export class UserController {
   @Get('google/callback')
   @UseGuards(AuthGuard('google'))
   async googleAuthRedirect(@Req() req: IRequestCustom, @Res() res: Response) {
-    const { user, access_token, refresh_token } =
-      await this.service.socialLogin(req);
+    const { access_token, refresh_token } = await this.service.socialLogin(req);
+    res.cookie('access_token', access_token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 15 * 60 * 1000,
+      path: '/',
+    });
     res.cookie('refresh_token', refresh_token, {
-      httpOnly: process.env.NODE_ENV === 'production',
+      httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
       maxAge: 7 * 24 * 60 * 60 * 1000,
       path: '/',
     });
-    res.redirect(
-      `${process.env.CLIENT_URL}/auth/social?access_token=${access_token}`,
-    );
+    res.redirect(`${process.env.CLIENT_URL}/auth/social`);
   }
 
   @Get('facebook')
@@ -53,18 +57,22 @@ export class UserController {
   @Get('facebook/callback')
   @UseGuards(AuthGuard('facebook'))
   async facebookAuthRedirect(@Req() req, @Res() res: Response) {
-    const { user, access_token, refresh_token } =
-      await this.service.socialLogin(req);
+    const { access_token, refresh_token } = await this.service.socialLogin(req);
+    res.cookie('access_token', access_token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 15 * 60 * 1000,
+      path: '/',
+    });
     res.cookie('refresh_token', refresh_token, {
-      httpOnly: process.env.NODE_ENV === 'production',
+      httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
       maxAge: 7 * 24 * 60 * 60 * 1000,
       path: '/',
     });
-    res.redirect(
-      `${process.env.CLIENT_URL}/auth/social?access_token=${access_token}`,
-    );
+    res.redirect(`${process.env.CLIENT_URL}/auth/social`);
   }
 
   @Get('apple')
@@ -74,18 +82,22 @@ export class UserController {
   @Get('apple/callback')
   @UseGuards(AuthGuard('apple'))
   async appleAuthRedirect(@Req() req, @Res() res: Response) {
-    const { user, access_token, refresh_token } =
-      await this.service.socialLogin(req);
+    const { access_token, refresh_token } = await this.service.socialLogin(req);
+    res.cookie('access_token', access_token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 15 * 60 * 1000,
+      path: '/',
+    });
     res.cookie('refresh_token', refresh_token, {
-      httpOnly: process.env.NODE_ENV === 'production',
+      httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
       maxAge: 7 * 24 * 60 * 60 * 1000,
       path: '/',
     });
-    res.redirect(
-      `${process.env.CLIENT_URL}/auth/social?access_token=${access_token}`,
-    );
+    res.redirect(`${process.env.CLIENT_URL}/auth/social`);
   }
 
   @Throttle({ default: { limit: 3, ttl: 10000 } })
@@ -100,7 +112,7 @@ export class UserController {
 
       return res
         .cookie('refresh_token', refresh_token, {
-          httpOnly: process.env.NODE_ENV === 'production',
+          httpOnly: true,
           secure: process.env.NODE_ENV === 'production',
           sameSite: 'strict',
           maxAge: 7 * 24 * 60 * 60 * 1000,
@@ -156,7 +168,7 @@ export class UserController {
         await this.service.confirmOtp(dto);
       return res
         .cookie('refresh_token', refresh_token, {
-          httpOnly: process.env.NODE_ENV === 'production',
+          httpOnly: true,
           secure: process.env.NODE_ENV === 'production',
           sameSite: 'strict',
           maxAge: 7 * 24 * 60 * 60 * 1000,
@@ -287,7 +299,13 @@ export class UserController {
   logout(@Res() res: Response) {
     try {
       res.clearCookie('refresh_token', {
-        httpOnly: process.env.NODE_ENV === 'production',
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        path: '/',
+      });
+      res.clearCookie('access_token', {
+        httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'strict',
         path: '/',

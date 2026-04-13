@@ -1,4 +1,11 @@
-import { IsEmail, IsNotEmpty, IsOptional } from 'class-validator';
+import {
+  IsEmail,
+  IsEnum,
+  IsNotEmpty,
+  IsOptional,
+  Matches,
+  MinLength,
+} from 'class-validator';
 import { EnumRole } from 'src/enums/role.enum';
 
 export class CreateUserDto {
@@ -7,8 +14,15 @@ export class CreateUserDto {
   email: string;
 
   @IsNotEmpty({ message: "Parol maydoni to'ldirilishi kerak!" })
+  @MinLength(8, {
+    message: "Parol kamida 8 ta belgidan iborat bo'lishi kerak!",
+  })
+  @Matches(/^(?=.*[A-Za-z])(?=.*\d).+$/, {
+    message: "Parolda kamida bitta harf va bitta raqam bo'lishi kerak!",
+  })
   password: string;
 
   @IsOptional()
+  @IsEnum(EnumRole)
   role: EnumRole;
 }

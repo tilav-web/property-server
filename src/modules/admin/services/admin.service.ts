@@ -22,7 +22,7 @@ export class AdminService implements OnModuleInit {
     @InjectModel(Admin.name) private readonly adminModel: Model<AdminDocument>,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
-  ) { }
+  ) {}
 
   async onModuleInit() {
     await this.createDefaultAdmin();
@@ -175,12 +175,19 @@ export class AdminService implements OnModuleInit {
       const payload = await this.jwtService.verifyAsync<{
         _id: string;
         role: string;
+        email?: string;
       }>(admin_refresh_token, { secret: adminJwtSecret });
+
+      const admin = await this.adminModel.findById(payload._id).lean();
+      if (!admin) {
+        throw new UnauthorizedException('Admin: Admin not found.');
+      }
 
       const admin_access_token = this.jwtService.sign(
         {
-          _id: payload._id,
+          _id: admin._id,
           role: payload.role,
+          email: admin.email,
         },
         { expiresIn: '15m', secret: adminJwtSecret },
       );
@@ -222,4 +229,3 @@ export class AdminService implements OnModuleInit {
     }
   }
 }
-

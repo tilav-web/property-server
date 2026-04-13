@@ -200,14 +200,14 @@ export class InquiryService {
               comment: {
                 $ifNull: [
                   `$inquiry.comment.${language}`,
-                  '$inquiry.comment.uz',
+                  '$inquiry.comment.en',
                 ],
               },
             },
             property: {
               _id: '$property._id',
               title: {
-                $ifNull: [`$property.title.${language}`, '$property.title.uz'],
+                $ifNull: [`$property.title.${language}`, '$property.title.en'],
               },
               photos: '$property.photos',
             },

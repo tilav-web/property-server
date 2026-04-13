@@ -20,7 +20,7 @@ export class AdvertiseService {
     @InjectModel(Advertise.name)
     private readonly advertiseModel: Model<AdvertiseDocument>,
     private readonly fileService: FileService,
-  ) { }
+  ) {}
 
   async create({
     dto,
@@ -31,19 +31,29 @@ export class AdvertiseService {
     author: string;
     files: { image: Express.Multer.File[] };
   }) {
+    if (!files?.image?.[0]) {
+      throw new BadRequestException('Reklama rasmini yuborishingiz shart!');
+    }
+
     const { totalPrice } = this.priceCalculus(dto.days);
     const image = await this.fileService.saveFile({
       folder: EnumFilesFolder.PHOTOS,
       file: files.image[0],
     });
-    const newAdvertise = await this.advertiseModel.create({
-      ...dto,
-      author,
-      price: totalPrice,
-      image,
-    });
 
-    return this.advertiseModel.findById(newAdvertise._id).exec();
+    try {
+      const newAdvertise = await this.advertiseModel.create({
+        ...dto,
+        author,
+        price: totalPrice,
+        image,
+      });
+
+      return this.advertiseModel.findById(newAdvertise._id).exec();
+    } catch (error) {
+      await this.fileService.deleteFile(image);
+      throw error;
+    }
   }
 
   async findAll(params: {
@@ -112,7 +122,7 @@ export class AdvertiseService {
   }
 
   async findById(id: string) {
-    const advertise = await this.advertiseModel.findById(id)
+    const advertise = await this.advertiseModel.findById(id);
     if (!advertise) {
       throw new NotFoundException('Eʼlon topilmadi');
     }
@@ -125,10 +135,10 @@ export class AdvertiseService {
     author: string,
     files?: { image: Express.Multer.File[] },
   ) {
-    const advertise = await this.advertiseModel.findOne({ _id: id, author })
+    const advertise = await this.advertiseModel.findOne({ _id: id, author });
 
     if (!advertise) {
-      throw new NotFoundException()
+      throw new NotFoundException();
     }
 
     // Handle image deletion
@@ -139,7 +149,7 @@ export class AdvertiseService {
 
     // Handle image upload
     let image: string | undefined;
-    if (files && files.image) {
+    if (files?.image?.[0]) {
       if (advertise.image) {
         await this.fileService.deleteFile(advertise.image);
       }
@@ -150,7 +160,7 @@ export class AdvertiseService {
       advertise.image = image;
     }
 
-    advertise.status = EnumAdvertiseStatus.PENDING
+    advertise.status = EnumAdvertiseStatus.PENDING;
 
     // remove image_to_delete from dto
     const { image_to_delete, ...restDto } = dto;
@@ -163,11 +173,11 @@ export class AdvertiseService {
   async remove(id: string, author: string) {
     const advertise = await this.advertiseModel.findOne({
       _id: id,
-      author
+      author,
     });
 
     if (!advertise) {
-      throw new NotFoundException()
+      throw new NotFoundException();
     }
 
     if (advertise.image) {

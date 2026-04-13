@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -32,6 +33,14 @@ import { EnumLanguage } from 'src/enums/language.enum';
 import { UpdateSellerDto } from './dto/update-seller.dto';
 import { Property } from '../property/schemas/property.schema';
 import { User } from '../user/user.schema';
+import {
+  Commissioner,
+  CommissionerDocument,
+} from '../commissioner/commissioner.schema';
+import {
+  BankAccount,
+  BankAccountDocument,
+} from '../bank-account/bank-account.schema';
 
 @Injectable()
 export class SellerService {
@@ -45,9 +54,44 @@ export class SellerService {
     private selfEmployedSellerModel: Model<SelfEmployedSellerDocument>,
     @InjectModel(PhysicalSeller.name)
     private physicalSellerModel: Model<PhysicalSellerDocument>,
+    @InjectModel(Commissioner.name)
+    private commissionerModel: Model<CommissionerDocument>,
+    @InjectModel(BankAccount.name)
+    private bankAccountModel: Model<BankAccountDocument>,
     private readonly userService: UserService,
     private readonly fileService: FileService,
   ) {}
+
+  private assertSellerOwner(seller: SellerDocument, userId: string) {
+    if (!userId || seller.user.toString() !== userId.toString()) {
+      throw new ForbiddenException(
+        "Sizda bu sotuvchi profilini o'zgartirish huquqi yo'q",
+      );
+    }
+  }
+
+  private assertBusinessType(
+    seller: SellerDocument,
+    expected: EnumSellerBusinessType,
+  ) {
+    if (seller.business_type !== expected) {
+      throw new BadRequestException(
+        `Bu sotuvchi profili ${expected} turi uchun emas`,
+      );
+    }
+  }
+
+  private collectFileUrls(
+    doc: { toObject?: () => Record<string, unknown> } | null,
+    fields: string[],
+  ): string[] {
+    if (!doc) return [];
+
+    const data = typeof doc.toObject === 'function' ? doc.toObject() : doc;
+    return fields
+      .map((field) => data[field])
+      .filter((value): value is string => typeof value === 'string' && !!value);
+  }
 
   async createSeller({
     passport,
@@ -222,7 +266,7 @@ export class SellerService {
     return sellers as SellerDocument[];
   }
 
-  async findOne(id: string, language: EnumLanguage = EnumLanguage.UZ) {
+  async findOne(id: string, language: EnumLanguage = EnumLanguage.EN) {
     if (!Types.ObjectId.isValid(id)) {
       throw new BadRequestException('Invalid seller ID');
     }
@@ -262,9 +306,9 @@ export class SellerService {
 
     const properties = seller.properties.map((p) => ({
       ...p,
-      title: p.title?.[language] ?? p.title?.uz ?? '',
-      description: p.description?.[language] ?? p.description?.uz ?? '',
-      address: p.address?.[language] ?? p.address?.uz ?? '',
+      title: p.title?.[language] ?? p.title?.en ?? '',
+      description: p.description?.[language] ?? p.description?.en ?? '',
+      address: p.address?.[language] ?? p.address?.en ?? '',
     }));
 
     return { ...seller, properties };
@@ -274,29 +318,30 @@ export class SellerService {
     if (!userId || !Types.ObjectId.isValid(sellerId)) {
       return false;
     }
-    
+
     const seller = await this.sellerModel.findById(sellerId).lean();
     if (!seller) {
       return false;
     }
-    
+
     return seller.user.toString() === userId;
   }
 
   async findOneWithAuth(
     id: string,
-    language: EnumLanguage = EnumLanguage.UZ,
+    language: EnumLanguage = EnumLanguage.EN,
     userId?: string,
   ) {
     const isOwner = userId ? await this.isOwner(id, userId) : false;
     const seller = await this.findOne(id, language);
-    
+
     if (isOwner) {
       return seller;
     }
-    
-    const { socialAccounts, passport, commission_rate, ...publicData } = seller.user as any;
-    
+
+    const { socialAccounts, passport, commission_rate, ...publicData } =
+      seller.user as any;
+
     return {
       ...seller,
       user: {
@@ -310,7 +355,14 @@ export class SellerService {
     };
   }
 
-  async update(id: string, dto: UpdateSellerDto) {
+  async update(id: string, dto: UpdateSellerDto, userId: string) {
+    const sellerDocument = await this.sellerModel.findById(id);
+    if (!sellerDocument) {
+      throw new NotFoundException('Seller not found');
+    }
+
+    this.assertSellerOwner(sellerDocument, userId);
+
     const seller = await this.sellerModel
       .findByIdAndUpdate(id, dto, {
         new: true,
@@ -349,11 +401,14 @@ export class SellerService {
       ytt_certificate_file?: Express.Multer.File[];
       vat_file?: Express.Multer.File[];
     },
+    userId: string,
   ) {
     const seller = await this.sellerModel.findById(dto.seller);
     if (!seller) {
       throw new NotFoundException('Sotuvchi profili topilmadi');
     }
+    this.assertSellerOwner(seller, userId);
+    this.assertBusinessType(seller, EnumSellerBusinessType.YTT);
 
     if (!files?.passport_file?.[0]) {
       throw new BadRequestException('Pasport faylni yuborishingiz shart!');
@@ -455,10 +510,13 @@ export class SellerService {
       kadastr_file?: Express.Multer.File[];
       vat_file?: Express.Multer.File[];
     },
+    userId: string,
   ) {
     // Sotuvchi tekshiruvi
     const seller = await this.sellerModel.findById(dto.seller);
     if (!seller) throw new NotFoundException('Sotuvchi profili topilmadi');
+    this.assertSellerOwner(seller, userId);
+    this.assertBusinessType(seller, EnumSellerBusinessType.MCHJ);
 
     // Majburiy fayllar
     const requiredFiles: (keyof typeof files)[] = [
@@ -687,5 +745,65 @@ export class SellerService {
     return this.sellerModel.findByIdAndUpdate(id, {
       status,
     });
+  }
+
+  async remove(id: string, userId: string) {
+    const seller = await this.sellerModel.findById(id);
+    if (!seller) {
+      throw new NotFoundException('Seller not found');
+    }
+
+    this.assertSellerOwner(seller, userId);
+
+    const sellerId = new Types.ObjectId(id);
+    const [ytt, mchj, selfEmployed, physical, commissioner] = await Promise.all(
+      [
+        this.yttSellerModel.findOne({ seller: sellerId }),
+        this.mchjSellerModel.findOne({ seller: sellerId }),
+        this.selfEmployedSellerModel.findOne({ seller: sellerId }),
+        this.physicalSellerModel.findOne({ seller: sellerId }),
+        this.commissionerModel.findOne({ seller: sellerId }),
+      ],
+    );
+
+    const fileUrls = [
+      ...this.collectFileUrls(ytt, [
+        'passport_file',
+        'ytt_certificate_file',
+        'vat_file',
+      ]),
+      ...this.collectFileUrls(mchj, [
+        'ustav_file',
+        'mchj_license',
+        'director_appointment_file',
+        'director_passport_file',
+        'legal_address_file',
+        'kadastr_file',
+        'vat_file',
+      ]),
+      ...this.collectFileUrls(selfEmployed, [
+        'passport_file',
+        'self_employment_certificate',
+      ]),
+      ...this.collectFileUrls(physical, ['passport_file']),
+      ...this.collectFileUrls(commissioner, ['contract_file']),
+    ];
+
+    await Promise.allSettled(
+      fileUrls.map((url) => this.fileService.deleteFile(url)),
+    );
+
+    await Promise.all([
+      this.yttSellerModel.deleteMany({ seller: sellerId }),
+      this.mchjSellerModel.deleteMany({ seller: sellerId }),
+      this.selfEmployedSellerModel.deleteMany({ seller: sellerId }),
+      this.physicalSellerModel.deleteMany({ seller: sellerId }),
+      this.commissionerModel.deleteMany({ seller: sellerId }),
+      this.bankAccountModel.deleteMany({ seller: sellerId }),
+    ]);
+
+    await seller.deleteOne();
+
+    return { message: "Sotuvchi profili o'chirildi" };
   }
 }

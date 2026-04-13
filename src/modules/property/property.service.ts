@@ -17,7 +17,6 @@ import { FindAllPropertiesDto } from './dto/find-all-properties.dto';
 import { MessageService } from '../message/message.service';
 import { CreateMessageDto } from '../message/dto/create-message.dto';
 import { EnumPropertyStatus } from './enums/property-status.enum';
-import { EnumSellerStatus } from 'src/enums/seller-status.enum';
 import { Seller, SellerDocument } from '../seller/schemas/seller.schema';
 import { TagService } from '../tag/tag.service';
 import { EnumFilesFolder } from '../file/enums/files-folder.enum';
@@ -39,7 +38,7 @@ export class PropertyService {
     private readonly openaiService: OpenaiService,
     private readonly messageService: MessageService,
     private readonly tagService: TagService,
-  ) { }
+  ) {}
 
   async onModuleInit() {
     const textIndexName =
@@ -73,21 +72,6 @@ export class PropertyService {
       throw new BadRequestException('Log back in system!');
     }
 
-    // Fayllarni saqlash
-    const photos = files?.photos?.length
-      ? await this.fileService.saveFiles({
-        files: files.photos,
-        folder: EnumFilesFolder.PHOTOS,
-      })
-      : [];
-
-    const videos = files?.videos?.length
-      ? await this.fileService.saveFiles({
-        files: files.videos,
-        folder: EnumFilesFolder.VIDEOS,
-      })
-      : [];
-
     let Model: Model<PropertyDocument>;
 
     switch (category) {
@@ -101,33 +85,59 @@ export class PropertyService {
         throw new BadRequestException("Qo'llab-quvvatlanmaydigan kategoriya");
     }
 
-    const location = {
-      type: 'Point',
-      coordinates: [dto.location_lng, dto.location_lat],
-    };
+    const savedFileUrls: string[] = [];
 
-    const [tags, translations] = await this.openaiService.translateTexts({
-      title: dto.title,
-      description: dto.description,
-      address: dto.address,
-    });
+    try {
+      // Fayllarni saqlash
+      const photos = files?.photos?.length
+        ? await this.fileService.saveFiles({
+            files: files.photos,
+            folder: EnumFilesFolder.PHOTOS,
+          })
+        : [];
+      savedFileUrls.push(...photos);
 
-    const property = await Model.create({
-      ...dto,
-      photos,
-      videos,
-      author,
-      location,
-      title: translations.title,
-      description: translations.description,
-      address: translations.address,
-    });
+      const videos = files?.videos?.length
+        ? await this.fileService.saveFiles({
+            files: files.videos,
+            folder: EnumFilesFolder.VIDEOS,
+          })
+        : [];
+      savedFileUrls.push(...videos);
 
-    if (tags.length > 0) {
-      await this.tagService.saveTags(tags);
+      const location = {
+        type: 'Point',
+        coordinates: [dto.location_lng, dto.location_lat],
+      };
+
+      const [tags, translations] = await this.openaiService.translateTexts({
+        title: dto.title,
+        description: dto.description,
+        address: dto.address,
+      });
+
+      const property = await Model.create({
+        ...dto,
+        photos,
+        videos,
+        author,
+        location,
+        title: translations.title,
+        description: translations.description,
+        address: translations.address,
+      });
+
+      if (tags.length > 0) {
+        await this.tagService.saveTags(tags);
+      }
+
+      return property;
+    } catch (error) {
+      await Promise.allSettled(
+        savedFileUrls.map((url) => this.fileService.deleteFile(url)),
+      );
+      throw error;
     }
-
-    return property;
   }
 
   async findAll(dto: FindAllPropertiesDto & { language: EnumLanguage }) {
@@ -141,7 +151,7 @@ export class PropertyService {
       is_new,
       rating,
       filterCategory,
-      language = EnumLanguage.UZ,
+      language = EnumLanguage.EN,
       bathrooms,
       bedrooms,
       sw_lng,
@@ -409,15 +419,15 @@ export class PropertyService {
   ) {
     const baseProjection: {
       [key: string]:
-      | 1
-      | { $ifNull: (string | { $slice: (string | number)[] })[] }
-      | { $slice: (string | number)[] };
+        | 1
+        | { $ifNull: (string | { $slice: (string | number)[] })[] }
+        | { $slice: (string | number)[] };
     } = {
       _id: 1,
       author: 1,
-      title: { $ifNull: [`$title.${language}`, '$title.uz'] },
-      description: { $ifNull: [`$description.${language}`, '$description.uz'] },
-      address: { $ifNull: [`$address.${language}`, '$address.uz'] },
+      title: { $ifNull: [`$title.${language}`, '$title.en'] },
+      description: { $ifNull: [`$description.${language}`, '$description.en'] },
+      address: { $ifNull: [`$address.${language}`, '$address.en'] },
       category: 1,
       location: 1,
       currency: 1,
@@ -484,7 +494,7 @@ export class PropertyService {
   async findMyProperties({
     search,
     author,
-    language = EnumLanguage.UZ,
+    language = EnumLanguage.EN,
     page = 1,
     limit = 10,
   }: {
@@ -532,9 +542,9 @@ export class PropertyService {
     // Tilni JS da to‘g‘ri tanlash — eng tezkor va ishonchli usul
     const translated = properties.map((p) => ({
       ...p,
-      title: p.title?.[language] ?? p.title?.uz ?? '',
-      description: p.description?.[language] ?? p.description?.uz ?? '',
-      address: p.address?.[language] ?? p.address?.uz ?? '',
+      title: p.title?.[language] ?? p.title?.en ?? '',
+      description: p.description?.[language] ?? p.description?.en ?? '',
+      address: p.address?.[language] ?? p.address?.en ?? '',
     }));
 
     return {
@@ -567,10 +577,10 @@ export class PropertyService {
         ...property.author,
         seller,
       },
-      title: property.title[language ?? 'uz'] ?? property.title.uz,
+      title: property.title[language ?? 'en'] ?? property.title.en,
       description:
-        property.description[language ?? 'uz'] ?? property.description.uz,
-      address: property.address[language ?? 'uz'] ?? property.address.uz,
+        property.description[language ?? 'en'] ?? property.description.en,
+      address: property.address[language ?? 'en'] ?? property.address.en,
     };
   }
 
@@ -626,7 +636,7 @@ export class PropertyService {
     if (!property) {
       throw new NotFoundException('Property not found!');
     }
-    if (property.author.toString() !== userId) {
+    if (property.author.toString() !== userId.toString()) {
       throw new ForbiddenException('You can only archive your own properties.');
     }
     if (property.status !== EnumPropertyStatus.APPROVED) {
@@ -639,41 +649,7 @@ export class PropertyService {
   }
 
   async sendMessage({ dto, user }: { dto: CreateMessageDto; user: string }) {
-    const property = await this.propertyModel.findById(dto.property);
-    if (!property) {
-      throw new NotFoundException('Property not found!');
-    }
-
-    if (property.author?.toString() === user) {
-      throw new BadRequestException('O\'zingizning e\'loningizga xabar yubora olmaysiz!');
-    }
-
-    const { message, rating } = await this.messageService.create({
-      ...dto,
-      user,
-    });
-
-    if (message && property.author) {
-      const seller = await this.sellerModel.findOne({
-        user: property.author,
-        status: { $in: [EnumSellerStatus.COMPLETED, EnumSellerStatus.APPROVED] },
-      }).lean();
-
-      if (seller) {
-        await this.messageService.createMessageStatus({
-          message: message?._id as string,
-          seller: seller._id.toString(),
-        });
-      }
-    }
-
-    if (rating !== undefined) {
-      await this.propertyModel.findByIdAndUpdate(dto.property, {
-        $set: { rating },
-      });
-    }
-
-    return message;
+    return this.messageService.createForProperty({ dto, user });
   }
 
   async getCategories(): Promise<{ category: string; count: number }[]> {
@@ -711,13 +687,24 @@ export class PropertyService {
     return categories;
   }
 
-  async findOnePropertyForUpdate({ propertyId, authorId }: { propertyId: string; authorId: string }) {
-    const property = await this.propertyModel.findById(propertyId).lean().exec();
+  async findOnePropertyForUpdate({
+    propertyId,
+    authorId,
+  }: {
+    propertyId: string;
+    authorId: string;
+  }) {
+    const property = await this.propertyModel
+      .findById(propertyId)
+      .lean()
+      .exec();
     if (!property) {
       throw new NotFoundException('Property not found!');
     }
     if (property.author.toString() !== authorId.toString()) {
-      throw new ForbiddenException("You don't have permission to update this property.");
+      throw new ForbiddenException(
+        "You don't have permission to update this property.",
+      );
     }
     return property;
   }
@@ -781,7 +768,7 @@ export class PropertyService {
 
     // 1. Handle File Deletions
     if (dto.photos_to_delete?.length) {
-      await Promise.all(
+      await Promise.allSettled(
         dto.photos_to_delete.map((url) => this.fileService.deleteFile(url)),
       );
       typedProperty.photos = typedProperty.photos.filter(
@@ -789,7 +776,7 @@ export class PropertyService {
       );
     }
     if (dto.videos_to_delete?.length) {
-      await Promise.all(
+      await Promise.allSettled(
         dto.videos_to_delete.map((url) => this.fileService.deleteFile(url)),
       );
       typedProperty.videos = typedProperty.videos.filter(

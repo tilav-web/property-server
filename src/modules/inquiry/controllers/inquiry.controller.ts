@@ -22,7 +22,7 @@ export class InquiryController {
   @Get()
   findAll(@Req() req: IRequestCustom) {
     try {
-      const language = (req.headers['accept-language'] || 'uz')
+      const language = (req.headers['accept-language'] || 'en')
         .toLowerCase()
         .split(',')[0] as EnumLanguage;
       const user = req.user;
@@ -45,7 +45,7 @@ export class InquiryController {
   @Get('my-responses')
   findMyResponses(@Req() req: IRequestCustom) {
     try {
-      const language = (req.headers['accept-language'] || 'uz')
+      const language = (req.headers['accept-language'] || 'en')
         .toLowerCase()
         .split(',')[0] as EnumLanguage;
       const user = req.user;

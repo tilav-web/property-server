@@ -13,6 +13,12 @@ import {
   MessageStatusDocument,
 } from './schemas/message-status.schema';
 import { EnumLanguage } from 'src/enums/language.enum';
+import {
+  Property,
+  PropertyDocument,
+} from '../property/schemas/property.schema';
+import { Seller, SellerDocument } from '../seller/schemas/seller.schema';
+import { EnumSellerStatus } from 'src/enums/seller-status.enum';
 
 type RatingsAggResult = {
   _id: string; // property id
@@ -26,7 +32,11 @@ export class MessageService {
     @InjectModel(Message.name) private messageModel: Model<MessageDocument>,
     @InjectModel(MessageStatus.name)
     private messageStatusModel: Model<MessageStatusDocument>,
-  ) { }
+    @InjectModel(Property.name)
+    private propertyModel: Model<PropertyDocument>,
+    @InjectModel(Seller.name)
+    private sellerModel: Model<SellerDocument>,
+  ) {}
 
   async findById(id: string) {
     return this.messageModel.findById(id).populate('user').populate('property');
@@ -74,9 +84,6 @@ export class MessageService {
       user: new Types.ObjectId(dto.user),
     });
 
-    console.log(dto);
-
-
     if (hasMessage)
       throw new BadRequestException('Bu property uchun fikr bildirgansiz!');
 
@@ -85,8 +92,6 @@ export class MessageService {
       property: new Types.ObjectId(dto.property),
       user: new Types.ObjectId(dto.user),
     });
-
-
 
     const ratings = await this.messageModel.aggregate<RatingsAggResult>([
       { $match: { property: message.property } },
@@ -107,6 +112,60 @@ export class MessageService {
       .populate('property');
 
     return { message: resMessage, rating: avgRating };
+  }
+
+  async createForProperty({
+    dto,
+    user,
+  }: {
+    dto: CreateMessageDto;
+    user: string;
+  }) {
+    if (!user) {
+      throw new NotFoundException('User not found!');
+    }
+
+    const property = await this.propertyModel.findById(dto.property);
+    if (!property) {
+      throw new NotFoundException('Property not found!');
+    }
+
+    if (property.author?.toString() === user.toString()) {
+      throw new BadRequestException(
+        "O'zingizning e'loningizga xabar yubora olmaysiz!",
+      );
+    }
+
+    const { message, rating } = await this.create({
+      ...dto,
+      user,
+    });
+
+    if (message && property.author) {
+      const seller = await this.sellerModel
+        .findOne({
+          user: property.author,
+          status: {
+            $in: [EnumSellerStatus.COMPLETED, EnumSellerStatus.APPROVED],
+          },
+        })
+        .lean();
+
+      if (seller) {
+        await this.createMessageStatus({
+          message: message._id as string,
+          seller: property.author.toString(),
+        });
+      }
+    }
+
+    if (rating !== undefined) {
+      await this.propertyModel.findByIdAndUpdate(dto.property, {
+        $set: { rating },
+      });
+    }
+
+    return message;
   }
 
   async createMessageStatus(dto: CreateMessageStatusDto) {
@@ -197,15 +256,20 @@ export class MessageService {
 
   async readMessageStatus(id: string) {
     return this.messageStatusModel
-      .findByIdAndUpdate(id, { is_read: true })
+      .findByIdAndUpdate(id, { is_read: true }, { new: true })
       .populate('seller')
       .sort({ createdAt: -1 })
       .lean();
   }
 
   async readMessageStatusAll(seller: string) {
+    await this.messageStatusModel.updateMany(
+      { seller },
+      { $set: { is_read: true } },
+    );
+
     return this.messageStatusModel
-      .updateMany({ seller }, { is_read: true })
+      .find({ seller })
       .populate('seller')
       .sort({ createdAt: -1 })
       .lean();

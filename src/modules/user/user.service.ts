@@ -95,16 +95,18 @@ export class UserService {
       existingUser.role = role ?? EnumRole.PHYSICAL;
       const saveUser = await existingUser.save();
 
-      return this.mailService
-        .sendOtpEmail({ to: { email: existingUser.email.value }, code })
-        .then(() => {
-          return { message: 'Tasdiqlash kodi yuborildi!', user: saveUser };
-        })
-        .catch(() => {
-          throw new InternalServerErrorException(
-            `Email-ga habar yuborishda xatolik!`,
-          );
+      try {
+        await this.mailService.sendOtpEmail({
+          to: { email: existingUser.email.value },
+          code,
         });
+      } catch (error) {
+        throw new InternalServerErrorException(
+          `Email-ga habar yuborishda xatolik!`,
+        );
+      }
+
+      return { message: 'Tasdiqlash kodi yuborildi!', user: saveUser };
     }
 
     const user = await this.model.create({
@@ -121,16 +123,16 @@ export class UserService {
       user: user._id as string,
     });
 
-    this.mailService
-      .sendOtpEmail({ to: { email: user.email.value }, code })
-      .then(() => {
-        return { message: 'Tasdiqlash kodi yuborildi!', user };
-      })
-      .catch(() => {
-        throw new InternalServerErrorException(
-          `Email-ga habar yuborishda xatolik!`,
-        );
+    try {
+      await this.mailService.sendOtpEmail({
+        to: { email: user.email.value },
+        code,
       });
+    } catch (error) {
+      throw new InternalServerErrorException(
+        `Email-ga habar yuborishda xatolik!`,
+      );
+    }
 
     return { message: 'Tasdiqlash kodi yuborildi!', user };
   }
@@ -142,10 +144,25 @@ export class UserService {
         'Tasdiqlash kodi eskirgan, undan 1 daqiqa ichida foydalanish kerak!',
       );
 
-    if (otp.code !== code)
+    if (otp.lockedUntil && otp.lockedUntil > new Date()) {
+      throw new BadRequestException(
+        "Juda ko'p urinish bo'ldi. Yangi kod so'rang yoki birozdan so'ng urinib ko'ring.",
+      );
+    }
+
+    if (otp.code !== code) {
+      const updatedOtp = await this.otpService.incrementAttempts(id);
+      if ((updatedOtp?.attempts ?? 0) >= 5) {
+        await this.otpService.lock(id, new Date(Date.now() + 60_000));
+        throw new BadRequestException(
+          "Tasdiqlash kodi 5 marta noto'g'ri kiritildi. Yangi kod so'rang.",
+        );
+      }
+
       throw new BadRequestException(
         "Tasdiqlash kodida xatolik bor, qayta urinib ko'ring",
       );
+    }
 
     const user = await this.model.findById(id);
     if (!user)
@@ -219,14 +236,17 @@ export class UserService {
     }>(refresh_token);
 
     if (payload.tokenType !== 'refresh') {
-      throw new BadRequestException('Noto\'g\'ri token turi!');
+      throw new BadRequestException("Noto'g'ri token turi!");
     }
 
-    const access_token = this.jwtService.sign({
-      _id: payload._id,
-      role: payload.role,
-      tokenType: 'access',
-    });
+    const access_token = this.jwtService.sign(
+      {
+        _id: payload._id,
+        role: payload.role,
+        tokenType: 'access',
+      },
+      { expiresIn: '15m' },
+    );
 
     return access_token;
   }
