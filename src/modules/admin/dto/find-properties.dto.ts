@@ -1,7 +1,14 @@
-import { IsOptional, IsString, IsIn, IsNumber, Min } from 'class-validator';
+import {
+  IsOptional,
+  IsString,
+  IsIn,
+  IsNumber,
+  IsBoolean,
+  Min,
+} from 'class-validator';
 import { EnumPropertyStatus } from 'src/modules/property/enums/property-status.enum';
 import { EnumPropertyCategory } from 'src/modules/property/enums/property-category.enum';
-import { Type } from 'class-transformer';
+import { Type, Transform } from 'class-transformer';
 
 export class FindPropertiesDto {
   @IsOptional()
@@ -27,4 +34,13 @@ export class FindPropertiesDto {
   @IsOptional()
   @IsIn(Object.values(EnumPropertyCategory))
   category?: EnumPropertyCategory;
+
+  @IsOptional()
+  @IsBoolean()
+  @Transform(({ value }) => {
+    if (value === 'true') return true;
+    if (value === 'false') return false;
+    return undefined;
+  })
+  is_archived?: boolean;
 }

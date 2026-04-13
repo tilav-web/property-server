@@ -20,7 +20,7 @@ export class AdminPropertyService {
   ) {}
 
   async findAll(dto: FindPropertiesDto) {
-    const { page = 1, limit = 10, search, status, category } = dto;
+    const { page = 1, limit = 10, search, status, category, is_archived } = dto;
     const skip = (page - 1) * limit;
 
     const filter: FilterQuery<PropertyDocument> = {};
@@ -31,6 +31,10 @@ export class AdminPropertyService {
 
     if (category) {
       filter.category = category;
+    }
+
+    if (is_archived !== undefined) {
+      filter.is_archived = is_archived;
     }
 
     if (search) {
