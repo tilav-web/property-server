@@ -213,6 +213,38 @@ export class UserController {
     }
   }
 
+  @Throttle({ default: { limit: 3, ttl: 10000 } })
+  @Post('/forgot-password')
+  async forgotPassword(@Body() { email }: { email: string }) {
+    try {
+      return await this.service.forgotPassword(email);
+    } catch (error) {
+      if (error instanceof HttpException) throw error;
+      if (error instanceof Error)
+        throw new InternalServerErrorException(error.message);
+      throw new InternalServerErrorException(
+        "Tizimda xatolik ketdi. Iltimos birozdan so'ng qayta urinib ko'ring!",
+      );
+    }
+  }
+
+  @Throttle({ default: { limit: 3, ttl: 10000 } })
+  @Post('/reset-password')
+  async resetPassword(
+    @Body() dto: { userId: string; code: string; newPassword: string },
+  ) {
+    try {
+      return await this.service.resetPassword(dto);
+    } catch (error) {
+      if (error instanceof HttpException) throw error;
+      if (error instanceof Error)
+        throw new InternalServerErrorException(error.message);
+      throw new InternalServerErrorException(
+        "Tizimda xatolik ketdi. Iltimos birozdan so'ng qayta urinib ko'ring!",
+      );
+    }
+  }
+
   @Post('/refresh-token')
   async refresh(
     @Req() req: IRequestCustom & { cookies: { refresh_token?: string } },

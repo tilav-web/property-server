@@ -228,6 +228,101 @@ export class UserService {
       });
   }
 
+  async forgotPassword(email: string) {
+    if (!email) {
+      throw new BadRequestException('Email kiritilmagan!');
+    }
+
+    const user = await this.model.findOne({
+      'email.value': email,
+      'email.isVerified': true,
+    });
+
+    if (!user) {
+      throw new NotFoundException(
+        'Bu email bilan tasdiqlangan foydalanuvchi topilmadi!',
+      );
+    }
+
+    const oldOtp = await this.otpService.findByUser(user._id as string);
+    if (oldOtp) {
+      throw new ConflictException(
+        `${email} manziliga kod allaqachon yuborilgan! 1 daqiqa kuting.`,
+      );
+    }
+
+    const code = generateOtp();
+
+    await this.otpService.create({
+      code,
+      user: user._id as string,
+    });
+
+    try {
+      await this.mailService.sendOtpEmail({
+        to: { email: user.email.value },
+        code,
+      });
+    } catch {
+      throw new InternalServerErrorException(
+        'Email-ga habar yuborishda xatolik!',
+      );
+    }
+
+    return {
+      message: 'Parolni tiklash kodi yuborildi!',
+      userId: user._id,
+    };
+  }
+
+  async resetPassword({
+    userId,
+    code,
+    newPassword,
+  }: {
+    userId: string;
+    code: string;
+    newPassword: string;
+  }) {
+    const otp = await this.otpService.findByUser(userId);
+    if (!otp) {
+      throw new BadRequestException(
+        'Tasdiqlash kodi eskirgan, qaytadan urinib koring!',
+      );
+    }
+
+    if (otp.lockedUntil && otp.lockedUntil > new Date()) {
+      throw new BadRequestException(
+        "Juda ko'p urinish bo'ldi. Yangi kod so'rang yoki birozdan so'ng urinib ko'ring.",
+      );
+    }
+
+    if (otp.code !== code) {
+      const updatedOtp = await this.otpService.incrementAttempts(userId);
+      if ((updatedOtp?.attempts ?? 0) >= 5) {
+        await this.otpService.lock(userId, new Date(Date.now() + 60_000));
+        throw new BadRequestException(
+          "Tasdiqlash kodi 5 marta noto'g'ri kiritildi. Yangi kod so'rang.",
+        );
+      }
+      throw new BadRequestException(
+        "Tasdiqlash kodida xatolik bor, qayta urinib ko'ring",
+      );
+    }
+
+    const user = await this.model.findById(userId);
+    if (!user) {
+      throw new NotFoundException('Foydalanuvchi topilmadi!');
+    }
+
+    user.password = await bcrypt.hash(newPassword, 10);
+    await user.save();
+
+    await this.otpService.deleteMany(userId);
+
+    return { message: 'Parol muvaffaqiyatli yangilandi!' };
+  }
+
   async refresh(refresh_token: string) {
     const payload = await this.jwtService.verifyAsync<{
       _id: string;
