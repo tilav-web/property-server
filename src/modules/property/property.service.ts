@@ -158,6 +158,13 @@ export class PropertyService {
       sw_lat,
       ne_lng,
       ne_lat,
+      minPrice,
+      maxPrice,
+      minArea,
+      maxArea,
+      amenities,
+      furnished,
+      parking,
     } = dto;
 
     const isMapView =
@@ -179,6 +186,13 @@ export class PropertyService {
       sw_lat,
       ne_lng,
       ne_lat,
+      minPrice,
+      maxPrice,
+      minArea,
+      maxArea,
+      amenities,
+      furnished,
+      parking,
     });
 
     if (sample) {
@@ -243,6 +257,13 @@ export class PropertyService {
     sw_lat,
     ne_lng,
     ne_lat,
+    minPrice,
+    maxPrice,
+    minArea,
+    maxArea,
+    amenities,
+    furnished,
+    parking,
   }: {
     category?: string;
     is_premium?: boolean;
@@ -256,6 +277,13 @@ export class PropertyService {
     sw_lat?: number;
     ne_lng?: number;
     ne_lat?: number;
+    minPrice?: number;
+    maxPrice?: number;
+    minArea?: number;
+    maxArea?: number;
+    amenities?: string[];
+    furnished?: boolean;
+    parking?: boolean;
   }): FilterQuery<PropertyDocument> {
     const match: FilterQuery<PropertyDocument> = {
       status: EnumPropertyStatus.APPROVED,
@@ -325,6 +353,25 @@ export class PropertyService {
         match.bathrooms = { $gte: 7 };
       }
     }
+
+    if (minPrice !== undefined || maxPrice !== undefined) {
+      match.price = {};
+      if (minPrice !== undefined) match.price.$gte = minPrice;
+      if (maxPrice !== undefined) match.price.$lte = maxPrice;
+    }
+
+    if (minArea !== undefined || maxArea !== undefined) {
+      match.area = {};
+      if (minArea !== undefined) match.area.$gte = minArea;
+      if (maxArea !== undefined) match.area.$lte = maxArea;
+    }
+
+    if (amenities?.length) {
+      match.amenities = { $all: amenities };
+    }
+
+    if (furnished !== undefined) match.furnished = furnished;
+    if (parking !== undefined) match.parking = parking;
 
     return match;
   }

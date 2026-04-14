@@ -156,6 +156,59 @@ export class FindAllPropertiesDto {
   radius?: number;
 
   @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
+  minPrice?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
+  maxPrice?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
+  minArea?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
+  maxArea?: number;
+
+  @IsOptional()
+  @Transform(({ value }) => {
+    if (value === undefined || value === null || value === '') return undefined;
+    if (Array.isArray(value)) return value.map((v: unknown) => String(v));
+    if (typeof value === 'string') {
+      const s = value.trim();
+      if (s.startsWith('[') && s.endsWith(']')) {
+        try {
+          const parsed: unknown = JSON.parse(s);
+          if (Array.isArray(parsed)) return (parsed as unknown[]).map((v) => String(v));
+        } catch (e) {
+          console.error(e);
+        }
+      }
+      if (s.includes(',')) return s.split(',').map((v) => v.trim());
+      return [s];
+    }
+    return undefined;
+  })
+  @IsArray()
+  @IsString({ each: true })
+  amenities?: string[];
+
+  @IsOptional()
+  @IsBoolean()
+  @Type(() => Boolean)
+  furnished?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  @Type(() => Boolean)
+  parking?: boolean;
+
+  @IsOptional()
   @IsBoolean()
   @Type(() => Boolean)
   sample?: boolean;
