@@ -746,72 +746,59 @@ export class PropertyService {
   async getTransactionStats() {
     const now = new Date();
     const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-    const sixtyDaysAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
 
     const baseMatch = {
       status: EnumPropertyStatus.APPROVED,
       is_archived: false,
     };
 
-    const [rentStats, saleStats, totalCurrent, totalPrevious] =
-      await Promise.all([
-        // New rentals avg price (last 30 days)
-        this.propertyModel
-          .aggregate([
-            {
-              $match: {
-                ...baseMatch,
-                category: 'APARTMENT_RENT',
-                createdAt: { $gte: thirtyDaysAgo },
-              },
+    const [rentStats, saleStats, totalAll, recentCount] = await Promise.all([
+      // All rentals — avg price & count
+      this.propertyModel
+        .aggregate([
+          { $match: { ...baseMatch, category: 'APARTMENT_RENT' } },
+          {
+            $group: {
+              _id: null,
+              avgPrice: { $avg: '$price' },
+              count: { $sum: 1 },
             },
-            {
-              $group: {
-                _id: null,
-                avgPrice: { $avg: '$price' },
-                count: { $sum: 1 },
-              },
+          },
+        ])
+        .exec(),
+
+      // All sales — avg price & count
+      this.propertyModel
+        .aggregate([
+          { $match: { ...baseMatch, category: 'APARTMENT_SALE' } },
+          {
+            $group: {
+              _id: null,
+              avgPrice: { $avg: '$price' },
+              count: { $sum: 1 },
             },
-          ])
-          .exec(),
+          },
+        ])
+        .exec(),
 
-        // Sales avg price (last 30 days)
-        this.propertyModel
-          .aggregate([
-            {
-              $match: {
-                ...baseMatch,
-                category: 'APARTMENT_SALE',
-                createdAt: { $gte: thirtyDaysAgo },
-              },
-            },
-            {
-              $group: {
-                _id: null,
-                avgPrice: { $avg: '$price' },
-                count: { $sum: 1 },
-              },
-            },
-          ])
-          .exec(),
+      // Total approved properties
+      this.propertyModel.countDocuments(baseMatch),
 
-        // Total transactions current period
-        this.propertyModel.countDocuments({
-          ...baseMatch,
-          createdAt: { $gte: thirtyDaysAgo },
-        }),
+      // Recent (last 30 days) — for growth indicator
+      this.propertyModel.countDocuments({
+        ...baseMatch,
+        createdAt: { $gte: thirtyDaysAgo },
+      }),
+    ]);
 
-        // Total transactions previous period (for growth %)
-        this.propertyModel.countDocuments({
-          ...baseMatch,
-          createdAt: { $gte: sixtyDaysAgo, $lt: thirtyDaysAgo },
-        }),
-      ]);
-
-    const currentTotal = totalCurrent || 0;
-    const previousTotal = totalPrevious || 1; // avoid division by zero
+    const total = totalAll || 0;
+    const older = total - recentCount;
     const growthPercent =
-      ((currentTotal - previousTotal) / previousTotal) * 100;
+      older > 0
+        ? Math.round(((recentCount - older) / older) * 10000) / 100
+        : recentCount > 0
+          ? 100
+          : 0;
 
     return {
       newRentals: {
@@ -822,7 +809,7 @@ export class PropertyService {
         avgPrice: Math.round(saleStats[0]?.avgPrice || 0),
         count: saleStats[0]?.count || 0,
       },
-      totalTransactions: currentTotal,
+      totalTransactions: total,
       growthPercent: Math.round(growthPercent * 100) / 100,
     };
   }
