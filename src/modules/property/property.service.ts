@@ -354,16 +354,20 @@ export class PropertyService {
       }
     }
 
-    if (minPrice !== undefined || maxPrice !== undefined) {
-      match.price = {};
-      if (minPrice !== undefined) match.price.$gte = minPrice;
-      if (maxPrice !== undefined) match.price.$lte = maxPrice;
+    if (minPrice !== undefined && maxPrice !== undefined) {
+      match.price = { $gte: minPrice, $lte: maxPrice };
+    } else if (minPrice !== undefined) {
+      match.price = { $gte: minPrice };
+    } else if (maxPrice !== undefined) {
+      match.price = { $lte: maxPrice };
     }
 
-    if (minArea !== undefined || maxArea !== undefined) {
-      match.area = {};
-      if (minArea !== undefined) match.area.$gte = minArea;
-      if (maxArea !== undefined) match.area.$lte = maxArea;
+    if (minArea !== undefined && maxArea !== undefined) {
+      match.area = { $gte: minArea, $lte: maxArea };
+    } else if (minArea !== undefined) {
+      match.area = { $gte: minArea };
+    } else if (maxArea !== undefined) {
+      match.area = { $lte: maxArea };
     }
 
     if (amenities?.length) {

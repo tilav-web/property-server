@@ -87,3 +87,10 @@ PropertySchema.index({
 }, {
   default_language: 'none'
 });
+
+// Yangi filterlar uchun indexlar
+PropertySchema.index({ price: 1 });
+PropertySchema.index({ area: 1 });
+PropertySchema.index({ amenities: 1 });
+PropertySchema.index({ status: 1, is_archived: 1, price: 1 });
+PropertySchema.index({ status: 1, is_archived: 1, category: 1, price: 1 });
