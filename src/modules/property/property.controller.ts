@@ -290,6 +290,11 @@ export class PropertyController {
     return this.service.getCategories();
   }
 
+  @Get('/stats/transactions')
+  async getTransactionStats() {
+    return this.service.getTransactionStats();
+  }
+
   @Get('/update/:id')
   @UseGuards(AuthGuard('jwt'))
   async findOnePropertyForUpdate(

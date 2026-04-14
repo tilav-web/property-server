@@ -743,6 +743,90 @@ export class PropertyService {
     return categories;
   }
 
+  async getTransactionStats() {
+    const now = new Date();
+    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const sixtyDaysAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
+
+    const baseMatch = {
+      status: EnumPropertyStatus.APPROVED,
+      is_archived: false,
+    };
+
+    const [rentStats, saleStats, totalCurrent, totalPrevious] =
+      await Promise.all([
+        // New rentals avg price (last 30 days)
+        this.propertyModel
+          .aggregate([
+            {
+              $match: {
+                ...baseMatch,
+                category: 'APARTMENT_RENT',
+                createdAt: { $gte: thirtyDaysAgo },
+              },
+            },
+            {
+              $group: {
+                _id: null,
+                avgPrice: { $avg: '$price' },
+                count: { $sum: 1 },
+              },
+            },
+          ])
+          .exec(),
+
+        // Sales avg price (last 30 days)
+        this.propertyModel
+          .aggregate([
+            {
+              $match: {
+                ...baseMatch,
+                category: 'APARTMENT_SALE',
+                createdAt: { $gte: thirtyDaysAgo },
+              },
+            },
+            {
+              $group: {
+                _id: null,
+                avgPrice: { $avg: '$price' },
+                count: { $sum: 1 },
+              },
+            },
+          ])
+          .exec(),
+
+        // Total transactions current period
+        this.propertyModel.countDocuments({
+          ...baseMatch,
+          createdAt: { $gte: thirtyDaysAgo },
+        }),
+
+        // Total transactions previous period (for growth %)
+        this.propertyModel.countDocuments({
+          ...baseMatch,
+          createdAt: { $gte: sixtyDaysAgo, $lt: thirtyDaysAgo },
+        }),
+      ]);
+
+    const currentTotal = totalCurrent || 0;
+    const previousTotal = totalPrevious || 1; // avoid division by zero
+    const growthPercent =
+      ((currentTotal - previousTotal) / previousTotal) * 100;
+
+    return {
+      newRentals: {
+        avgPrice: Math.round(rentStats[0]?.avgPrice || 0),
+        count: rentStats[0]?.count || 0,
+      },
+      sales: {
+        avgPrice: Math.round(saleStats[0]?.avgPrice || 0),
+        count: saleStats[0]?.count || 0,
+      },
+      totalTransactions: currentTotal,
+      growthPercent: Math.round(growthPercent * 100) / 100,
+    };
+  }
+
   async findOnePropertyForUpdate({
     propertyId,
     authorId,
