@@ -99,3 +99,11 @@ PropertySchema.index({ area: 1 });
 PropertySchema.index({ amenities: 1 });
 PropertySchema.index({ status: 1, is_archived: 1, price: 1 });
 PropertySchema.index({ status: 1, is_archived: 1, category: 1, price: 1 });
+
+// Keng tarqalgan search + sort kombinatsiyalari
+PropertySchema.index({ status: 1, is_archived: 1, createdAt: -1 });
+PropertySchema.index({ status: 1, is_archived: 1, is_premium: -1, createdAt: -1 });
+PropertySchema.index({ status: 1, is_archived: 1, category: 1, bedrooms: 1, price: 1 });
+PropertySchema.index({ status: 1, is_archived: 1, category: 1, rating: -1 });
+PropertySchema.index({ status: 1, is_archived: 1, liked: -1, createdAt: -1 });
+PropertySchema.index({ status: 1, is_archived: 1, currency: 1, price: 1 });

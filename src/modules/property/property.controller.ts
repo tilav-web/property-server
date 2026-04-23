@@ -16,6 +16,7 @@ import {
   Res,
   Patch,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { PropertyService } from './property.service';
 import { FindAllPropertiesDto } from './dto/find-all-properties.dto';
 import { EnumLanguage } from 'src/enums/language.enum';
@@ -51,68 +52,16 @@ export class PropertyController {
     return this.service.create({ dto, files, author: req.user?._id });
   }
 
+  @Throttle({ default: { limit: 60, ttl: 60_000 } })
   @Get()
   findAll(@Query() query: FindAllPropertiesDto, @Req() req: IRequestCustom) {
-    const language = req.headers['accept-language'] as EnumLanguage;
+    const raw = (req.headers['accept-language'] as string | undefined) ?? '';
+    const first = raw.split(',')[0]?.trim().toLowerCase();
+    const language = (Object.values(EnumLanguage) as string[]).includes(first)
+      ? (first as EnumLanguage)
+      : EnumLanguage.EN;
 
-    const rawQuery = (req.query ?? {}) as Record<string, unknown>;
-
-    const normalizeArrayParam = (key: string): number[] | undefined => {
-      const maybe = rawQuery[key] ?? rawQuery[`${key}[]`];
-      if (maybe === undefined || maybe === null || maybe === '')
-        return undefined;
-
-      if (Array.isArray(maybe)) {
-        return maybe
-          .map((x) => {
-            if (typeof x === 'string' || typeof x === 'number')
-              return Number(x);
-            return NaN;
-          })
-          .filter((n) => !Number.isNaN(n));
-      }
-
-      if (typeof maybe === 'string') {
-        const s = maybe.trim();
-        if (s === '') return undefined;
-
-        if (s.startsWith('[') && s.endsWith(']')) {
-          try {
-            const parsed: unknown = JSON.parse(s);
-            if (Array.isArray(parsed)) {
-              return (parsed as unknown[])
-                .filter((v) => typeof v === 'string' || typeof v === 'number')
-                .map((v) => Number(v))
-                .filter((n) => !Number.isNaN(n));
-            }
-          } catch (e) {
-            console.error(e);
-          }
-        }
-
-        if (s.includes(',')) {
-          return s
-            .split(',')
-            .map((x) => Number(x.trim()))
-            .filter((n) => !Number.isNaN(n));
-        }
-
-        const num = Number(s);
-        return Number.isNaN(num) ? undefined : [num];
-      }
-
-      if (typeof maybe === 'number') return [maybe];
-
-      return undefined;
-    };
-
-    const normalized = { ...query } as FindAllPropertiesDto;
-    if (!normalized.bedrooms)
-      normalized.bedrooms = normalizeArrayParam('bedrooms');
-    if (!normalized.bathrooms)
-      normalized.bathrooms = normalizeArrayParam('bathrooms');
-
-    return this.service.findAll({ ...normalized, language });
+    return this.service.findAll({ ...query, language });
   }
 
   @Get('share/:id')

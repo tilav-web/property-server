@@ -12,7 +12,10 @@ import { OpenaiService } from '../openai/openai.service';
 import { CreatePropertyDto } from './dto/create-property.dto';
 import { UpdatePropertyDto } from './dto/update-property.dto';
 import { EnumPropertyCategory } from './enums/property-category.enum';
+import { EnumPropertyCategoryFilter } from './enums/property-category-filter.enum';
+import { SortOption } from './enums/sort-option.enum';
 import { EnumLanguage } from 'src/enums/language.enum';
+import { CurrencyCode } from 'src/common/currencies';
 import { FindAllPropertiesDto } from './dto/find-all-properties.dto';
 import { MessageService } from '../message/message.service';
 import { CreateMessageDto } from '../message/dto/create-message.dto';
@@ -22,6 +25,7 @@ import { TagService } from '../tag/tag.service';
 import { EnumFilesFolder } from '../file/enums/files-folder.enum';
 import { ApartmentRentDocument } from './schemas/categories/apartment-rent.schema';
 import { ApartmentSaleDocument } from './schemas/categories/apartment-sale.schema';
+import { PropertySearchCache } from './property-search.cache';
 
 @Injectable()
 export class PropertyService {
@@ -38,6 +42,7 @@ export class PropertyService {
     private readonly openaiService: OpenaiService,
     private readonly messageService: MessageService,
     private readonly tagService: TagService,
+    private readonly searchCache: PropertySearchCache,
   ) {}
 
   async onModuleInit() {
@@ -131,6 +136,7 @@ export class PropertyService {
         await this.tagService.saveTags(tags);
       }
 
+      this.searchCache.invalidate();
       return property;
     } catch (error) {
       await Promise.allSettled(
@@ -146,6 +152,7 @@ export class PropertyService {
       page = 1,
       limit = 10,
       category,
+      currency,
       search,
       is_premium,
       is_new,
@@ -158,6 +165,9 @@ export class PropertyService {
       sw_lat,
       ne_lng,
       ne_lat,
+      lat,
+      lng,
+      radius,
       minPrice,
       maxPrice,
       minArea,
@@ -165,7 +175,11 @@ export class PropertyService {
       amenities,
       furnished,
       parking,
+      sort,
     } = dto;
+
+    const safeLimit = Math.min(Math.max(limit, 1), 50);
+    const safePage = Math.max(page, 1);
 
     const isMapView =
       sw_lng !== undefined &&
@@ -175,6 +189,7 @@ export class PropertyService {
 
     const match = this.buildMatchQuery({
       category,
+      currency,
       is_premium,
       is_new,
       rating,
@@ -186,6 +201,9 @@ export class PropertyService {
       sw_lat,
       ne_lng,
       ne_lat,
+      lat,
+      lng,
+      radius,
       minPrice,
       maxPrice,
       minArea,
@@ -198,20 +216,40 @@ export class PropertyService {
     if (sample) {
       return this.executeSampleQuery({
         match,
-        limit,
+        limit: safeLimit,
         language,
         category,
         isMapView,
       });
     }
 
-    const result = await this.executePaginationQuery({
+    const cacheKey = this.searchCache.makeKey({
       match,
-      page,
-      limit,
+      page: safePage,
+      limit: safeLimit,
       language,
       category,
       isMapView,
+      sort,
+    });
+    const cached = this.searchCache.get<{
+      properties: unknown[];
+      totalItems: number | null;
+      totalPages: number | null;
+      page: number;
+      limit: number;
+      areaKey: string | null;
+    }>(cacheKey);
+    if (cached) return cached;
+
+    const result = await this.executePaginationQuery({
+      match,
+      page: safePage,
+      limit: safeLimit,
+      language,
+      category,
+      isMapView,
+      sort,
     });
 
     let areaKey: string | null = null;
@@ -221,10 +259,13 @@ export class PropertyService {
       areaKey = this.getAreaKey(centerLat, centerLng);
     }
 
-    return {
+    const response = {
       ...result,
       areaKey: areaKey || null,
     };
+
+    this.searchCache.set(cacheKey, response);
+    return response;
   }
 
   private areaKeyCache = new Map<string, string>();
@@ -244,8 +285,32 @@ export class PropertyService {
     return areaKey;
   }
 
+  private buildRoomFilter(
+    values: number[] | undefined,
+    field: 'bedrooms' | 'bathrooms',
+    plusThreshold = 7,
+  ): FilterQuery<PropertyDocument> | null {
+    if (!values?.length) return null;
+
+    const exact = values.filter((v) => v < plusThreshold);
+    const hasPlus = values.some((v) => v >= plusThreshold);
+
+    if (exact.length && hasPlus) {
+      return {
+        $or: [
+          { [field]: { $in: exact } },
+          { [field]: { $gte: plusThreshold } },
+        ],
+      };
+    }
+    if (exact.length) return { [field]: { $in: exact } };
+    if (hasPlus) return { [field]: { $gte: plusThreshold } };
+    return null;
+  }
+
   private buildMatchQuery({
     category,
+    currency,
     is_premium,
     is_new,
     rating,
@@ -257,6 +322,9 @@ export class PropertyService {
     sw_lat,
     ne_lng,
     ne_lat,
+    lat,
+    lng,
+    radius,
     minPrice,
     maxPrice,
     minArea,
@@ -266,17 +334,21 @@ export class PropertyService {
     parking,
   }: {
     category?: string;
+    currency?: CurrencyCode;
     is_premium?: boolean;
     is_new?: boolean;
     rating?: number;
     search?: string;
-    filterCategory?: string;
+    filterCategory?: EnumPropertyCategoryFilter;
     bathrooms?: number[];
     bedrooms?: number[];
     sw_lng?: number;
     sw_lat?: number;
     ne_lng?: number;
     ne_lat?: number;
+    lat?: number;
+    lng?: number;
+    radius?: number;
     minPrice?: number;
     maxPrice?: number;
     minArea?: number;
@@ -289,13 +361,15 @@ export class PropertyService {
       status: EnumPropertyStatus.APPROVED,
       is_archived: false,
     };
+    const andClauses: FilterQuery<PropertyDocument>[] = [];
 
-    if (
+    const hasBbox =
       sw_lng !== undefined &&
       sw_lat !== undefined &&
       ne_lng !== undefined &&
-      ne_lat !== undefined
-    ) {
+      ne_lat !== undefined;
+
+    if (hasBbox) {
       match.location = {
         $geoWithin: {
           $box: [
@@ -304,78 +378,61 @@ export class PropertyService {
           ],
         },
       };
+    } else if (
+      lat !== undefined &&
+      lng !== undefined &&
+      radius !== undefined &&
+      radius > 0
+    ) {
+      match.location = {
+        $geoWithin: {
+          $centerSphere: [[lng, lat], radius / 6378.1],
+        },
+      };
     }
 
-    if (category) match.category = category;
+    if (category) {
+      match.category = category;
+    } else if (filterCategory === EnumPropertyCategoryFilter.APARTMENT) {
+      match.category = {
+        $in: [
+          EnumPropertyCategory.APARTMENT_SALE,
+          EnumPropertyCategory.APARTMENT_RENT,
+        ],
+      };
+    }
+
+    if (currency) match.currency = currency;
     if (is_premium !== undefined) match.is_premium = is_premium;
-
     if (is_new) {
-      match.createdAt = { $gte: new Date(Date.now() - 604800000) };
+      match.createdAt = { $gte: new Date(Date.now() - 604_800_000) };
+    }
+    if (rating !== undefined) match.rating = { $gte: rating };
+    if (search) match.$text = { $search: search };
+
+    const bedroomFilter = this.buildRoomFilter(bedrooms, 'bedrooms');
+    if (bedroomFilter) andClauses.push(bedroomFilter);
+
+    const bathroomFilter = this.buildRoomFilter(bathrooms, 'bathrooms');
+    if (bathroomFilter) andClauses.push(bathroomFilter);
+
+    if (minPrice !== undefined || maxPrice !== undefined) {
+      match.price = {};
+      if (minPrice !== undefined) match.price.$gte = minPrice;
+      if (maxPrice !== undefined) match.price.$lte = maxPrice;
     }
 
-    if (rating) match.rating = { $gte: rating };
-
-    if (search) {
-      match.$text = { $search: search };
+    if (minArea !== undefined || maxArea !== undefined) {
+      match.area = {};
+      if (minArea !== undefined) match.area.$gte = minArea;
+      if (maxArea !== undefined) match.area.$lte = maxArea;
     }
 
-    if (filterCategory && !category) {
-      match.category = { $regex: `^${filterCategory}`, $options: 'i' };
-    }
-
-    if (bedrooms?.length) {
-      const exact = bedrooms.filter((v) => v < 7);
-      const hasSevenPlus = bedrooms.includes(7);
-
-      if (exact.length && hasSevenPlus) {
-        match.$or = match.$or || [];
-        match.$or.push({ bedrooms: { $in: exact } }, { bedrooms: { $gte: 7 } });
-      } else if (exact.length) {
-        match.bedrooms = { $in: exact };
-      } else if (hasSevenPlus) {
-        match.bedrooms = { $gte: 7 };
-      }
-    }
-
-    if (bathrooms?.length) {
-      const exact = bathrooms.filter((v) => v < 7);
-      const hasSevenPlus = bathrooms.includes(7);
-
-      if (exact.length && hasSevenPlus) {
-        match.$or = match.$or || [];
-        match.$or.push(
-          { bathrooms: { $in: exact } },
-          { bathrooms: { $gte: 7 } },
-        );
-      } else if (exact.length) {
-        match.bathrooms = { $in: exact };
-      } else if (hasSevenPlus) {
-        match.bathrooms = { $gte: 7 };
-      }
-    }
-
-    if (minPrice !== undefined && maxPrice !== undefined) {
-      match.price = { $gte: minPrice, $lte: maxPrice };
-    } else if (minPrice !== undefined) {
-      match.price = { $gte: minPrice };
-    } else if (maxPrice !== undefined) {
-      match.price = { $lte: maxPrice };
-    }
-
-    if (minArea !== undefined && maxArea !== undefined) {
-      match.area = { $gte: minArea, $lte: maxArea };
-    } else if (minArea !== undefined) {
-      match.area = { $gte: minArea };
-    } else if (maxArea !== undefined) {
-      match.area = { $lte: maxArea };
-    }
-
-    if (amenities?.length) {
-      match.amenities = { $all: amenities };
-    }
-
+    if (amenities?.length) match.amenities = { $all: amenities };
     if (furnished !== undefined) match.furnished = furnished;
     if (parking !== undefined) match.parking = parking;
+
+    if (andClauses.length) match.$and = andClauses;
 
     return match;
   }
@@ -415,6 +472,24 @@ export class PropertyService {
     };
   }
 
+  private getSortStage(sort?: SortOption): Record<string, 1 | -1> {
+    switch (sort) {
+      case SortOption.OLDEST:
+        return { createdAt: 1 };
+      case SortOption.PRICE_ASC:
+        return { price: 1, createdAt: -1 };
+      case SortOption.PRICE_DESC:
+        return { price: -1, createdAt: -1 };
+      case SortOption.RATING:
+        return { rating: -1, createdAt: -1 };
+      case SortOption.POPULAR:
+        return { liked: -1, saved: -1, createdAt: -1 };
+      case SortOption.NEWEST:
+      default:
+        return { createdAt: -1 };
+    }
+  }
+
   private async executePaginationQuery({
     match,
     page,
@@ -422,6 +497,7 @@ export class PropertyService {
     language,
     category,
     isMapView,
+    sort,
   }: {
     match: FilterQuery<PropertyDocument>;
     page: number;
@@ -429,29 +505,40 @@ export class PropertyService {
     language: EnumLanguage;
     category?: string;
     isMapView?: boolean;
+    sort?: SortOption;
   }) {
-    const pipeline: any[] = [];
+    const pipeline: PipelineStage[] = [];
 
     if (Object.keys(match).length > 0) {
       pipeline.push({ $match: match });
     }
 
     pipeline.push(
-      { $sort: { createdAt: -1 } },
+      { $sort: this.getSortStage(sort) },
       { $skip: (page - 1) * limit },
       { $limit: limit },
       { $project: this.getProjectionByCategory(language, category, isMapView) },
     );
 
-    const [properties, totalItems] = await Promise.all([
-      this.propertyModel.aggregate(pipeline).exec(),
-      this.getCount(match),
-    ]);
+    if (page === 1) {
+      const [properties, totalItems] = await Promise.all([
+        this.propertyModel.aggregate(pipeline).exec(),
+        this.getCount(match),
+      ]);
+      return {
+        properties,
+        totalItems,
+        totalPages: Math.ceil(totalItems / limit),
+        page,
+        limit,
+      };
+    }
 
+    const properties = await this.propertyModel.aggregate(pipeline).exec();
     return {
       properties,
-      totalItems,
-      totalPages: Math.ceil(totalItems / limit),
+      totalItems: null,
+      totalPages: null,
       page,
       limit,
     };
@@ -668,6 +755,7 @@ export class PropertyService {
 
     // Property ni o'chirish (oxirida qilish yaxshi – fayllar avval o'chirilsin)
     await property.deleteOne();
+    this.searchCache.invalidate();
 
     return property;
   }
@@ -684,7 +772,9 @@ export class PropertyService {
       throw new NotFoundException('Property not found!');
     }
     property.status = status;
-    return property.save();
+    const saved = await property.save();
+    this.searchCache.invalidate();
+    return saved;
   }
 
   async toggleArchive({ id, userId }: { id: string; userId: string }) {
@@ -701,7 +791,9 @@ export class PropertyService {
       );
     }
     property.is_archived = !property.is_archived;
-    return property.save();
+    const saved = await property.save();
+    this.searchCache.invalidate();
+    return saved;
   }
 
   async sendMessage({ dto, user }: { dto: CreateMessageDto; user: string }) {
@@ -1037,6 +1129,8 @@ export class PropertyService {
       typedProperty.markModified('location');
     }
 
-    return typedProperty.save();
+    const saved = await typedProperty.save();
+    this.searchCache.invalidate();
+    return saved;
   }
 }

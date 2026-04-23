@@ -18,6 +18,7 @@ import { AiPropertyModule } from './modules/ai-property/ai-property.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { StatisticModule } from './modules/statistic/statistic.module';
 import { TagModule } from './modules/tag/tag.module';
+import { PropertySearchCacheModule } from './modules/property/property-search.cache';
 
 @Module({
   imports: [
@@ -41,6 +42,7 @@ import { TagModule } from './modules/tag/tag.module';
         return { uri, autoIndex: true };
       },
     }),
+    PropertySearchCacheModule,
     UserModule,
     FileModule,
     PropertyModule,

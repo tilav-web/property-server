@@ -11,12 +11,14 @@ import {
 } from 'src/modules/seller/schemas/seller.schema';
 import { FindPropertiesDto } from '../dto/find-properties.dto';
 import { UpdatePropertyDto } from '../dto/update-property.dto';
+import { PropertySearchCache } from 'src/modules/property/property-search.cache';
 
 @Injectable()
 export class AdminPropertyService {
   constructor(
     @InjectModel(Property.name) private propertyModel: Model<PropertyDocument>,
     @InjectModel(Seller.name) private sellerModel: Model<SellerDocument>,
+    private readonly searchCache: PropertySearchCache,
   ) {}
 
   async findAll(dto: FindPropertiesDto) {
@@ -119,6 +121,8 @@ export class AdminPropertyService {
     if (dto.photos !== undefined) property.photos = dto.photos;
     if (dto.videos !== undefined) property.videos = dto.videos;
 
-    return property.save();
+    const saved = await property.save();
+    this.searchCache.invalidate();
+    return saved;
   }
 }

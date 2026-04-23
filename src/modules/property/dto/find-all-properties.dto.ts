@@ -6,22 +6,30 @@ import {
   IsEnum,
   IsArray,
   ValidateIf,
+  Min,
+  Max,
+  MaxLength,
 } from 'class-validator';
 import { Transform as ClassTransformerTransform } from 'class-transformer';
 import { Type, Transform } from 'class-transformer';
 import { EnumPropertyCategory } from '../enums/property-category.enum';
 import { EnumPropertyCategoryFilter } from '../enums/property-category-filter.enum';
 import { EnumPropertyStatus } from '../enums/property-status.enum';
+import { SortOption } from '../enums/sort-option.enum';
+import { CurrencyCode } from 'src/common/currencies';
 
 export class FindAllPropertiesDto {
   @IsOptional()
-  @IsNumber()
   @Type(() => Number)
+  @IsNumber()
+  @Min(1)
   page?: number;
 
   @IsOptional()
-  @IsNumber()
   @Type(() => Number)
+  @IsNumber()
+  @Min(1)
+  @Max(50)
   limit?: number;
 
   @IsOptional()
@@ -122,7 +130,24 @@ export class FindAllPropertiesDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(200)
   search?: string;
+
+  @IsOptional()
+  @ValidateIf((_, value) => value !== '')
+  @ClassTransformerTransform(({ value }) =>
+    value === ''
+      ? undefined
+      : typeof value === 'string'
+        ? value.toUpperCase()
+        : value,
+  )
+  @IsEnum(CurrencyCode)
+  currency?: CurrencyCode;
+
+  @IsOptional()
+  @IsEnum(SortOption)
+  sort?: SortOption;
 
   @IsOptional()
   @IsBoolean()
