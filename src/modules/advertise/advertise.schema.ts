@@ -3,7 +3,11 @@ import { Document, Types } from 'mongoose';
 import { EnumPaymentStatus } from 'src/enums/advertise-payment-status.enum';
 import { EnumAdvertiseStatus } from 'src/enums/advertise-status.enum';
 import { EnumAdvertiseType } from 'src/enums/advertise-type.enum';
-import { EnumPropertyCurrency } from 'src/enums/property-currency.enum';
+import {
+  CurrencyCode,
+  DEFAULT_CURRENCY,
+  SUPPORTED_CURRENCIES,
+} from 'src/common/currencies';
 
 export type AdvertiseDocument = Document & Advertise;
 
@@ -40,9 +44,10 @@ export class Advertise {
   @Prop({
     type: String,
     required: true,
-    default: EnumPropertyCurrency.RM,
+    enum: SUPPORTED_CURRENCIES,
+    default: DEFAULT_CURRENCY,
   })
-  currency: string;
+  currency: CurrencyCode;
 
   @Prop({
     type: String,

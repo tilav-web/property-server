@@ -4,6 +4,7 @@ import { AiPropertyController } from './ai-property.controller';
 import { GenaiModule } from '../openai/openai.module';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Property, PropertySchema } from '../property/schemas/property.schema';
+import { AiQueryCache } from './query-cache';
 
 @Module({
   imports: [
@@ -12,7 +13,7 @@ import { Property, PropertySchema } from '../property/schemas/property.schema';
     ]),
     GenaiModule,
   ],
-  providers: [AiPropertyService],
+  providers: [AiPropertyService, AiQueryCache],
   controllers: [AiPropertyController],
   exports: [AiPropertyService],
 })

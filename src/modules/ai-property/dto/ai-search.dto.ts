@@ -4,12 +4,15 @@ import {
   IsNumber,
   IsOptional,
   Min,
+  Max,
+  MaxLength,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class AiSearchDto {
   @IsString()
   @IsNotEmpty()
+  @MaxLength(500, { message: 'Prompt 500 belgidan uzun bo\'lmasligi kerak' })
   prompt: string;
 
   @IsOptional()
@@ -22,5 +25,6 @@ export class AiSearchDto {
   @Type(() => Number)
   @IsNumber()
   @Min(1)
+  @Max(50)
   limit?: number = 5;
 }

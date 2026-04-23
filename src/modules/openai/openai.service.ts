@@ -257,4 +257,53 @@ Examples of INCORRECT tags:
       }, 3),
     );
   }
+
+  async generateJson<T = unknown>(opts: {
+    system: string;
+    user: string;
+    model?: string;
+    temperature?: number;
+    maxTokens?: number;
+  }): Promise<{ data: T; usage?: OpenAI.CompletionUsage }> {
+    const {
+      system,
+      user,
+      model = 'gpt-4o-mini',
+      temperature = 0.1,
+      maxTokens = 800,
+    } = opts;
+
+    return this.queueRequest(() =>
+      this.withRetry(async () => {
+        const response = await this.ai.chat.completions.create({
+          model,
+          messages: [
+            { role: 'system', content: system },
+            { role: 'user', content: user },
+          ],
+          response_format: { type: 'json_object' },
+          max_tokens: maxTokens,
+          temperature,
+        });
+
+        const output = response.choices?.[0]?.message?.content?.trim() ?? '';
+        if (!output) {
+          throw new Error('OpenAI returned empty response');
+        }
+
+        let parsed: unknown;
+        try {
+          parsed = JSON.parse(output);
+        } catch {
+          throw new Error('OpenAI returned non-JSON response');
+        }
+
+        if (typeof parsed !== 'object' || parsed === null) {
+          throw new Error('OpenAI returned a non-object JSON value');
+        }
+
+        return { data: parsed as T, usage: response.usage };
+      }, 3),
+    );
+  }
 }

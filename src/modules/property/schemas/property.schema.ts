@@ -1,7 +1,11 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument, Types } from 'mongoose';
 import { EnumPropertyCategory } from 'src/modules/property/enums/property-category.enum';
-import { EnumPropertyCurrency } from 'src/enums/property-currency.enum';
+import {
+  CurrencyCode,
+  DEFAULT_CURRENCY,
+  SUPPORTED_CURRENCIES,
+} from 'src/common/currencies';
 import { Language } from 'src/common/language/language.schema';
 import { Location, LocationSchema } from 'src/common/location/location.schema';
 import { EnumPropertyStatus } from '../enums/property-status.enum';
@@ -36,9 +40,10 @@ export class Property {
   @Prop({
     type: String,
     required: true,
-    default: EnumPropertyCurrency.RM,
+    enum: SUPPORTED_CURRENCIES,
+    default: DEFAULT_CURRENCY,
   })
-  currency: string;
+  currency: CurrencyCode;
 
   @Prop({ type: Number, required: true, default: 0 })
   price: number;

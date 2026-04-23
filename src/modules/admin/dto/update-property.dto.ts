@@ -10,7 +10,7 @@ import {
 import { Type } from 'class-transformer';
 import { EnumPropertyStatus } from 'src/modules/property/enums/property-status.enum';
 import { EnumPropertyCategory } from 'src/modules/property/enums/property-category.enum';
-import { EnumPropertyCurrency } from 'src/enums/property-currency.enum';
+import { CurrencyCode, SUPPORTED_CURRENCIES } from 'src/common/currencies';
 import { LanguageDto } from 'src/common/language/language.dto';
 import { LocationDto } from 'src/common/location/location.dto';
 
@@ -40,8 +40,8 @@ export class UpdatePropertyDto {
   location?: LocationDto;
 
   @IsOptional()
-  @IsIn(Object.values(EnumPropertyCurrency))
-  currency?: EnumPropertyCurrency;
+  @IsIn(SUPPORTED_CURRENCIES)
+  currency?: CurrencyCode;
 
   @IsOptional()
   @IsNumber()

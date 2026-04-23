@@ -11,7 +11,7 @@ import {
 } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { EnumPropertyCategory } from '../enums/property-category.enum';
-import { EnumPropertyCurrency } from 'src/enums/property-currency.enum';
+import { CurrencyCode } from 'src/common/currencies';
 import { EnumRepairType } from '../enums/repair-type.enum';
 import { EnumHeating } from '../enums/heating.enum';
 
@@ -90,9 +90,15 @@ export class UpdatePropertyDto {
 
   @IsOptional()
   @ValidateIf((_, value) => value !== '')
-  @Transform(({ value }) => (value === '' ? undefined : value))
-  @IsEnum(EnumPropertyCurrency)
-  currency?: EnumPropertyCurrency;
+  @Transform(({ value }) =>
+    value === ''
+      ? undefined
+      : typeof value === 'string'
+        ? value.toUpperCase()
+        : value,
+  )
+  @IsEnum(CurrencyCode)
+  currency?: CurrencyCode;
 
   @IsOptional()
   @IsNumber()

@@ -13,6 +13,7 @@ import { EnumAdvertiseType } from 'src/enums/advertise-type.enum';
 import { EnumPaymentStatus } from 'src/enums/advertise-payment-status.enum';
 import { EnumFilesFolder } from '../file/enums/files-folder.enum';
 import { UpdateAdvertiseDto } from './dto/update-advertise.dto';
+import { DEFAULT_CURRENCY, isSupportedCurrency } from 'src/common/currencies';
 
 @Injectable()
 export class AdvertiseService {
@@ -214,7 +215,9 @@ export class AdvertiseService {
     return {
       days,
       totalPrice,
-      currency: process.env.ADVERTISE_CURRENCY || 'RM',
+      currency: isSupportedCurrency(process.env.ADVERTISE_CURRENCY)
+        ? process.env.ADVERTISE_CURRENCY!.toUpperCase()
+        : DEFAULT_CURRENCY,
     };
   }
 

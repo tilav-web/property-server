@@ -3,7 +3,7 @@ import { Transform } from 'class-transformer';
 import { EnumPropertyCategory } from '../enums/property-category.enum';
 import { CreateApartmentRentDto } from './create-apartment-rent.dto';
 import { CreateApartmentSaleDto } from './create-apartment-sale.dto';
-import { EnumPropertyCurrency } from 'src/enums/property-currency.enum';
+import { CurrencyCode } from 'src/common/currencies';
 
 export class CreatePropertyBaseDto {
   @IsString({ message: 'Sarlavha kiritilmagan!' })
@@ -31,8 +31,11 @@ export class CreatePropertyBaseDto {
   category?: EnumPropertyCategory;
 
   @IsOptional()
-  @IsEnum(EnumPropertyCurrency)
-  currency?: EnumPropertyCurrency;
+  @Transform(({ value }) =>
+    typeof value === 'string' ? value.toUpperCase() : value,
+  )
+  @IsEnum(CurrencyCode)
+  currency?: CurrencyCode;
 }
 
 export type CreatePropertyDto =
