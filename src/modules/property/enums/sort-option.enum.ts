@@ -5,4 +5,5 @@ export enum SortOption {
   PRICE_DESC = 'price_desc',
   RATING = 'rating',
   POPULAR = 'popular',
+  DISTANCE = 'distance',
 }

@@ -250,6 +250,9 @@ export class PropertyService {
       category,
       isMapView,
       sort,
+      lat,
+      lng,
+      radius,
     });
 
     let areaKey: string | null = null;
@@ -498,6 +501,9 @@ export class PropertyService {
     category,
     isMapView,
     sort,
+    lat,
+    lng,
+    radius,
   }: {
     match: FilterQuery<PropertyDocument>;
     page: number;
@@ -506,24 +512,60 @@ export class PropertyService {
     category?: string;
     isMapView?: boolean;
     sort?: SortOption;
+    lat?: number;
+    lng?: number;
+    radius?: number;
   }) {
     const pipeline: PipelineStage[] = [];
+    const useGeoNear =
+      sort === SortOption.DISTANCE && lat !== undefined && lng !== undefined;
 
-    if (Object.keys(match).length > 0) {
-      pipeline.push({ $match: match });
+    const projection = this.getProjectionByCategory(
+      language,
+      category,
+      isMapView,
+    ) as Record<string, unknown>;
+
+    if (useGeoNear) {
+      // $geoNear MUST be the first stage and produces its own sort by distance
+      const geoMatch = { ...match };
+      delete geoMatch.location;
+
+      pipeline.push({
+        $geoNear: {
+          near: { type: 'Point', coordinates: [lng, lat] },
+          distanceField: 'distance_m',
+          spherical: true,
+          ...(radius && radius > 0
+            ? { maxDistance: radius * 1000 }
+            : {}),
+          query: geoMatch,
+        },
+      });
+      pipeline.push(
+        { $skip: (page - 1) * limit },
+        { $limit: limit },
+        { $project: { ...projection, distance_m: 1 } },
+      );
+    } else {
+      if (Object.keys(match).length > 0) {
+        pipeline.push({ $match: match });
+      }
+      pipeline.push(
+        { $sort: this.getSortStage(sort) },
+        { $skip: (page - 1) * limit },
+        { $limit: limit },
+        { $project: projection },
+      );
     }
 
-    pipeline.push(
-      { $sort: this.getSortStage(sort) },
-      { $skip: (page - 1) * limit },
-      { $limit: limit },
-      { $project: this.getProjectionByCategory(language, category, isMapView) },
-    );
-
     if (page === 1) {
+      const countFilter = useGeoNear
+        ? this.countFilterForDistance(match, lat!, lng!, radius)
+        : match;
       const [properties, totalItems] = await Promise.all([
         this.propertyModel.aggregate(pipeline).exec(),
-        this.getCount(match),
+        this.getCount(countFilter),
       ]);
       return {
         properties,
@@ -542,6 +584,29 @@ export class PropertyService {
       page,
       limit,
     };
+  }
+
+  private matchWithoutLocation(
+    match: FilterQuery<PropertyDocument>,
+  ): FilterQuery<PropertyDocument> {
+    const copy = { ...match };
+    delete copy.location;
+    return copy;
+  }
+
+  private countFilterForDistance(
+    match: FilterQuery<PropertyDocument>,
+    lat: number,
+    lng: number,
+    radius?: number,
+  ): FilterQuery<PropertyDocument> {
+    const copy = this.matchWithoutLocation(match);
+    if (radius && radius > 0) {
+      copy.location = {
+        $geoWithin: { $centerSphere: [[lng, lat], radius / 6378.1] },
+      };
+    }
+    return copy;
   }
 
   private async getCount(
