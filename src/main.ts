@@ -1,3 +1,6 @@
+// libvips SIMD warninglarini yashirish (eski CPU'larda shovqin yaratadi)
+process.env.VIPS_WARNING = '0';
+
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { BadRequestException, ValidationPipe } from '@nestjs/common';

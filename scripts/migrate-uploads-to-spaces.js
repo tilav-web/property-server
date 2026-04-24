@@ -23,6 +23,8 @@
  */
 
 require('dotenv').config();
+// libvips SIMD warninglarini yashirish (eski CPU'larda shovqin yaratadi)
+process.env.VIPS_WARNING = '0';
 const { MongoClient } = require('mongodb');
 const {
   S3Client,
@@ -231,7 +233,8 @@ async function migrateUrl(url, folder, stats) {
   }
   const newUrl = await uploadOne(localPath, folder);
   stats.migrated++;
-  console.log(`  ✓ ${path.basename(localPath)} → ${newUrl}`);
+  const arrow = DRY_RUN ? '…' : '✓';
+  console.log(`  ${arrow} ${path.basename(localPath)} → ${newUrl}`);
   return newUrl;
 }
 
