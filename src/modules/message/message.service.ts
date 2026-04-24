@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
@@ -19,6 +20,8 @@ import {
 } from '../property/schemas/property.schema';
 import { Seller, SellerDocument } from '../seller/schemas/seller.schema';
 import { EnumSellerStatus } from 'src/enums/seller-status.enum';
+import { NotificationService } from '../notification/notification.service';
+import { NotificationType } from '../notification/enums/notification-type.enum';
 
 type RatingsAggResult = {
   _id: string; // property id
@@ -28,6 +31,8 @@ type RatingsAggResult = {
 
 @Injectable()
 export class MessageService {
+  private readonly logger = new Logger(MessageService.name);
+
   constructor(
     @InjectModel(Message.name) private messageModel: Model<MessageDocument>,
     @InjectModel(MessageStatus.name)
@@ -36,6 +41,7 @@ export class MessageService {
     private propertyModel: Model<PropertyDocument>,
     @InjectModel(Seller.name)
     private sellerModel: Model<SellerDocument>,
+    private readonly notificationService: NotificationService,
   ) {}
 
   async findById(id: string) {
@@ -156,6 +162,29 @@ export class MessageService {
           message: message._id as string,
           seller: property.author.toString(),
         });
+
+        // Sellerga ham umumiy notification yaratamiz — bell badge'ida ko'rinadi
+        try {
+          const snippet =
+            dto.comment.length > 80
+              ? `${dto.comment.slice(0, 79)}…`
+              : dto.comment;
+          await this.notificationService.create({
+            user: property.author.toString(),
+            type: NotificationType.NEW_MESSAGE,
+            title: `Yangi fikr (${rating ? rating.toFixed(1) : 0}★)`,
+            body: snippet,
+            link: `/property/${String(property._id)}`,
+            payload: {
+              propertyId: String(property._id),
+              rating: message.rating,
+            },
+          });
+        } catch (err) {
+          this.logger.warn(
+            `Feedback notification create failed: ${String(err)}`,
+          );
+        }
       }
     }
 

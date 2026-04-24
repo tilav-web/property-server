@@ -39,7 +39,6 @@ export class CreateApartmentRentDto extends CreatePropertyBaseDto {
   @Type(() => Number)
   area?: number;
 
-  @IsBoolean() @IsOptional() balcony?: boolean;
   @IsBoolean() @IsOptional() furnished?: boolean;
 
   @IsOptional()
@@ -53,10 +52,6 @@ export class CreateApartmentRentDto extends CreatePropertyBaseDto {
   @Transform(({ value }) => (value === '' ? undefined : value))
   @IsEnum(EnumHeating)
   heating?: EnumHeating;
-
-  @IsBoolean() @IsOptional() air_conditioning?: boolean;
-  @IsBoolean() @IsOptional() parking?: boolean;
-  @IsBoolean() @IsOptional() elevator?: boolean;
 
   @IsArray()
   @IsEnum(EnumAmenities, { each: true })

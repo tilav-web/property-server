@@ -150,11 +150,6 @@ export class UpdatePropertyDto {
   @IsOptional()
   @IsBoolean()
   @Transform(({ value }) => valueToBoolean(value))
-  balcony?: boolean;
-
-  @IsOptional()
-  @IsBoolean()
-  @Transform(({ value }) => valueToBoolean(value))
   furnished?: boolean;
 
   @IsOptional()
@@ -168,21 +163,6 @@ export class UpdatePropertyDto {
   @Transform(({ value }) => (value === '' ? undefined : value))
   @IsEnum(EnumHeating)
   heating?: EnumHeating;
-
-  @IsOptional()
-  @IsBoolean()
-  @Transform(({ value }) => valueToBoolean(value))
-  air_conditioning?: boolean;
-
-  @IsOptional()
-  @IsBoolean()
-  @Transform(({ value }) => valueToBoolean(value))
-  parking?: boolean;
-
-  @IsOptional()
-  @IsBoolean()
-  @Transform(({ value }) => valueToBoolean(value))
-  elevator?: boolean;
 
   @IsOptional()
   @IsArray()

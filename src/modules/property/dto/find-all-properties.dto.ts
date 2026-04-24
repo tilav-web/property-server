@@ -231,11 +231,6 @@ export class FindAllPropertiesDto {
   @IsOptional()
   @IsBoolean()
   @Type(() => Boolean)
-  parking?: boolean;
-
-  @IsOptional()
-  @IsBoolean()
-  @Type(() => Boolean)
   sample?: boolean;
 
   @IsOptional()

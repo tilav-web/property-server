@@ -90,6 +90,22 @@ export class PropertyService {
         throw new BadRequestException("Qo'llab-quvvatlanmaydigan kategoriya");
     }
 
+    // 🧮 Rasmlar minimum soni — xonalar soniga bog'liq (kamida 1, xonalar>=1 bo'lsa
+    // xonalar soniga teng yoki undan ko'p bo'lishi kerak).
+    const bedroomsRaw = (dto as { bedrooms?: number | string }).bedrooms;
+    const bedrooms =
+      typeof bedroomsRaw === 'string' ? Number(bedroomsRaw) : bedroomsRaw;
+    const requiredPhotos = Math.max(bedrooms ?? 0, 1);
+    const providedPhotos = files?.photos?.length ?? 0;
+    if (providedPhotos < requiredPhotos) {
+      throw new BadRequestException(
+        `Kamida ${requiredPhotos} ta rasm yuklash talab qilinadi` +
+          (bedrooms && bedrooms >= 1
+            ? ` (xonalar soni: ${bedrooms})`
+            : ''),
+      );
+    }
+
     const savedFileUrls: string[] = [];
 
     try {
@@ -174,7 +190,6 @@ export class PropertyService {
       maxArea,
       amenities,
       furnished,
-      parking,
       sort,
     } = dto;
 
@@ -210,7 +225,6 @@ export class PropertyService {
       maxArea,
       amenities,
       furnished,
-      parking,
     });
 
     if (sample) {
@@ -334,7 +348,6 @@ export class PropertyService {
     maxArea,
     amenities,
     furnished,
-    parking,
   }: {
     category?: string;
     currency?: CurrencyCode;
@@ -358,7 +371,6 @@ export class PropertyService {
     maxArea?: number;
     amenities?: string[];
     furnished?: boolean;
-    parking?: boolean;
   }): FilterQuery<PropertyDocument> {
     const match: FilterQuery<PropertyDocument> = {
       status: EnumPropertyStatus.APPROVED,
@@ -433,7 +445,6 @@ export class PropertyService {
 
     if (amenities?.length) match.amenities = { $all: amenities };
     if (furnished !== undefined) match.furnished = furnished;
-    if (parking !== undefined) match.parking = parking;
 
     if (andClauses.length) match.$and = andClauses;
 
@@ -660,13 +671,9 @@ export class PropertyService {
         floor_level: 1,
         total_floors: 1,
         area: 1,
-        balcony: 1,
         furnished: 1,
         repair_type: 1,
         heating: 1,
-        air_conditioning: 1,
-        parking: 1,
-        elevator: 1,
         amenities: 1,
         contract_duration_months: 1,
       },
@@ -676,13 +683,9 @@ export class PropertyService {
         floor_level: 1,
         total_floors: 1,
         area: 1,
-        balcony: 1,
         furnished: 1,
         repair_type: 1,
         heating: 1,
-        air_conditioning: 1,
-        parking: 1,
-        elevator: 1,
         amenities: 1,
         mortgage_available: 1,
       },
@@ -1084,6 +1087,23 @@ export class PropertyService {
       typedProperty.videos.push(...newVideoUrls);
     }
 
+    // 🧮 Tahrirlangandan keyin rasmlar minimum shartini tekshiramiz.
+    const effectiveBedroomsRaw =
+      dto.bedrooms ?? (typedProperty as { bedrooms?: number }).bedrooms;
+    const effectiveBedrooms =
+      typeof effectiveBedroomsRaw === 'string'
+        ? Number(effectiveBedroomsRaw)
+        : effectiveBedroomsRaw;
+    const requiredPhotos = Math.max(effectiveBedrooms ?? 0, 1);
+    if (typedProperty.photos.length < requiredPhotos) {
+      throw new BadRequestException(
+        `Kamida ${requiredPhotos} ta rasm bo'lishi kerak` +
+          (effectiveBedrooms && effectiveBedrooms >= 1
+            ? ` (xonalar soni: ${effectiveBedrooms})`
+            : ''),
+      );
+    }
+
     // 3. Update language fields
     if (dto.title_uz !== undefined) typedProperty.title.uz = dto.title_uz;
     if (dto.title_ru !== undefined) typedProperty.title.ru = dto.title_ru;
@@ -1122,15 +1142,10 @@ export class PropertyService {
     if (dto.total_floors !== undefined)
       typedProperty.total_floors = dto.total_floors;
     if (dto.area !== undefined) typedProperty.area = dto.area;
-    if (dto.balcony !== undefined) typedProperty.balcony = dto.balcony;
     if (dto.furnished !== undefined) typedProperty.furnished = dto.furnished;
     if (dto.repair_type !== undefined)
       typedProperty.repair_type = dto.repair_type;
     if (dto.heating !== undefined) typedProperty.heating = dto.heating;
-    if (dto.air_conditioning !== undefined)
-      typedProperty.air_conditioning = dto.air_conditioning;
-    if (dto.parking !== undefined) typedProperty.parking = dto.parking;
-    if (dto.elevator !== undefined) typedProperty.elevator = dto.elevator;
     if (dto.amenities !== undefined)
       typedProperty.amenities = dto.amenities as any;
 
@@ -1167,13 +1182,9 @@ export class PropertyService {
       dto.floor_level !== undefined ||
       dto.total_floors !== undefined ||
       dto.area !== undefined ||
-      dto.balcony !== undefined ||
       dto.furnished !== undefined ||
       dto.repair_type !== undefined ||
       dto.heating !== undefined ||
-      dto.air_conditioning !== undefined ||
-      dto.parking !== undefined ||
-      dto.elevator !== undefined ||
       dto.amenities !== undefined ||
       dto.contract_duration_months !== undefined ||
       dto.mortgage_available !== undefined ||
