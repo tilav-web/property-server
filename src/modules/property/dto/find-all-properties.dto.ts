@@ -29,7 +29,7 @@ export class FindAllPropertiesDto {
   @Type(() => Number)
   @IsNumber()
   @Min(1)
-  @Max(50)
+  @Max(200)
   limit?: number;
 
   @IsOptional()
