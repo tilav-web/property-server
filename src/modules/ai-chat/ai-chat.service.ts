@@ -119,10 +119,12 @@ export class AiChatService {
         metadata.noResults = true;
       }
 
-      const finalBody =
-        properties.length === 0 && classified.isSearch
-          ? `${classified.reply}\n\nKechirasiz, so'rovingizga mos mulk topilmadi. Boshqa shartlar bilan urinib ko'ring.`
-          : classified.reply;
+      let finalBody = classified.reply;
+      if (classified.isSearch && properties.length === 0) {
+        // Hech narsa topilmadi — AI'ning "mana topildi" gapini almashtirib, aniq
+        // xabar qaytaramiz (hozircha Malayziya bozori ekanligini eslatib).
+        finalBody = `Kechirasiz, "${classified.searchQuery}" bo'yicha mos e'lon topilmadi. Hozircha platformada asosan Malayziya ko'chmas mulki mavjud. Boshqa shahar, narx oralig'i yoki kengroq shartlar bilan urinib ko'ring.`;
+      }
 
       await this.chatService.createSystemMessage({
         conversationId,
@@ -155,7 +157,7 @@ export class AiChatService {
         senderId: aiUserId,
         type: MessageType.TEXT,
         body:
-          "Salom! Men Amaar Properties AI yordamchisiman 🤖\n\nMulk qidirish uchun oddiy tilda yozing:\n• \"KLda 3 xonali kvartira\"\n• \"Selangorda ijara 2000 dan arzon\"\n• \"pool bilan yangi kvartira\"\n\nYoki platforma haqida savol bering.",
+          "Salom! Men Amaar Properties AI yordamchisiman 🤖\n\nHozircha asosan Malayziya ko'chmas mulki bo'yicha yordam beraman.\n\nMulk qidirish uchun oddiy tilda yozing:\n• \"KLda 3 xonali kvartira\"\n• \"Selangorda ijara 2000 dan arzon\"\n• \"pool bilan yangi kvartira\"\n\nYoki platforma haqida savol bering.",
       });
     } catch (err) {
       this.logger.warn(`AI welcome failed: ${String(err)}`);
