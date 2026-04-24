@@ -5,6 +5,7 @@ interface TranslationResponse {
   en?: string;
   ru?: string;
   uz?: string;
+  ms?: string;
 }
 
 interface AIResponse {
@@ -36,7 +37,8 @@ export class OpenaiService implements OnModuleInit {
     return (
       (typeof translation.en === 'string' || translation.en === undefined) &&
       (typeof translation.ru === 'string' || translation.ru === undefined) &&
-      (typeof translation.uz === 'string' || translation.uz === undefined)
+      (typeof translation.uz === 'string' || translation.uz === undefined) &&
+      (typeof translation.ms === 'string' || translation.ms === undefined)
     );
   }
 
@@ -100,10 +102,10 @@ export class OpenaiService implements OnModuleInit {
       this.withRetry(async () => {
         const textsJson = JSON.stringify(texts, null, 2);
 
-        const prompt = `You are a property listing translator and tag generator. 
+        const prompt = `You are a property listing translator and tag generator.
 
 Given these property fields, provide:
-1. Translations for each field in English, Russian, and Uzbek
+1. Translations for each field in English (en), Russian (ru), Uzbek (uz), and Malay (ms).
 2. Relevant search tags/keywords based on location.
 
 Input:
@@ -115,36 +117,45 @@ Return ONLY valid JSON in this exact format:
     "title": {
       "en": "English translation",
       "ru": "Russian translation",
-      "uz": "Uzbek translation"
+      "uz": "Uzbek translation",
+      "ms": "Malay translation"
     },
     "description": {
       "en": "English translation",
       "ru": "Russian translation",
-      "uz": "Uzbek translation"
+      "uz": "Uzbek translation",
+      "ms": "Malay translation"
     },
     "address": {
       "en": "English translation",
       "ru": "Russian translation",
-      "uz": "Uzbek translation"
+      "uz": "Uzbek translation",
+      "ms": "Malay translation"
     }
   },
   "tags": [
     "Malaysia",
     "Малайзия",
     "Malayziya",
+    "Malaysia",
     "Selangor",
     "Penang",
     "Johor"
   ]
 }
 
+**Rules for translations:**
+- All four languages (en, ru, uz, ms) MUST be provided for every field.
+- Malay (ms) is the local language of Malaysia — use proper Malay, not a transliteration.
+- If the original is already in one of the languages, keep that variant intact and translate the others.
+
 **Rules for tags:**
 - **CRITICAL:** Tags MUST only contain a SINGLE word.
 - **CRITICAL:** Tags MUST be for a notable location (city, region, country).
-- **CRITICAL:** For each location, provide the name in English, Russian, and Uzbek.
+- **CRITICAL:** For each location, provide the name in English, Russian, Uzbek, and Malay when they differ.
 - **ABSOLUTELY NO** multi-word tags like "Kuala Lumpur city". Use a single-word location such as "Selangor" instead.
 - **DO NOT** include any tags that are not locations, such as "3 bedroom", "luxury", or "apartment".
-- Generate 5-10 location tags in total.
+- Generate 5-12 location tags in total.
 
 Examples of correct tags:
 - "Malaysia", "Малайзия", "Malayziya"
@@ -189,16 +200,20 @@ Examples of INCORRECT tags:
         for (const key of Object.keys(texts)) {
           const translation = parsed.translations[key];
           if (this.isValidTranslation(translation)) {
+            const en = (translation.en ?? texts[key]).trim();
+            // ms yetishmasa — inglizchaga fallback qilamiz
             translations[key] = {
-              en: (translation.en ?? texts[key]).trim(),
+              en,
               ru: (translation.ru ?? texts[key]).trim(),
               uz: (translation.uz ?? texts[key]).trim(),
+              ms: (translation.ms ?? en).trim(),
             };
           } else {
             translations[key] = {
               en: texts[key],
               ru: texts[key],
               uz: texts[key],
+              ms: texts[key],
             };
           }
         }
@@ -232,6 +247,7 @@ Examples of INCORRECT tags:
         en: texts[key],
         ru: texts[key],
         uz: texts[key],
+        ms: texts[key],
       };
     }
 

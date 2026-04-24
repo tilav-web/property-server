@@ -8,4 +8,8 @@ export class Language {
   ru: string;
   @Prop({ type: String, required: true })
   en: string;
+  // Malay — ixtiyoriy. Yetishmagan hujjatlarda aggregation $ifNull orqali
+  // inglizchaga fallback qilinadi.
+  @Prop({ type: String, required: false })
+  ms?: string;
 }

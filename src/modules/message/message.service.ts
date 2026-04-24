@@ -248,7 +248,9 @@ export class MessageService {
       {
         $addFields: {
           'message.property': {
-            title: `$property.title.${language}`,
+            title: {
+              $ifNull: [`$property.title.${language}`, '$property.title.en'],
+            },
           },
         },
       },

@@ -1,4 +1,4 @@
-import { IsString } from 'class-validator';
+import { IsOptional, IsString } from 'class-validator';
 
 export class LanguageDto {
   @IsString()
@@ -9,4 +9,8 @@ export class LanguageDto {
 
   @IsString()
   en: string;
+
+  @IsOptional()
+  @IsString()
+  ms?: string;
 }

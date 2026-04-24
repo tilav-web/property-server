@@ -3,7 +3,6 @@ import {
   Controller,
   Get,
   HttpException,
-  InternalServerErrorException,
   Param,
   Put,
   Post,
@@ -24,7 +23,7 @@ import { AuthGuard } from '@nestjs/passport';
 import type { IRequestCustom } from 'src/interfaces/custom-request.interface';
 import { UpdatePropertyStatusDto } from './dto/update-property-status.dto';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
-import type { CreatePropertyDto } from './dto/create-property.dto';
+import { CreatePropertyDto } from './dto/create-property.dto';
 import { CreateMessageDto } from '../message/dto/create-message.dto';
 import { FilterMyPropertiesDto } from './dto/filter-my-properties.dto';
 import { type Response } from 'express';
@@ -166,30 +165,11 @@ export class PropertyController {
   @Delete('/:id')
   @UseGuards(AuthGuard('jwt'))
   async deleteById(@Param('id') id: string, @Req() req: IRequestCustom) {
-    try {
-      const user = req.user;
-      if (!user) {
-        throw new HttpException('Unauthorized', 401);
-      }
-      const result = await this.service.remove({
-        id,
-        userId: user._id,
-      });
-      return result;
-    } catch (error) {
-      console.error(error);
-
-      if (error instanceof HttpException) {
-        throw error;
-      }
-
-      if (error instanceof Error) {
-        throw new InternalServerErrorException(error.message);
-      }
-      throw new InternalServerErrorException(
-        "Tizimda xatolik ketdi. Iltimos birozdan so'ng qayta urinib ko'ring!",
-      );
+    const user = req.user;
+    if (!user) {
+      throw new HttpException('Unauthorized', 401);
     }
+    return this.service.remove({ id, userId: user._id });
   }
 
   @Put(':id/status')
@@ -204,27 +184,11 @@ export class PropertyController {
   @Post('/message')
   @UseGuards(AuthGuard('jwt'))
   async sendMessage(@Body() dto: CreateMessageDto, @Req() req: IRequestCustom) {
-    try {
-      const user = req.user;
-      const result = await this.service.sendMessage({
-        dto,
-        user: user?._id as string,
-      });
-      return result;
-    } catch (error) {
-      console.error(error);
-
-      if (error instanceof HttpException) {
-        throw error;
-      }
-
-      if (error instanceof Error) {
-        throw new InternalServerErrorException(error.message);
-      }
-      throw new InternalServerErrorException(
-        "Tizimda xatolik ketdi. Iltimos birozdan so'ng qayta urinib ko'ring!",
-      );
-    }
+    const user = req.user;
+    return this.service.sendMessage({
+      dto,
+      user: user?._id as string,
+    });
   }
 
   @Put(':id/archive')

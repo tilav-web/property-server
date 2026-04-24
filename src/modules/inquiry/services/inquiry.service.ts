@@ -147,7 +147,9 @@ export class InquiryService {
         },
         {
           $addFields: {
-            'property.title': `$property.title.${language}`,
+            'property.title': {
+              $ifNull: [`$property.title.${language}`, '$property.title.en'],
+            },
           },
         },
         {
