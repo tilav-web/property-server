@@ -295,19 +295,28 @@ export class ChatService {
       : snippet;
   }
 
+  private participantId(p: unknown): string {
+    if (p && typeof p === 'object' && '_id' in p) {
+      return String((p as { _id: unknown })._id);
+    }
+    return String(p);
+  }
+
   private isParticipant(
     conv: ConversationDocument,
     userId: string,
   ): boolean {
-    return conv.participants.some((p) => String(p) === userId);
+    return conv.participants.some((p) => this.participantId(p) === userId);
   }
 
   private peerOf(
     conv: ConversationDocument,
     userId: string,
   ): string | null {
-    const peer = conv.participants.find((p) => String(p) !== userId);
-    return peer ? String(peer) : null;
+    const peer = conv.participants.find(
+      (p) => this.participantId(p) !== userId,
+    );
+    return peer ? this.participantId(peer) : null;
   }
 
   private serializeMessage(
