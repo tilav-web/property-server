@@ -72,6 +72,9 @@ export class User {
     default: null,
   })
   password?: string;
+
+  @Prop({ type: Boolean, default: false, index: true })
+  isAI: boolean;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

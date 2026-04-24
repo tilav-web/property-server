@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
@@ -22,9 +23,13 @@ import {
   Seller,
   SellerDocument,
 } from 'src/modules/seller/schemas/seller.schema';
+import { ChatService } from 'src/modules/chat/chat.service';
+import { MessageType } from 'src/modules/chat/enums/message-type.enum';
 
 @Injectable()
 export class InquiryResponseService {
+  private readonly logger = new Logger(InquiryResponseService.name);
+
   constructor(
     @InjectModel(InquiryResponse.name)
     private readonly inquiryResponseModel: Model<InquiryResponseDocument>,
@@ -33,41 +38,44 @@ export class InquiryResponseService {
     @InjectModel(Inquiry.name)
     private readonly inquiryModel: Model<InquiryDocument>,
     private readonly inquiryService: InquiryService,
+    private readonly chatService: ChatService,
   ) {}
 
   async create(
     dto: CreateInquiryResponseDto,
-    id: string,
+    userId: string,
   ): Promise<InquiryResponse> {
-    const seller = await this.sellerModel.findOne({
-      user: new Types.ObjectId(id),
-    });
-
-    if (!seller) {
-      throw new NotFoundException('Sotuvchi topilmadi');
-    }
-
-    const inquiry = await this.inquiryModel.findById(dto.inquiry);
+    const inquiry = await this.inquiryModel.findById(dto.inquiryId);
     if (!inquiry) {
       throw new NotFoundException("So'rov topilmadi");
     }
 
-    if (inquiry.seller.toString() !== id.toString()) {
+    if (inquiry.seller.toString() !== userId.toString()) {
       throw new ForbiddenException("Bu so'rovga javob berish huquqi yo'q");
     }
 
-    if (
-      inquiry.user.toString() !== dto.user.toString() ||
-      inquiry.property.toString() !== dto.property.toString()
-    ) {
-      throw new BadRequestException("So'rov ma'lumotlari mos kelmadi");
+    const existing = await this.inquiryResponseModel.findOne({
+      inquiry: inquiry._id,
+    });
+    if (existing) {
+      throw new BadRequestException(
+        "Ushbu so'rovga allaqachon javob berilgan",
+      );
     }
 
-    const newInquiryResponse = new this.inquiryResponseModel({
-      ...dto,
-      user: new Types.ObjectId(dto.user),
-      inquiry: new Types.ObjectId(dto.inquiry),
-      property: new Types.ObjectId(dto.property),
+    const seller = await this.sellerModel.findOne({
+      user: new Types.ObjectId(userId),
+    });
+    if (!seller) {
+      throw new NotFoundException('Sotuvchi topilmadi');
+    }
+
+    const response = await this.inquiryResponseModel.create({
+      status: dto.status,
+      description: dto.description,
+      user: inquiry.user,
+      inquiry: inquiry._id,
+      property: inquiry.property,
       seller: seller._id,
     });
 
@@ -77,10 +85,40 @@ export class InquiryResponseService {
         : EnumInquiryStatus.REJECTED;
 
     await this.inquiryService.updateStatus(
-      dto.inquiry.toString(),
+      String(inquiry._id),
       inquiryStatus,
     );
 
-    return newInquiryResponse.save();
+    // --- Chat'ga SYSTEM message yuborish — buyer chatda javob ko'radi ---
+    try {
+      const conversation = await this.chatService.findOrCreateConversation(
+        String(inquiry.user),
+        userId,
+        String(inquiry.property),
+      );
+      const prefix =
+        dto.status === EnumInquiryResponseStatus.APPROVED
+          ? '✅ Taklif qabul qilindi'
+          : '❌ Taklif rad etildi';
+      const body = dto.description
+        ? `${prefix}: ${dto.description}`
+        : prefix;
+
+      await this.chatService.createSystemMessage({
+        conversationId: conversation._id,
+        senderId: userId,
+        type: MessageType.SYSTEM,
+        body,
+        metadata: {
+          inquiryId: String(inquiry._id),
+          responseStatus: dto.status,
+          description: dto.description,
+        },
+      });
+    } catch (err) {
+      this.logger.warn(`Chat response message failed: ${String(err)}`);
+    }
+
+    return response;
   }
 }

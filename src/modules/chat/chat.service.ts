@@ -21,6 +21,8 @@ import { MessageType } from './enums/message-type.enum';
 import { NotificationService } from '../notification/notification.service';
 import { NotificationType } from '../notification/enums/notification-type.enum';
 import { ChatGateway } from './chat.gateway';
+import { AiChatService } from '../ai-chat/ai-chat.service';
+import { UserService } from '../user/user.service';
 
 interface SystemMessageInput {
   conversationId: string | Types.ObjectId;
@@ -44,7 +46,33 @@ export class ChatService {
     private readonly notificationService: NotificationService,
     @Inject(forwardRef(() => ChatGateway))
     private readonly gateway: ChatGateway,
+    @Inject(forwardRef(() => AiChatService))
+    private readonly aiChatService: AiChatService,
+    private readonly userService: UserService,
   ) {}
+
+  /**
+   * AI agent user bilan conversation'ni ta'minlaydi. Yo'q bo'lsa yaratadi
+   * va welcome xabar yuboradi.
+   */
+  async ensureAiConversation(userId: string): Promise<void> {
+    const aiUserId = await this.userService.getAiAgentId();
+    if (aiUserId === userId) return; // AI user'ning o'zini chaqirmaymiz
+    const a = new Types.ObjectId(userId);
+    const b = new Types.ObjectId(aiUserId);
+    const existing = await this.conversationModel
+      .findOne({ participants: { $all: [a, b] } })
+      .exec();
+    if (existing) return;
+
+    const conv = await this.conversationModel.create({
+      participants: [a, b],
+      lastMessageAt: new Date(),
+      lastMessageSnippet: '',
+      unreadBy: new Map(),
+    });
+    await this.aiChatService.sendWelcome(String(conv._id));
+  }
 
   async findOrCreateConversation(
     userA: string,
@@ -82,11 +110,12 @@ export class ChatService {
   }
 
   async listForUser(userId: string): Promise<ConversationDocument[]> {
+    await this.ensureAiConversation(userId);
     return this.conversationModel
       .find({ participants: new Types.ObjectId(userId) })
       .sort({ lastMessageAt: -1 })
-      .populate('participants', 'first_name last_name email avatar')
-      .populate('property', 'title photos price currency')
+      .populate('participants', 'first_name last_name email avatar isAI')
+      .populate('property', 'title photos price currency author')
       .lean()
       .exec() as unknown as ConversationDocument[];
   }
@@ -100,8 +129,8 @@ export class ChatService {
     }
     const conv = await this.conversationModel
       .findById(id)
-      .populate('participants', 'first_name last_name email avatar')
-      .populate('property', 'title photos price currency')
+      .populate('participants', 'first_name last_name email avatar isAI')
+      .populate('property', 'title photos price currency author')
       .exec();
     if (!conv) throw new NotFoundException('Conversation not found');
     if (!this.isParticipant(conv, userId)) {
@@ -253,8 +282,11 @@ export class ChatService {
     if (peer) this.gateway.emitToUser(peer, 'chat:new_message', payload);
     this.gateway.emitToUser(senderId, 'chat:new_message', payload);
 
-    // Notification for the recipient only
-    if (peer) {
+    // Notification for the recipient only (AI user'ga notification kerak emas)
+    const aiUserId = await this.userService.getAiAgentId().catch(() => null);
+    const peerIsAI = Boolean(aiUserId && peer && aiUserId === peer);
+
+    if (peer && !peerIsAI) {
       try {
         await this.notificationService.create({
           user: peer,
@@ -277,6 +309,28 @@ export class ChatService {
       } catch (err) {
         this.logger.warn(`Notification create failed: ${String(err)}`);
       }
+    }
+
+    // AI auto-reply: foydalanuvchi AI agentga xabar yubordi → AI javob bersin.
+    // Fire-and-forget — user request'ni bloklamaymiz.
+    const senderIsAI = aiUserId && senderId === aiUserId;
+    if (peerIsAI && !senderIsAI && type === MessageType.TEXT) {
+      // "AI yozmoqda..." indicator — client typingByConversation'da ko'rsatadi
+      this.gateway.emitToUser(senderId, 'chat:typing', {
+        conversationId: String(conv._id),
+        userId: aiUserId,
+        typing: true,
+      });
+      this.aiChatService
+        .generateReply(String(conv._id))
+        .catch((err) => this.logger.warn(`AI reply task failed: ${String(err)}`))
+        .finally(() => {
+          this.gateway.emitToUser(senderId, 'chat:typing', {
+            conversationId: String(conv._id),
+            userId: aiUserId,
+            typing: false,
+          });
+        });
     }
 
     return message;

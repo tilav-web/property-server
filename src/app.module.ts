@@ -21,6 +21,7 @@ import { TagModule } from './modules/tag/tag.module';
 import { PropertySearchCacheModule } from './modules/property/property-search.cache';
 import { NotificationModule } from './modules/notification/notification.module';
 import { ChatModule } from './modules/chat/chat.module';
+import { AiChatModule } from './modules/ai-chat/ai-chat.module';
 
 @Module({
   imports: [
@@ -62,6 +63,7 @@ import { ChatModule } from './modules/chat/chat.module';
     TagModule,
     NotificationModule,
     ChatModule,
+    AiChatModule,
   ],
   providers: [
     {

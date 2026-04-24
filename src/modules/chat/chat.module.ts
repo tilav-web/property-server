@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import {
   Conversation,
@@ -13,6 +13,7 @@ import { ChatController } from './chat.controller';
 import { ChatGateway } from './chat.gateway';
 import { UserModule } from '../user/user.module';
 import { NotificationModule } from '../notification/notification.module';
+import { AiChatModule } from '../ai-chat/ai-chat.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { NotificationModule } from '../notification/notification.module';
     ]),
     UserModule, // JwtModule is re-exported from UserModule
     NotificationModule,
+    forwardRef(() => AiChatModule),
   ],
   providers: [ChatService, ChatGateway],
   controllers: [ChatController],

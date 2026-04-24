@@ -31,6 +31,31 @@ export class UserService {
     return this.model.findById(id);
   }
 
+  /**
+   * Maxsus AI agent user — barcha chatlarda bitta "bot" sifatida ishlatiladi.
+   * Boot paytida yoki kerak bo'lganda yaratiladi. Idempotent.
+   */
+  async ensureAiAgent(): Promise<UserDocument> {
+    const AI_EMAIL = 'ai@amaar.system';
+    let ai = await this.model.findOne({ isAI: true });
+    if (ai) return ai;
+
+    ai = await this.model.create({
+      email: { value: AI_EMAIL, isVerified: true },
+      first_name: 'AI',
+      last_name: 'Yordamchi',
+      avatar: null,
+      role: EnumRole.PHYSICAL,
+      isAI: true,
+    });
+    return ai;
+  }
+
+  async getAiAgentId(): Promise<string> {
+    const ai = await this.ensureAiAgent();
+    return String(ai._id);
+  }
+
   async login({ email, password }: { email: string; password: string }) {
     if (!email)
       throw new BadRequestException('Email-ni tekshiring. Email kiritilmagan!');
