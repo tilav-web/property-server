@@ -1,5 +1,6 @@
 import {
   Injectable,
+  Logger,
   NotFoundException,
   ForbiddenException,
 } from '@nestjs/common';
@@ -20,6 +21,8 @@ import {
   PropertyDocument,
 } from 'src/modules/property/schemas/property.schema';
 import { CreateInquiryDto } from '../dto/create-inquiry.dto';
+import { ChatService } from 'src/modules/chat/chat.service';
+import { MessageType } from 'src/modules/chat/enums/message-type.enum';
 
 @Injectable()
 export class InquiryService {
@@ -28,6 +31,7 @@ export class InquiryService {
     @InjectModel(Property.name) private propertyModel: Model<PropertyDocument>,
     @InjectModel(InquiryResponse.name)
     private inquiryResponseModel: Model<InquiryResponseDocument>,
+    private readonly chatService: ChatService,
   ) {}
 
   async create(dto: CreateInquiryDto & { user: string }): Promise<Inquiry> {
@@ -44,12 +48,59 @@ export class InquiryService {
       );
     }
 
-    const inquiry = new this.inquiryModel({
+    const inquiry = await new this.inquiryModel({
       ...dto,
       property: new Types.ObjectId(dto.property),
       seller: property.author,
-    });
-    return inquiry.save();
+    }).save();
+
+    // --- Chat integration: shu inquiry chat'da ko'rinadi ---
+    try {
+      const conversation = await this.chatService.findOrCreateConversation(
+        String(dto.user),
+        String(property.author),
+        String(property._id),
+      );
+
+      const snippet = this.formatInquirySnippet(dto);
+      await this.chatService.createSystemMessage({
+        conversationId: conversation._id,
+        senderId: String(dto.user),
+        type: MessageType.PRICE_OFFER,
+        body: snippet,
+        metadata: {
+          inquiryId: String(inquiry._id),
+          inquiryType: dto.type,
+          offered_price: dto.offered_price,
+          currency: property.currency,
+          rental_period: dto.rental_period,
+          property: {
+            _id: String(property._id),
+            price: property.price,
+            currency: property.currency,
+          },
+          comment: dto.comment,
+        },
+      });
+    } catch (err) {
+      // Chat xatosi inquiry yaratishni bekor qilmasin
+      this.logger.warn(`Chat message for inquiry failed: ${String(err)}`);
+    }
+
+    return inquiry;
+  }
+
+  private readonly logger = new Logger('InquiryService');
+
+  private formatInquirySnippet(
+    dto: CreateInquiryDto & { user: string },
+  ): string {
+    if (dto.offered_price !== undefined && dto.offered_price !== null) {
+      return `Men ${dto.offered_price} taklif qilaman${
+        dto.comment ? `: ${dto.comment}` : ''
+      }`;
+    }
+    return dto.comment ?? `Yangi so'rov: ${dto.type}`;
   }
 
   async findAllForSeller({

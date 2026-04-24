@@ -11,6 +11,7 @@ import { InquiryService } from './services/inquiry.service';
 import { InquiryResponseController } from './controllers/inquiry-response.controller';
 import { InquiryResponseService } from './services/inquiry-response.service';
 import { Seller, SellerSchema } from 'src/modules/seller/schemas/seller.schema';
+import { ChatModule } from '../chat/chat.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { Seller, SellerSchema } from 'src/modules/seller/schemas/seller.schema';
       { name: InquiryResponse.name, schema: InquiryResponseSchema },
       { name: Seller.name, schema: SellerSchema },
     ]),
+    ChatModule,
   ],
   controllers: [InquiryController, InquiryResponseController],
   providers: [InquiryService, InquiryResponseService],

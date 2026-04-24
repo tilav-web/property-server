@@ -19,6 +19,8 @@ import { AdminModule } from './modules/admin/admin.module';
 import { StatisticModule } from './modules/statistic/statistic.module';
 import { TagModule } from './modules/tag/tag.module';
 import { PropertySearchCacheModule } from './modules/property/property-search.cache';
+import { NotificationModule } from './modules/notification/notification.module';
+import { ChatModule } from './modules/chat/chat.module';
 
 @Module({
   imports: [
@@ -58,6 +60,8 @@ import { PropertySearchCacheModule } from './modules/property/property-search.ca
     AdminModule,
     StatisticModule,
     TagModule,
+    NotificationModule,
+    ChatModule,
   ],
   providers: [
     {
