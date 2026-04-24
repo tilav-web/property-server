@@ -193,14 +193,17 @@ export class PropertyService {
       sort,
     } = dto;
 
-    const safeLimit = Math.min(Math.max(limit, 1), 50);
-    const safePage = Math.max(page, 1);
-
     const isMapView =
       sw_lng !== undefined &&
       sw_lat !== undefined &&
       ne_lng !== undefined &&
       ne_lat !== undefined;
+
+    // Map view needs more properties in one call (bbox + clustering);
+    // list views stay capped lower to keep payloads small.
+    const maxLimit = isMapView ? 200 : 50;
+    const safeLimit = Math.min(Math.max(limit, 1), maxLimit);
+    const safePage = Math.max(page, 1);
 
     const match = this.buildMatchQuery({
       category,
