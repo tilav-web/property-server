@@ -38,24 +38,24 @@ export class ChatController {
     @Body() dto: CreateConversationDto,
   ) {
     const me = String(req.user!._id);
-    const conversation = await this.chatService.findOrCreateConversation(
-      me,
-      dto.peerUserId,
-      dto.propertyId,
-    );
+    const { conversation, propertyContextChanged } =
+      await this.chatService.findOrCreateConversation(
+        me,
+        dto.peerUserId,
+        dto.propertyId,
+      );
 
-    if (dto.propertyId) {
-      // Auto-yuboriladigan "User propertyga qiziqdi" system message.
-      // Faqat shu conversation hali bo'sh bo'lsa qo'shamiz — takrorlanmasin.
-      if (!conversation.lastMessageSnippet) {
-        await this.chatService.createSystemMessage({
-          conversationId: conversation._id,
-          senderId: me,
-          type: MessageType.PROPERTY_REFERENCE,
-          body: 'Shu e’lon bo‘yicha suhbat boshlandi',
-          metadata: { propertyId: dto.propertyId },
-        });
-      }
+    // Har safar yangi e'lon kontekstiga o'tganda PROPERTY_REFERENCE
+    // system message yuboriladi. Shu bilan bitta chat ichida turli e'lonlar
+    // bo'yicha muloqot tarixi aniq ko'rinadi.
+    if (dto.propertyId && propertyContextChanged) {
+      await this.chatService.createSystemMessage({
+        conversationId: conversation._id,
+        senderId: me,
+        type: MessageType.PROPERTY_REFERENCE,
+        body: 'Shu e’lon bo‘yicha suhbat boshlandi',
+        metadata: { propertyId: dto.propertyId },
+      });
     }
 
     if (dto.initialMessage) {

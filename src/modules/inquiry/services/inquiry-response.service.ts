@@ -91,7 +91,7 @@ export class InquiryResponseService {
 
     // --- Chat'ga SYSTEM message yuborish — buyer chatda javob ko'radi ---
     try {
-      const conversation = await this.chatService.findOrCreateConversation(
+      const { conversation } = await this.chatService.findOrCreateConversation(
         String(inquiry.user),
         userId,
         String(inquiry.property),

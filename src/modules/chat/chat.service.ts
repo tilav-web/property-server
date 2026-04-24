@@ -78,7 +78,10 @@ export class ChatService {
     userA: string,
     userB: string,
     propertyId?: string,
-  ): Promise<ConversationDocument> {
+  ): Promise<{
+    conversation: ConversationDocument;
+    propertyContextChanged: boolean;
+  }> {
     if (userA === userB) {
       throw new BadRequestException(
         'Conversation with yourself is not allowed',
@@ -93,6 +96,8 @@ export class ChatService {
       })
       .exec();
 
+    let propertyContextChanged = false;
+
     if (!conversation) {
       conversation = await this.conversationModel.create({
         participants: [a, b],
@@ -101,12 +106,22 @@ export class ChatService {
         lastMessageSnippet: '',
         unreadBy: new Map(),
       });
-    } else if (propertyId && !conversation.property) {
-      conversation.property = new Types.ObjectId(propertyId);
-      await conversation.save();
+      propertyContextChanged = Boolean(propertyId);
+    } else if (propertyId) {
+      const currentPropertyId = conversation.property
+        ? String(conversation.property)
+        : null;
+      if (currentPropertyId !== propertyId) {
+        // Yangi e'lon referent qilindi — header'da eng so'nggisini ko'rsatish uchun
+        // conversation.property'ni yangilaymiz. Eski propertylar o'z metadata'si
+        // bilan xabarlar ichida saqlanadi.
+        conversation.property = new Types.ObjectId(propertyId);
+        await conversation.save();
+        propertyContextChanged = true;
+      }
     }
 
-    return conversation;
+    return { conversation, propertyContextChanged };
   }
 
   async listForUser(userId: string): Promise<ConversationDocument[]> {

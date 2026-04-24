@@ -56,7 +56,7 @@ export class InquiryService {
 
     // --- Chat integration: shu inquiry chat'da ko'rinadi ---
     try {
-      const conversation = await this.chatService.findOrCreateConversation(
+      const { conversation } = await this.chatService.findOrCreateConversation(
         String(dto.user),
         String(property.author),
         String(property._id),
