@@ -14,6 +14,7 @@ import { GenaiModule } from '../openai/openai.module';
 import { UserModule } from '../user/user.module';
 import { ChatModule } from '../chat/chat.module';
 import { UserService } from '../user/user.service';
+import { AiPropertyModule } from '../ai-property/ai-property.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { UserService } from '../user/user.service';
     ]),
     GenaiModule,
     UserModule,
+    AiPropertyModule,
     forwardRef(() => ChatModule),
   ],
   providers: [AiChatService],

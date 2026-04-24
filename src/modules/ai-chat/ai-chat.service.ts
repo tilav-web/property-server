@@ -14,27 +14,56 @@ import {
   ChatMessageDocument,
 } from '../chat/schemas/chat-message.schema';
 import { UserService } from '../user/user.service';
+import { AiPropertyService } from '../ai-property/ai-property.service';
+import { EnumLanguage } from 'src/enums/language.enum';
 
 const AI_SYSTEM_PROMPT = `Sen Amaar Properties platformasining AI yordamchisisan.
 Platforma Malayziya ko'chmas mulk bozori uchun ishlaydi (sotib olish, ijara, ipoteka).
 
-Vazifalar:
-- Foydalanuvchiga mulk qidirishga yordam berish (joylashuv, narx, xonalar soni, turi)
-- Tushunarli va qisqa javob berish
-- Agar foydalanuvchi aniq qidiruv bersa, u /search sahifasida qidirib ko'rishi mumkinligini eslatish
-- Sotuvchilar bilan bog'lanish uchun "Sotuvchiga yozish" tugmasidan foydalanishni maslahat berish
-- Inquiry (so'rov) yuborganda seller chatda javob berishi haqida eslatish
+Vazifang:
+- Foydalanuvchi yozgan xabarni tahlil qilish
+- Agar foydalanuvchi mulk qidirayotgan bo'lsa (shahar, xonalar, narx, kategoriya va h.k. bo'yicha) — searchQuery'ni aniqlab qaytar
+- Har doim qisqa va foydali reply (3-5 gap) qaytar
 
-Muhim:
-- Foydalanuvchi qaysi tilda yozsa, shu tilda javob ber (uz/ru/en/ms)
-- Taqdim etilgan ma'lumotlardan tashqari narsa bilmasligingni aniq ayt
-- Qisqa bo'l (3-5 gap) agar foydalanuvchi batafsil so'ramasa
-- Shaxsiy ma'lumot so'rama`;
+MUHIM qoidalar:
+- reply foydalanuvchi tilida bo'lsin (uz/ru/en/ms — yozuvidan aniqla)
+- Agar qidiruv bo'lsa: "Mana men siz uchun topgan variantlar:" kabi tez kirish gapi bilan reply ber
+- Agar savol bo'lsa (umumiy): to'g'ridan-to'g'ri javob ber, searchQuery bo'sh bo'lsin
+- Shaxsiy ma'lumot so'rama
+- isSearch=true bo'lishi uchun foydalanuvchi aniq mulk izlayotgan bo'lishi kerak ("KLda 2 xonali", "Selangorda ijara", "5 lakhgacha kvartira", "pool bilan")
+- Salomlashish, umumiy savollar, ma'lumot so'rash uchun isSearch=false`;
 
-const HISTORY_LIMIT = 20;
+const RESPONSE_SCHEMA_PROMPT = `Natija STRICTLY quyidagi JSON shaklida bo'lsin:
+{
+  "reply": "foydalanuvchiga qisqa javob",
+  "isSearch": true yoki false,
+  "searchQuery": "agar isSearch=true bo'lsa, mulk qidiruv so'rovi (foydalanuvchi tilida)" yoki ""
+}`;
 
-type OpenAIMessage = {
-  role: 'system' | 'user' | 'assistant';
+const HISTORY_LIMIT = 12;
+const SEARCH_RESULT_LIMIT = 5;
+
+interface ClassifiedReply {
+  reply: string;
+  isSearch: boolean;
+  searchQuery: string;
+}
+
+interface CompactProperty {
+  _id: string;
+  title: string;
+  address?: string;
+  category?: string;
+  price?: number;
+  currency?: string;
+  photo?: string;
+  bedrooms?: number;
+  bathrooms?: number;
+  area?: number;
+}
+
+type MessageRecord = {
+  role: 'user' | 'assistant';
   content: string;
 };
 
@@ -47,19 +76,15 @@ export class AiChatService {
     private readonly messageModel: Model<ChatMessageDocument>,
     private readonly openai: OpenaiService,
     private readonly userService: UserService,
+    private readonly aiPropertyService: AiPropertyService,
     @Inject(forwardRef(() => ChatService))
     private readonly chatService: ChatService,
   ) {}
 
-  /**
-   * Foydalanuvchi AI conversation'ga xabar yuborganda chaqiriladi (fire-and-forget).
-   * Context tuzadi, OpenAI'ga yuboradi, javobni chatga qaytaradi.
-   */
   async generateReply(conversationId: string): Promise<void> {
     try {
       const aiUserId = await this.userService.getAiAgentId();
 
-      // Oxirgi HISTORY_LIMIT xabarni olamiz (chronological tartibda)
       const recent = await this.messageModel
         .find({
           conversation: new Types.ObjectId(conversationId),
@@ -70,22 +95,41 @@ export class AiChatService {
         .lean()
         .exec();
 
-      const ordered = recent.reverse();
+      const history: MessageRecord[] = recent
+        .slice()
+        .reverse()
+        .map((m) => ({
+          role: String(m.sender) === aiUserId ? 'assistant' : 'user',
+          content: m.body,
+        }));
 
-      const history: OpenAIMessage[] = ordered.map((m) => ({
-        role: String(m.sender) === aiUserId ? 'assistant' : 'user',
-        content: m.body,
-      }));
+      const classified = await this.classify(history);
 
-      const reply = await this.openai.generateText(
-        this.buildPromptFromHistory(history),
-      );
+      let properties: CompactProperty[] = [];
+      if (classified.isSearch && classified.searchQuery.trim()) {
+        properties = await this.searchProperties(classified.searchQuery);
+      }
+
+      const metadata: Record<string, unknown> = {};
+      if (properties.length > 0) {
+        metadata.properties = properties;
+        metadata.searchQuery = classified.searchQuery;
+      } else if (classified.isSearch && classified.searchQuery.trim()) {
+        metadata.searchQuery = classified.searchQuery;
+        metadata.noResults = true;
+      }
+
+      const finalBody =
+        properties.length === 0 && classified.isSearch
+          ? `${classified.reply}\n\nKechirasiz, so'rovingizga mos mulk topilmadi. Boshqa shartlar bilan urinib ko'ring.`
+          : classified.reply;
 
       await this.chatService.createSystemMessage({
         conversationId,
         senderId: aiUserId,
         type: MessageType.TEXT,
-        body: reply,
+        body: finalBody,
+        metadata: Object.keys(metadata).length > 0 ? metadata : undefined,
       });
     } catch (err) {
       this.logger.warn(`AI reply failed: ${String(err)}`);
@@ -111,22 +155,96 @@ export class AiChatService {
         senderId: aiUserId,
         type: MessageType.TEXT,
         body:
-          'Salom! Men Amaar Properties AI yordamchisiman. Mulk qidirish, narx-navo yoki platforma haqida savollaringiz bo‘lsa, so‘rang.',
+          "Salom! Men Amaar Properties AI yordamchisiman 🤖\n\nMulk qidirish uchun oddiy tilda yozing:\n• \"KLda 3 xonali kvartira\"\n• \"Selangorda ijara 2000 dan arzon\"\n• \"pool bilan yangi kvartira\"\n\nYoki platforma haqida savol bering.",
       });
     } catch (err) {
       this.logger.warn(`AI welcome failed: ${String(err)}`);
     }
   }
 
-  private buildPromptFromHistory(history: OpenAIMessage[]): string {
-    // OpenaiService.generateText() oddiy prompt qabul qiladi. System + history'ni
-    // bitta prompt ichiga birlashtiramiz.
-    const lines: string[] = [AI_SYSTEM_PROMPT, ''];
-    for (const m of history) {
-      const prefix = m.role === 'user' ? 'Foydalanuvchi:' : 'Yordamchi:';
-      lines.push(`${prefix} ${m.content}`);
+  private async classify(
+    history: MessageRecord[],
+  ): Promise<ClassifiedReply> {
+    const conversationText = history
+      .map((m) => {
+        const prefix = m.role === 'user' ? 'User' : 'Assistant';
+        return `${prefix}: ${m.content}`;
+      })
+      .join('\n');
+
+    const system = `${AI_SYSTEM_PROMPT}\n\n${RESPONSE_SCHEMA_PROMPT}`;
+    const user = `Suhbat:\n${conversationText}\n\nOxirgi User xabariga javob bering.`;
+
+    try {
+      const { data } = await this.openai.generateJson<Partial<ClassifiedReply>>({
+        system,
+        user,
+        model: 'gpt-4o-mini',
+        temperature: 0.4,
+        maxTokens: 600,
+      });
+
+      return {
+        reply:
+          typeof data?.reply === 'string' && data.reply.trim()
+            ? data.reply.trim()
+            : 'Uzr, sizni to‘liq tushunmadim. Qayta yozib ko‘ring.',
+        isSearch: Boolean(data?.isSearch),
+        searchQuery:
+          typeof data?.searchQuery === 'string' ? data.searchQuery : '',
+      };
+    } catch (err) {
+      this.logger.warn(`AI classify failed: ${String(err)}`);
+      return {
+        reply: 'Kechirasiz, savolingizni qayta yuboring.',
+        isSearch: false,
+        searchQuery: '',
+      };
     }
-    lines.push('Yordamchi:');
-    return lines.join('\n');
+  }
+
+  private async searchProperties(
+    query: string,
+  ): Promise<CompactProperty[]> {
+    try {
+      const res = await this.aiPropertyService.findByPrompt({
+        userPrompt: query,
+        page: 1,
+        limit: SEARCH_RESULT_LIMIT,
+        language: EnumLanguage.EN,
+      });
+      return res.properties.map((p) =>
+        this.toCompact(p as unknown as Record<string, unknown>),
+      );
+    } catch (err) {
+      this.logger.warn(`AI property search failed: ${String(err)}`);
+      return [];
+    }
+  }
+
+  private toCompact(p: Record<string, unknown>): CompactProperty {
+    const photos = Array.isArray(p.photos) ? (p.photos as string[]) : [];
+    return {
+      _id: String(p._id),
+      title:
+        typeof p.title === 'string'
+          ? p.title
+          : (((p.title as Record<string, string>) ?? {}).en ?? 'Property'),
+      address:
+        typeof p.address === 'string'
+          ? p.address
+          : ((p.address as Record<string, string>) ?? {}).en,
+      category:
+        typeof p.category === 'string' ? (p.category as string) : undefined,
+      price: typeof p.price === 'number' ? (p.price as number) : undefined,
+      currency:
+        typeof p.currency === 'string' ? (p.currency as string) : undefined,
+      photo: photos[0],
+      bedrooms:
+        typeof p.bedrooms === 'number' ? (p.bedrooms as number) : undefined,
+      bathrooms:
+        typeof p.bathrooms === 'number' ? (p.bathrooms as number) : undefined,
+      area: typeof p.area === 'number' ? (p.area as number) : undefined,
+    };
   }
 }
