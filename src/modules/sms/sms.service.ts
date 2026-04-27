@@ -1,6 +1,15 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { EskizClient } from './eskiz.client';
 
+export type SmsLanguage = 'uz' | 'ru' | 'en' | 'ms';
+
+const OTP_TEMPLATES: Record<SmsLanguage, (code: string) => string> = {
+  uz: (code) => `Amaar Properties: tasdiqlash kodingiz ${code}.`,
+  ru: (code) => `Amaar Properties: ваш код подтверждения ${code}.`,
+  en: (code) => `Amaar Properties: your verification code is ${code}.`,
+  ms: (code) => `Amaar Properties: kod pengesahan anda ${code}.`,
+};
+
 @Injectable()
 export class SmsService {
   private readonly logger = new Logger(SmsService.name);
@@ -8,17 +17,29 @@ export class SmsService {
   constructor(private readonly eskiz: EskizClient) {}
 
   /**
-   * OTP xabarini yuboradi. Eskiz'da template oldindan tasdiqlangan bo'lishi
-   * shart — production'da template'ni ro'yxatdan o'tkazishni unutmang.
+   * OTP xabarini yuboradi. Har bir til uchun template Eskiz'da alohida
+   * tasdiqlangan bo'lishi kerak.
    *
-   * Test mode'da Eskiz faqat shu matnlarni qabul qiladi:
-   *   "Это тест от Eskiz" / "Bu Eskiz dan test" / "This is test from Eskiz"
+   * Test mode'da (ESKIZ_TEST_MODE=1) Eskiz faqat shu sample matn'ni qabul qiladi:
+   *   "Bu Eskiz dan test"
    */
-  async sendOtp(phone: string, code: string): Promise<void> {
-    const message = this.buildOtpMessage(code);
+  async sendOtp(
+    phone: string,
+    code: string,
+    language: SmsLanguage = 'uz',
+  ): Promise<void> {
+    const message = this.buildOtpMessage(code, language);
     try {
       await this.eskiz.sendSms({ mobile_phone: phone, message });
-      this.logger.log(`OTP SMS sent to ${this.maskPhone(phone)}`);
+      if (process.env.ESKIZ_TEST_MODE === '1') {
+        this.logger.warn(
+          `[TEST_MODE] OTP code for ${this.maskPhone(phone)}: ${code}`,
+        );
+      } else {
+        this.logger.log(
+          `OTP SMS sent to ${this.maskPhone(phone)} [${language}]`,
+        );
+      }
     } catch (err) {
       this.logger.error(
         `Failed to send OTP SMS to ${this.maskPhone(phone)}`,
@@ -32,13 +53,12 @@ export class SmsService {
     await this.eskiz.sendSms({ mobile_phone: phone, message });
   }
 
-  private buildOtpMessage(code: string): string {
-    // Production'da Eskiz'da tasdiqlangan template ishlating.
-    // Test mode uchun Eskiz approved sample matn:
+  private buildOtpMessage(code: string, language: SmsLanguage): string {
     if (process.env.ESKIZ_TEST_MODE === '1') {
       return 'Bu Eskiz dan test';
     }
-    return `Amaar Properties: tasdiqlash kodingiz ${code}. Hech kim bilan baham ko'rmang.`;
+    const builder = OTP_TEMPLATES[language] ?? OTP_TEMPLATES.uz;
+    return builder(code);
   }
 
   private maskPhone(phone: string): string {

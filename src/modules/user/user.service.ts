@@ -18,7 +18,7 @@ import { OtpTarget } from '../otp/otp.schema';
 import { MailService } from '../mailer/mail.service';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { FileService } from '../file/file.service';
-import { SmsService } from '../sms/sms.service';
+import { SmsService, type SmsLanguage } from '../sms/sms.service';
 
 const PHONE_REGEX = /^\+?\d{9,15}$/;
 
@@ -115,7 +115,13 @@ export class UserService {
     return { user: userWithoutPassword, ...tokens };
   }
 
-  async register({ email, phone, role, password }: CreateUserDto) {
+  async register({
+    email,
+    phone,
+    role,
+    password,
+    language,
+  }: CreateUserDto & { language?: SmsLanguage }) {
     if (!email && !phone) {
       throw new BadRequestException(
         'Email yoki telefon raqamlardan birini kiriting!',
@@ -127,6 +133,7 @@ export class UserService {
       phone: normalizePhone(phone as string),
       role,
       password,
+      language: language ?? 'uz',
     });
   }
 
@@ -201,10 +208,12 @@ export class UserService {
     phone,
     role,
     password,
+    language,
   }: {
     phone: string;
     role?: EnumRole;
     password: string;
+    language: SmsLanguage;
   }) {
     const existingUser = await this.model.findOne({ 'phone.value': phone });
     const code = generateOtp();
@@ -227,7 +236,7 @@ export class UserService {
       const saveUser = await existingUser.save();
 
       try {
-        await this.smsService.sendOtp(phone, code);
+        await this.smsService.sendOtp(phone, code, language);
       } catch (err) {
         const detail = err instanceof Error ? err.message : String(err);
         throw new InternalServerErrorException(
@@ -250,7 +259,7 @@ export class UserService {
     });
 
     try {
-      await this.smsService.sendOtp(phone, code);
+      await this.smsService.sendOtp(phone, code, language);
     } catch (err) {
       const detail = err instanceof Error ? err.message : String(err);
       throw new InternalServerErrorException(
@@ -305,7 +314,7 @@ export class UserService {
     return { user: saveUser, ...tokens };
   }
 
-  async resendOtp(id: string) {
+  async resendOtp(id: string, language: SmsLanguage = 'uz') {
     const user = await this.model.findById(id).lean();
     if (!user) {
       throw new NotFoundException('Foydalanuvchi topilmadi!');
@@ -330,7 +339,7 @@ export class UserService {
 
     try {
       if (usePhone && user.phone?.value) {
-        await this.smsService.sendOtp(user.phone.value, code);
+        await this.smsService.sendOtp(user.phone.value, code, language);
       } else if (user.email?.value) {
         await this.mailService.sendOtpEmail({
           to: { email: user.email.value },
@@ -354,7 +363,7 @@ export class UserService {
     return { message: 'Tasdiqlash kodi yuborildi!', user };
   }
 
-  async forgotPassword(identifier: string) {
+  async forgotPassword(identifier: string, language: SmsLanguage = 'uz') {
     if (!identifier) {
       throw new BadRequestException('Email yoki telefon kiritilmagan!');
     }
@@ -395,6 +404,7 @@ export class UserService {
         await this.smsService.sendOtp(
           user.phone.value as string,
           code,
+          language,
         );
       } else {
         await this.mailService.sendOtpEmail({

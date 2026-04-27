@@ -20,6 +20,22 @@ import { AuthGuard } from '@nestjs/passport';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { Throttle } from '@nestjs/throttler';
+import type { SmsLanguage } from '../sms/sms.service';
+
+// Accept-Language header'idan SMS tilini aniqlash. Noma'lum til → en fallback.
+function detectSmsLanguage(req: { headers: Record<string, unknown> }): SmsLanguage {
+  const raw = (req.headers['accept-language'] as string | undefined) ?? '';
+  const first = raw.split(',')[0]?.trim().toLowerCase();
+  if (
+    first === 'uz' ||
+    first === 'ru' ||
+    first === 'en' ||
+    first === 'ms'
+  ) {
+    return first;
+  }
+  return 'en';
+}
 
 @Controller('users/auth')
 export class UserController {
@@ -141,9 +157,10 @@ export class UserController {
 
   @Throttle({ default: { limit: 3, ttl: 10000 } })
   @Post('/register')
-  async register(@Body() dto: CreateUserDto) {
+  async register(@Body() dto: CreateUserDto, @Req() req: IRequestCustom) {
     try {
-      const result = await this.service.register(dto);
+      const language = detectSmsLanguage(req);
+      const result = await this.service.register({ ...dto, language });
       return result;
     } catch (error) {
       console.error(error);
@@ -197,9 +214,13 @@ export class UserController {
 
   @Throttle({ default: { limit: 3, ttl: 10000 } })
   @Post('/resend-otp')
-  async resendOtp(@Body() { id }: { id: string }) {
+  async resendOtp(
+    @Body() { id }: { id: string },
+    @Req() req: IRequestCustom,
+  ) {
     try {
-      const result = await this.service.resendOtp(id);
+      const language = detectSmsLanguage(req);
+      const result = await this.service.resendOtp(id, language);
       return result;
     } catch (error) {
       console.error(error);
@@ -221,10 +242,13 @@ export class UserController {
   @Post('/forgot-password')
   async forgotPassword(
     @Body() { identifier, email }: { identifier?: string; email?: string },
+    @Req() req: IRequestCustom,
   ) {
     try {
+      const language = detectSmsLanguage(req);
       return await this.service.forgotPassword(
         (identifier || email || '').trim(),
+        language,
       );
     } catch (error) {
       if (error instanceof HttpException) throw error;
