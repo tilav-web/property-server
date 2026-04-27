@@ -228,9 +228,10 @@ export class UserService {
 
       try {
         await this.smsService.sendOtp(phone, code);
-      } catch {
+      } catch (err) {
+        const detail = err instanceof Error ? err.message : String(err);
         throw new InternalServerErrorException(
-          'SMS yuborishda xatolik!',
+          `SMS yuborishda xatolik: ${detail}`,
         );
       }
       return { message: 'Tasdiqlash kodi yuborildi!', user: saveUser };
@@ -250,8 +251,11 @@ export class UserService {
 
     try {
       await this.smsService.sendOtp(phone, code);
-    } catch {
-      throw new InternalServerErrorException('SMS yuborishda xatolik!');
+    } catch (err) {
+      const detail = err instanceof Error ? err.message : String(err);
+      throw new InternalServerErrorException(
+        `SMS yuborishda xatolik: ${detail}`,
+      );
     }
     return { message: 'Tasdiqlash kodi yuborildi!', user };
   }
@@ -339,8 +343,11 @@ export class UserService {
       }
     } catch (err) {
       if (err instanceof BadRequestException) throw err;
+      const detail = err instanceof Error ? err.message : String(err);
       throw new InternalServerErrorException(
-        usePhone ? 'SMS yuborishda xatolik!' : 'Email yuborishda xatolik!',
+        usePhone
+          ? `SMS yuborishda xatolik: ${detail}`
+          : `Email yuborishda xatolik: ${detail}`,
       );
     }
 
@@ -395,9 +402,12 @@ export class UserService {
           code,
         });
       }
-    } catch {
+    } catch (err) {
+      const detail = err instanceof Error ? err.message : String(err);
       throw new InternalServerErrorException(
-        usingPhone ? 'SMS yuborishda xatolik!' : 'Email yuborishda xatolik!',
+        usingPhone
+          ? `SMS yuborishda xatolik: ${detail}`
+          : `Email yuborishda xatolik: ${detail}`,
       );
     }
 
