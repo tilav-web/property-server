@@ -103,12 +103,16 @@ export class UserController {
   @Throttle({ default: { limit: 3, ttl: 10000 } })
   @Post('/login')
   async login(
-    @Body() dto: { email: string; password: string },
+    @Body()
+    dto: { identifier?: string; email?: string; password: string },
     @Res() res: Response,
   ) {
     try {
-      const { user, refresh_token, access_token } =
-        await this.service.login(dto);
+      const identifier = (dto.identifier || dto.email || '').trim();
+      const { user, refresh_token, access_token } = await this.service.login({
+        identifier,
+        password: dto.password,
+      });
 
       return res
         .cookie('refresh_token', refresh_token, {
@@ -215,9 +219,13 @@ export class UserController {
 
   @Throttle({ default: { limit: 3, ttl: 10000 } })
   @Post('/forgot-password')
-  async forgotPassword(@Body() { email }: { email: string }) {
+  async forgotPassword(
+    @Body() { identifier, email }: { identifier?: string; email?: string },
+  ) {
     try {
-      return await this.service.forgotPassword(email);
+      return await this.service.forgotPassword(
+        (identifier || email || '').trim(),
+      );
     } catch (error) {
       if (error instanceof HttpException) throw error;
       if (error instanceof Error)

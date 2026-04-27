@@ -12,6 +12,7 @@ import { FacebookStrategy } from './strategies/facebook.strategy';
 import { AppleStrategy } from './strategies/apple.strategy';
 import { MailModule } from '../mailer/mail.module';
 import { FileModule } from '../file/file.module';
+import { SmsModule } from '../sms/sms.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { FileModule } from '../file/file.module';
     OtpModule,
     MailModule,
     FileModule,
+    SmsModule,
   ],
   controllers: [UserController],
   providers: [

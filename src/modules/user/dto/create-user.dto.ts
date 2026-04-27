@@ -5,13 +5,24 @@ import {
   IsOptional,
   Matches,
   MinLength,
+  ValidateIf,
 } from 'class-validator';
 import { EnumRole } from 'src/enums/role.enum';
 
 export class CreateUserDto {
+  @ValidateIf((o: CreateUserDto) => !o.phone)
   @IsEmail({}, { message: "Email to'g'ri ekanligiga ishonch hosil qiling!" })
-  @IsNotEmpty({ message: "Email maydoni to'ldirilishi kerak!" })
-  email: string;
+  @IsNotEmpty({
+    message: 'Email yoki telefon raqamlardan birini kiriting!',
+  })
+  email?: string;
+
+  @ValidateIf((o: CreateUserDto) => !o.email)
+  @Matches(/^\+?\d{9,15}$/, {
+    message: 'Telefon raqami noto‘g‘ri formatda!',
+  })
+  @IsNotEmpty({ message: 'Email yoki telefon raqamlardan birini kiriting!' })
+  phone?: string;
 
   @IsNotEmpty({ message: "Parol maydoni to'ldirilishi kerak!" })
   @MinLength(8, {

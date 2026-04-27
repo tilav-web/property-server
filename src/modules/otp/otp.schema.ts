@@ -3,6 +3,11 @@ import { Document, Types } from 'mongoose';
 
 export type OtpDocument = Otp & Document;
 
+export enum OtpTarget {
+  EMAIL = 'email',
+  PHONE = 'phone',
+}
+
 @Schema({ timestamps: true })
 export class Otp {
   @Prop({ type: String, required: true })
@@ -10,6 +15,13 @@ export class Otp {
 
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
   user: Types.ObjectId;
+
+  @Prop({
+    type: String,
+    enum: OtpTarget,
+    default: OtpTarget.EMAIL,
+  })
+  target: OtpTarget;
 
   @Prop({ type: Number, default: 0 })
   attempts: number;

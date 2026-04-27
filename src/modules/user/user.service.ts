@@ -14,9 +14,21 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { EnumRole } from 'src/enums/role.enum';
 import { generateOtp } from 'src/utils/generate-otp';
 import { OtpService } from '../otp/otp.service';
+import { OtpTarget } from '../otp/otp.schema';
 import { MailService } from '../mailer/mail.service';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { FileService } from '../file/file.service';
+import { SmsService } from '../sms/sms.service';
+
+const PHONE_REGEX = /^\+?\d{9,15}$/;
+
+function isPhone(identifier: string): boolean {
+  return PHONE_REGEX.test(identifier.replace(/[\s-]/g, ''));
+}
+
+function normalizePhone(input: string): string {
+  return input.replace(/[^\d]/g, '');
+}
 
 @Injectable()
 export class UserService {
@@ -26,7 +38,20 @@ export class UserService {
     private readonly otpService: OtpService,
     private readonly mailService: MailService,
     private readonly fileService: FileService,
+    private readonly smsService: SmsService,
   ) {}
+
+  private signTokens(user: { _id: unknown; role: EnumRole }) {
+    const access_token = this.jwtService.sign(
+      { _id: user._id, role: user.role, tokenType: 'access' },
+      { expiresIn: '15m' },
+    );
+    const refresh_token = this.jwtService.sign(
+      { _id: user._id, role: user.role, tokenType: 'refresh' },
+      { expiresIn: '7d' },
+    );
+    return { access_token, refresh_token };
+  }
   async findById(id: string) {
     return this.model.findById(id);
   }
@@ -56,51 +81,64 @@ export class UserService {
     return String(ai._id);
   }
 
-  async login({ email, password }: { email: string; password: string }) {
-    if (!email)
-      throw new BadRequestException('Email-ni tekshiring. Email kiritilmagan!');
+  async login({
+    identifier,
+    password,
+  }: {
+    identifier: string;
+    password: string;
+  }) {
+    if (!identifier)
+      throw new BadRequestException('Email yoki telefon kiritilmagan!');
 
-    const user = await this.model
-      .findOne({
-        'email.value': email,
-        'email.isVerified': true,
-      })
-      .select('+password');
+    const usingPhone = isPhone(identifier);
+    const query = usingPhone
+      ? { 'phone.value': normalizePhone(identifier), 'phone.isVerified': true }
+      : { 'email.value': identifier, 'email.isVerified': true };
+
+    const user = await this.model.findOne(query).select('+password');
     if (!user)
       throw new BadRequestException(
-        'Foydalanuvchi mavjut emas. Email-ni tekshiring!',
+        usingPhone
+          ? 'Foydalanuvchi topilmadi. Telefonni tekshiring!'
+          : 'Foydalanuvchi mavjut emas. Email-ni tekshiring!',
       );
 
     if (!password || !user.password)
       throw new BadRequestException('Parol kiritilmagan!');
 
     const isMatch = await bcrypt.compare(password, user.password);
-
     if (!isMatch) throw new BadRequestException('Parolda xatolik bor!');
 
-    const access_token = this.jwtService.sign(
-      {
-        _id: user._id,
-        role: user.role,
-        tokenType: 'access',
-      },
-      { expiresIn: '15m' },
-    );
-
-    const refresh_token = this.jwtService.sign(
-      {
-        _id: user._id,
-        role: user.role,
-        tokenType: 'refresh',
-      },
-      { expiresIn: '7d' },
-    );
-
+    const tokens = this.signTokens(user);
     const { password: _, ...userWithoutPassword } = user.toObject();
-    return { user: userWithoutPassword, access_token, refresh_token };
+    return { user: userWithoutPassword, ...tokens };
   }
 
-  async register({ email, role, password }: CreateUserDto) {
+  async register({ email, phone, role, password }: CreateUserDto) {
+    if (!email && !phone) {
+      throw new BadRequestException(
+        'Email yoki telefon raqamlardan birini kiriting!',
+      );
+    }
+
+    if (email) return this.registerWithEmail({ email, role, password });
+    return this.registerWithPhone({
+      phone: normalizePhone(phone as string),
+      role,
+      password,
+    });
+  }
+
+  private async registerWithEmail({
+    email,
+    role,
+    password,
+  }: {
+    email: string;
+    role?: EnumRole;
+    password: string;
+  }) {
     const existingUser = await this.model.findOne({ 'email.value': email });
     const code = generateOtp();
     const hashPassword = await bcrypt.hash(password, 10);
@@ -115,6 +153,7 @@ export class UserService {
       await this.otpService.create({
         code,
         user: existingUser._id as string,
+        target: OtpTarget.EMAIL,
       });
       existingUser.password = hashPassword;
       existingUser.role = role ?? EnumRole.PHYSICAL;
@@ -125,20 +164,16 @@ export class UserService {
           to: { email: existingUser.email.value },
           code,
         });
-      } catch (error) {
+      } catch {
         throw new InternalServerErrorException(
-          `Email-ga habar yuborishda xatolik!`,
+          'Email-ga habar yuborishda xatolik!',
         );
       }
-
       return { message: 'Tasdiqlash kodi yuborildi!', user: saveUser };
     }
 
     const user = await this.model.create({
-      email: {
-        value: email,
-        isVerified: false,
-      },
+      email: { value: email, isVerified: false },
       password: hashPassword,
       role: role ?? EnumRole.PHYSICAL,
     });
@@ -146,6 +181,7 @@ export class UserService {
     await this.otpService.create({
       code,
       user: user._id as string,
+      target: OtpTarget.EMAIL,
     });
 
     try {
@@ -153,12 +189,70 @@ export class UserService {
         to: { email: user.email.value },
         code,
       });
-    } catch (error) {
+    } catch {
       throw new InternalServerErrorException(
-        `Email-ga habar yuborishda xatolik!`,
+        'Email-ga habar yuborishda xatolik!',
       );
     }
+    return { message: 'Tasdiqlash kodi yuborildi!', user };
+  }
 
+  private async registerWithPhone({
+    phone,
+    role,
+    password,
+  }: {
+    phone: string;
+    role?: EnumRole;
+    password: string;
+  }) {
+    const existingUser = await this.model.findOne({ 'phone.value': phone });
+    const code = generateOtp();
+    const hashPassword = await bcrypt.hash(password, 10);
+
+    if (existingUser) {
+      if (existingUser.phone.isVerified) {
+        throw new ConflictException(
+          'Bu telefon bilan foydalanuvchi allaqachon mavjud!',
+        );
+      }
+      await this.otpService.deleteMany(existingUser._id as string);
+      await this.otpService.create({
+        code,
+        user: existingUser._id as string,
+        target: OtpTarget.PHONE,
+      });
+      existingUser.password = hashPassword;
+      existingUser.role = role ?? EnumRole.PHYSICAL;
+      const saveUser = await existingUser.save();
+
+      try {
+        await this.smsService.sendOtp(phone, code);
+      } catch {
+        throw new InternalServerErrorException(
+          'SMS yuborishda xatolik!',
+        );
+      }
+      return { message: 'Tasdiqlash kodi yuborildi!', user: saveUser };
+    }
+
+    const user = await this.model.create({
+      phone: { value: phone, isVerified: false },
+      password: hashPassword,
+      role: role ?? EnumRole.PHYSICAL,
+    });
+
+    await this.otpService.create({
+      code,
+      user: user._id as string,
+      target: OtpTarget.PHONE,
+    });
+
+    try {
+      await this.smsService.sendOtp(phone, code);
+    } catch {
+      throw new InternalServerErrorException('SMS yuborishda xatolik!');
+    }
     return { message: 'Tasdiqlash kodi yuborildi!', user };
   }
 
@@ -195,30 +289,16 @@ export class UserService {
         "Sizga tegishli kod topilmadi, qayta ro'yhatdan o'ting",
       );
 
-    user.email.isVerified = true;
+    if (otp.target === OtpTarget.PHONE) {
+      user.phone.isVerified = true;
+    } else {
+      user.email.isVerified = true;
+    }
     const saveUser = await user.save();
 
     await this.otpService.deleteMany(id);
-
-    const access_token = this.jwtService.sign(
-      {
-        _id: user._id,
-        role: user.role,
-        tokenType: 'access',
-      },
-      { expiresIn: '15m' },
-    );
-
-    const refresh_token = this.jwtService.sign(
-      {
-        _id: user._id,
-        role: user.role,
-        tokenType: 'refresh',
-      },
-      { expiresIn: '7d' },
-    );
-
-    return { user: saveUser, access_token, refresh_token };
+    const tokens = this.signTokens(user);
+    return { user: saveUser, ...tokens };
   }
 
   async resendOtp(id: string) {
@@ -228,69 +308,96 @@ export class UserService {
     }
 
     const oldOtp = await this.otpService.findByUser(id);
-    if (oldOtp)
-      throw new ConflictException(
-        `${user.email.value} manziliga kod yuborilgan!`,
-      );
-
-    const code = generateOtp();
-
-    // DB ga saqlaymiz
-    await this.otpService.create({
-      code,
-      user: id,
-    });
-
-    return this.mailService
-      .sendOtpEmail({ to: { email: user.email.value }, code })
-      .then(() => {
-        return { message: 'Tasdiqlash kodi yuborildi!', user };
-      })
-      .catch(() => {
-        throw new InternalServerErrorException(
-          `Email-ga habar yuborishda xatolik!`,
-        );
-      });
-  }
-
-  async forgotPassword(email: string) {
-    if (!email) {
-      throw new BadRequestException('Email kiritilmagan!');
+    if (oldOtp) {
+      const where =
+        oldOtp.target === OtpTarget.PHONE
+          ? user.phone?.value
+          : user.email?.value;
+      throw new ConflictException(`${where} manziliga kod yuborilgan!`);
     }
 
-    const user = await this.model.findOne({
-      'email.value': email,
-      'email.isVerified': true,
-    });
+    // Target ni aniqlaymiz: phone tasdiqlanmagan bo'lsa phone, aks holda email
+    const usePhone =
+      user.phone?.value && !user.phone.isVerified ? true : false;
+    const target = usePhone ? OtpTarget.PHONE : OtpTarget.EMAIL;
+    const code = generateOtp();
 
+    await this.otpService.create({ code, user: id, target });
+
+    try {
+      if (usePhone && user.phone?.value) {
+        await this.smsService.sendOtp(user.phone.value, code);
+      } else if (user.email?.value) {
+        await this.mailService.sendOtpEmail({
+          to: { email: user.email.value },
+          code,
+        });
+      } else {
+        throw new BadRequestException(
+          'Foydalanuvchida email yoki telefon mavjud emas',
+        );
+      }
+    } catch (err) {
+      if (err instanceof BadRequestException) throw err;
+      throw new InternalServerErrorException(
+        usePhone ? 'SMS yuborishda xatolik!' : 'Email yuborishda xatolik!',
+      );
+    }
+
+    return { message: 'Tasdiqlash kodi yuborildi!', user };
+  }
+
+  async forgotPassword(identifier: string) {
+    if (!identifier) {
+      throw new BadRequestException('Email yoki telefon kiritilmagan!');
+    }
+
+    const usingPhone = isPhone(identifier);
+    const query = usingPhone
+      ? {
+          'phone.value': normalizePhone(identifier),
+          'phone.isVerified': true,
+        }
+      : { 'email.value': identifier, 'email.isVerified': true };
+
+    const user = await this.model.findOne(query);
     if (!user) {
       throw new NotFoundException(
-        'Bu email bilan tasdiqlangan foydalanuvchi topilmadi!',
+        usingPhone
+          ? 'Bu telefon bilan tasdiqlangan foydalanuvchi topilmadi!'
+          : 'Bu email bilan tasdiqlangan foydalanuvchi topilmadi!',
       );
     }
 
     const oldOtp = await this.otpService.findByUser(user._id as string);
     if (oldOtp) {
-      throw new ConflictException(
-        `${email} manziliga kod allaqachon yuborilgan! 1 daqiqa kuting.`,
-      );
+      throw new ConflictException('Kod yuborilgan! 1 daqiqa kuting.');
     }
 
     const code = generateOtp();
+    const target = usingPhone ? OtpTarget.PHONE : OtpTarget.EMAIL;
 
     await this.otpService.create({
       code,
       user: user._id as string,
+      target,
     });
 
     try {
-      await this.mailService.sendOtpEmail({
-        to: { email: user.email.value },
-        code,
-      });
+      if (usingPhone) {
+        await this.smsService.sendOtp(
+          user.phone.value as string,
+          code,
+        );
+      } else {
+        await this.mailService.sendOtpEmail({
+          to: { email: user.email.value },
+          code,
+        });
+      }
     } catch {
       throw new InternalServerErrorException(
-        'Email-ga habar yuborishda xatolik!',
+        usingPhone ? 'SMS yuborishda xatolik!' : 'Email yuborishda xatolik!',
       );
     }
 
