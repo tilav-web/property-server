@@ -7,6 +7,8 @@
   "license": "UNLICENSED",
   "scripts": {
     "build": "nest build && cpx 'src/modules/mailer/templates/**/*' 'dist/modules/mailer/templates'",
+    "build:clean": "rm -rf dist && npm run build",
+    "deploy": "git pull && npm install && npm run build:clean && cp .env dist/ && pm2 restart property-server",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
     "start:dev": "nest start --watch",
