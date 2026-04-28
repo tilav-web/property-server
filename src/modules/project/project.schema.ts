@@ -1,5 +1,9 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
+import {
+  Location,
+  LocationSchema,
+} from 'src/common/location/location.schema';
 
 export type ProjectDocument = Project & Document;
 
@@ -81,19 +85,8 @@ export class Project {
   city?: string;
 
   // GeoJSON Point (optional, for future map integration)
-  @Prop({
-    type: {
-      type: String,
-      enum: ['Point'],
-      default: 'Point',
-    },
-    coordinates: {
-      type: [Number],
-      default: undefined,
-    },
-    required: false,
-  })
-  location?: { type: 'Point'; coordinates: [number, number] };
+  @Prop({ type: LocationSchema, required: false })
+  location?: Location;
 
   // Off-plan delivery target. Free string ("Q1 2030") for flexibility.
   @Prop({ type: String, required: false })
