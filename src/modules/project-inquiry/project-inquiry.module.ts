@@ -8,6 +8,7 @@ import { ProjectInquiryService } from './project-inquiry.service';
 import { ProjectInquiryController } from './project-inquiry.controller';
 import { ProjectModule } from '../project/project.module';
 import { AdminModule } from '../admin/admin.module';
+import { Admin, AdminSchema } from '../admin/admin.schema';
 import { NotificationModule } from '../notification/notification.module';
 import { MailModule } from '../mailer/mail.module';
 
@@ -15,6 +16,7 @@ import { MailModule } from '../mailer/mail.module';
   imports: [
     MongooseModule.forFeature([
       { name: ProjectInquiry.name, schema: ProjectInquirySchema },
+      { name: Admin.name, schema: AdminSchema },
     ]),
     ProjectModule,
     forwardRef(() => AdminModule),
