@@ -277,6 +277,30 @@ export class UserController {
     }
   }
 
+  @Throttle({ default: { limit: 5, ttl: 10000 } })
+  @Post('/change-password')
+  @UseGuards(AuthGuard('jwt'))
+  async changePassword(
+    @Body() dto: { currentPassword: string; newPassword: string },
+    @Req() req: IRequestCustom,
+  ) {
+    try {
+      const userId = req.user?._id as string;
+      return await this.service.changePassword({
+        userId,
+        currentPassword: dto.currentPassword,
+        newPassword: dto.newPassword,
+      });
+    } catch (error) {
+      if (error instanceof HttpException) throw error;
+      if (error instanceof Error)
+        throw new InternalServerErrorException(error.message);
+      throw new InternalServerErrorException(
+        "Tizimda xatolik ketdi. Iltimos birozdan so'ng qayta urinib ko'ring!",
+      );
+    }
+  }
+
   @Post('/refresh-token')
   async refresh(
     @Req() req: IRequestCustom & { cookies: { refresh_token?: string } },

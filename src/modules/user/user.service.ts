@@ -476,6 +476,48 @@ export class UserService {
     return { message: 'Parol muvaffaqiyatli yangilandi!' };
   }
 
+  async changePassword({
+    userId,
+    currentPassword,
+    newPassword,
+  }: {
+    userId: string;
+    currentPassword: string;
+    newPassword: string;
+  }) {
+    if (!newPassword || newPassword.length < 6) {
+      throw new BadRequestException(
+        "Yangi parol kamida 6 belgidan iborat bo'lishi kerak",
+      );
+    }
+    if (currentPassword === newPassword) {
+      throw new BadRequestException(
+        'Yangi parol joriy paroldan farq qilishi kerak',
+      );
+    }
+
+    const user = await this.model.findById(userId).select('+password');
+    if (!user) {
+      throw new NotFoundException('Foydalanuvchi topilmadi!');
+    }
+
+    if (!user.password) {
+      throw new BadRequestException(
+        "Akkauntda parol o'rnatilmagan. Avval 'Parolni unutdim' orqali parol yarating.",
+      );
+    }
+
+    const isMatch = await bcrypt.compare(currentPassword, user.password);
+    if (!isMatch) {
+      throw new BadRequestException("Joriy parol noto'g'ri");
+    }
+
+    user.password = await bcrypt.hash(newPassword, 10);
+    await user.save();
+
+    return { message: 'Parol muvaffaqiyatli yangilandi!' };
+  }
+
   async refresh(refresh_token: string) {
     const payload = await this.jwtService.verifyAsync<{
       _id: string;
