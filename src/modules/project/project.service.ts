@@ -25,6 +25,15 @@ interface FindAllOptions {
   status?: EnumProjectStatus;
   is_featured?: boolean;
   sort?: 'newest' | 'oldest' | 'price_asc' | 'price_desc' | 'popular';
+  beds_min?: number;
+  beds_max?: number;
+  price_min?: number;
+  price_max?: number;
+  delivery_year?: number;
+  // Bbox filter for map view: [west, south, east, north]
+  bbox?: [number, number, number, number];
+  // True when fetching for map (don't paginate; cap at 200)
+  isMapView?: boolean;
 }
 
 @Injectable()
@@ -83,6 +92,13 @@ export class ProjectService {
       status,
       is_featured,
       sort = 'newest',
+      beds_min,
+      beds_max,
+      price_min,
+      price_max,
+      delivery_year,
+      bbox,
+      isMapView,
     } = opts;
 
     const filter: FilterQuery<ProjectDocument> = {};
@@ -93,20 +109,57 @@ export class ProjectService {
     if (status) filter.status = status;
     if (is_featured !== undefined) filter.is_featured = is_featured;
 
-    let sortStage: Record<string, 1 | -1> = { is_featured: -1, createdAt: -1 };
+    // Beds range — overlap with any unit_type's [bedrooms_min, bedrooms_max]
+    if (beds_min !== undefined || beds_max !== undefined) {
+      const bedMatch: Record<string, unknown> = {};
+      if (beds_max !== undefined) bedMatch['bedrooms_min'] = { $lte: beds_max };
+      if (beds_min !== undefined) bedMatch['bedrooms_max'] = { $gte: beds_min };
+      filter.unit_types = { $elemMatch: bedMatch };
+    }
+
+    // Price range applied to launch_price (project entry price)
+    if (price_min !== undefined || price_max !== undefined) {
+      filter.launch_price = {};
+      if (price_min !== undefined)
+        (filter.launch_price as Record<string, number>).$gte = price_min;
+      if (price_max !== undefined)
+        (filter.launch_price as Record<string, number>).$lte = price_max;
+    }
+
+    // Delivery year (free string field "Q1 2030", "2027" etc.) — substring
+    if (delivery_year !== undefined) {
+      filter.delivery_date = { $regex: String(delivery_year), $options: 'i' };
+    }
+
+    // Map bbox filter
+    if (bbox && bbox.length === 4) {
+      const [west, south, east, north] = bbox;
+      filter['location.coordinates'] = {
+        $geoWithin: {
+          $box: [
+            [west, south],
+            [east, north],
+          ],
+        },
+      };
+    }
+
+    let sortStage: Record<string, 1 | -1> = { createdAt: -1 };
     if (sort === 'oldest') sortStage = { createdAt: 1 };
     else if (sort === 'price_asc') sortStage = { launch_price: 1 };
     else if (sort === 'price_desc') sortStage = { launch_price: -1 };
     else if (sort === 'popular') sortStage = { views: -1, createdAt: -1 };
 
-    const skip = (page - 1) * limit;
+    const effectiveLimit = isMapView ? Math.min(limit, 200) : limit;
+    const skip = isMapView ? 0 : (page - 1) * limit;
+
     const [items, total] = await Promise.all([
       this.model
         .find(filter)
         .populate('developer', 'name logo')
         .sort(sortStage)
         .skip(skip)
-        .limit(limit)
+        .limit(effectiveLimit)
         .lean(),
       this.model.countDocuments(filter),
     ]);
@@ -114,8 +167,8 @@ export class ProjectService {
       items,
       total,
       page,
-      limit,
-      totalPages: Math.ceil(total / limit),
+      limit: effectiveLimit,
+      totalPages: Math.ceil(total / effectiveLimit),
     };
   }
 

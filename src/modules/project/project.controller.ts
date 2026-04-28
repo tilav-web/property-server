@@ -38,16 +38,44 @@ export class ProjectController {
     @Query('is_featured') is_featured?: string,
     @Query('sort')
     sort?: 'newest' | 'oldest' | 'price_asc' | 'price_desc' | 'popular',
+    @Query('beds_min') beds_min?: string,
+    @Query('beds_max') beds_max?: string,
+    @Query('price_min') price_min?: string,
+    @Query('price_max') price_max?: string,
+    @Query('delivery_year') delivery_year?: string,
+    @Query('bbox') bbox?: string,
+    @Query('is_map_view') is_map_view?: string,
   ) {
+    const isMapView = is_map_view === 'true';
+    let bboxArr: [number, number, number, number] | undefined;
+    if (bbox) {
+      const parts = bbox.split(',').map(Number);
+      if (parts.length === 4 && parts.every((n) => Number.isFinite(n))) {
+        bboxArr = parts as [number, number, number, number];
+      }
+    }
+    const numericLimit = limit ? Number(limit) : 12;
+    const cappedLimit = isMapView
+      ? Math.min(numericLimit, 200)
+      : Math.min(numericLimit, 50);
+
     return this.service.findAll({
       page: page ? Number(page) : 1,
-      limit: limit ? Math.min(Number(limit), 50) : 12,
+      limit: cappedLimit,
       search,
       developer,
       city,
       status,
       is_featured: is_featured === 'true' ? true : undefined,
       sort,
+      beds_min: beds_min !== undefined ? Number(beds_min) : undefined,
+      beds_max: beds_max !== undefined ? Number(beds_max) : undefined,
+      price_min: price_min !== undefined ? Number(price_min) : undefined,
+      price_max: price_max !== undefined ? Number(price_max) : undefined,
+      delivery_year:
+        delivery_year !== undefined ? Number(delivery_year) : undefined,
+      bbox: bboxArr,
+      isMapView,
     });
   }
 

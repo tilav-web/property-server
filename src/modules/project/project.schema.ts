@@ -131,3 +131,5 @@ export class Project {
 export const ProjectSchema = SchemaFactory.createForClass(Project);
 ProjectSchema.index({ name: 'text', description: 'text', address: 'text' });
 ProjectSchema.index({ status: 1, is_featured: -1, createdAt: -1 });
+ProjectSchema.index({ 'location.coordinates': '2dsphere' });
+ProjectSchema.index({ launch_price: 1 });
