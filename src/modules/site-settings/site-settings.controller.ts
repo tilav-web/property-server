@@ -3,6 +3,7 @@ import {
   Controller,
   Delete,
   Get,
+  Param,
   Patch,
   UploadedFiles,
   UseGuards,
@@ -16,7 +17,11 @@ interface UpdateSiteSettingsDto {
   hero_title_override?: string;
   hero_subtitle_override?: string;
   hero_image_srcset?: string;
+  hero_image_buy_srcset?: string;
+  hero_image_rent_srcset?: string;
 }
+
+type HeroSlot = 'main' | 'buy' | 'rent';
 
 @Controller('site-settings')
 export class SiteSettingsController {
@@ -30,19 +35,34 @@ export class SiteSettingsController {
   @UseGuards(AdminGuard)
   @Patch()
   @UseInterceptors(
-    FileFieldsInterceptor([{ name: 'hero_image', maxCount: 1 }]),
+    FileFieldsInterceptor([
+      { name: 'hero_image', maxCount: 1 },
+      { name: 'hero_image_buy', maxCount: 1 },
+      { name: 'hero_image_rent', maxCount: 1 },
+    ]),
   )
   async update(
     @Body() dto: UpdateSiteSettingsDto,
     @UploadedFiles()
-    files?: { hero_image?: Express.Multer.File[] },
+    files?: {
+      hero_image?: Express.Multer.File[];
+      hero_image_buy?: Express.Multer.File[];
+      hero_image_rent?: Express.Multer.File[];
+    },
   ) {
     return this.service.update({ dto, files });
   }
 
   @UseGuards(AdminGuard)
+  @Delete('hero-image/:slot')
+  async clearHero(@Param('slot') slot: HeroSlot) {
+    return this.service.clearHeroImage(slot);
+  }
+
+  // Backward compatibility
+  @UseGuards(AdminGuard)
   @Delete('hero-image')
-  async clearHero() {
-    return this.service.clearHeroImage();
+  async clearMainHero() {
+    return this.service.clearHeroImage('main');
   }
 }
