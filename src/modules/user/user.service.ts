@@ -405,6 +405,7 @@ export class UserService {
           user.phone.value as string,
           code,
           language,
+          'reset_password',
         );
       } else {
         await this.mailService.sendOtpEmail({

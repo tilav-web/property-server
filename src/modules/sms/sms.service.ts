@@ -2,16 +2,27 @@ import { Injectable, Logger } from '@nestjs/common';
 import { EskizClient } from './eskiz.client';
 
 export type SmsLanguage = 'uz' | 'ru' | 'en' | 'ms';
+export type OtpPurpose = 'register' | 'reset_password';
 
-const OTP_TEMPLATES: Record<SmsLanguage, (code: string) => string> = {
-  uz: (code) =>
-    `Amaar Properties saytida ro'yxatdan o'tish va kirish uchun kod - ${code}`,
-  ru: (code) =>
-    `Код для регистрации и входа на сайте Amaar Properties - ${code}`,
-  en: (code) =>
-    `Registration and login code for Amaar Properties website - ${code}`,
-  ms: (code) =>
-    `Kod pendaftaran dan log masuk untuk laman Amaar Properties - ${code}`,
+const OTP_TEMPLATES: Record<
+  OtpPurpose,
+  Record<SmsLanguage, (code: string) => string>
+> = {
+  register: {
+    uz: (code) =>
+      `Amaar Properties saytida ro'yxatdan o'tish uchun kod - ${code}`,
+    ru: (code) => `Код для регистрации на сайте Amaar Properties - ${code}`,
+    en: (code) => `Registration code for Amaar Properties website - ${code}`,
+    ms: (code) => `Kod pendaftaran untuk laman Amaar Properties - ${code}`,
+  },
+  reset_password: {
+    uz: (code) =>
+      `Amaar Properties saytida parolni tiklash uchun kod - ${code}`,
+    ru: (code) => `Код для сброса пароля на сайте Amaar Properties - ${code}`,
+    en: (code) => `Password reset code for Amaar Properties website - ${code}`,
+    ms: (code) =>
+      `Kod tetapan semula kata laluan untuk laman Amaar Properties - ${code}`,
+  },
 };
 
 @Injectable()
@@ -31,8 +42,9 @@ export class SmsService {
     phone: string,
     code: string,
     language: SmsLanguage = 'uz',
+    purpose: OtpPurpose = 'register',
   ): Promise<void> {
-    const message = this.buildOtpMessage(code, language);
+    const message = this.buildOtpMessage(code, language, purpose);
     try {
       await this.eskiz.sendSms({ mobile_phone: phone, message });
       if (process.env.ESKIZ_TEST_MODE === '1') {
@@ -41,7 +53,7 @@ export class SmsService {
         );
       } else {
         this.logger.log(
-          `OTP SMS sent to ${this.maskPhone(phone)} [${language}]`,
+          `OTP SMS sent to ${this.maskPhone(phone)} [${language}/${purpose}]`,
         );
       }
     } catch (err) {
@@ -57,11 +69,16 @@ export class SmsService {
     await this.eskiz.sendSms({ mobile_phone: phone, message });
   }
 
-  private buildOtpMessage(code: string, language: SmsLanguage): string {
+  private buildOtpMessage(
+    code: string,
+    language: SmsLanguage,
+    purpose: OtpPurpose,
+  ): string {
     if (process.env.ESKIZ_TEST_MODE === '1') {
       return 'Bu Eskiz dan test';
     }
-    const builder = OTP_TEMPLATES[language] ?? OTP_TEMPLATES.uz;
+    const set = OTP_TEMPLATES[purpose] ?? OTP_TEMPLATES.register;
+    const builder = set[language] ?? set.uz;
     return builder(code);
   }
 
