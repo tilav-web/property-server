@@ -49,7 +49,7 @@ interface ClassifiedReply {
   searchQuery: string;
 }
 
-interface CompactProperty {
+export interface CompactProperty {
   _id: string;
   title: string;
   address?: string;
@@ -147,6 +147,51 @@ export class AiChatService {
         // swallow
       }
     }
+  }
+
+  /**
+   * Anonim foydalanuvchi uchun (login bo'lmagan) — DB'ga hech narsa
+   * yozmaydi, faqat AI javobini va topilgan property'larni qaytaradi.
+   * History client tarafda saqlanadi va har so'rov bilan yuboriladi.
+   */
+  async generateAnonymousReply(
+    history: MessageRecord[],
+  ): Promise<{
+    body: string;
+    properties?: CompactProperty[];
+    searchQuery?: string;
+    noResults?: boolean;
+  }> {
+    const safeHistory = history
+      .filter((m) => m && typeof m.content === 'string' && m.content.trim())
+      .slice(-HISTORY_LIMIT);
+
+    if (safeHistory.length === 0) {
+      return {
+        body: 'Salom! Sizga qanday yordam bera olaman?',
+      };
+    }
+
+    const classified = await this.classify(safeHistory);
+
+    let properties: CompactProperty[] = [];
+    if (classified.isSearch && classified.searchQuery.trim()) {
+      properties = await this.searchProperties(classified.searchQuery);
+    }
+
+    let body = classified.reply;
+    let noResults = false;
+    if (classified.isSearch && properties.length === 0) {
+      body = `Kechirasiz, "${classified.searchQuery}" bo'yicha mos e'lon topilmadi. Hozircha platformada asosan Malayziya ko'chmas mulki mavjud. Boshqa shahar, narx oralig'i yoki kengroq shartlar bilan urinib ko'ring.`;
+      noResults = true;
+    }
+
+    return {
+      body,
+      properties: properties.length > 0 ? properties : undefined,
+      searchQuery: classified.isSearch ? classified.searchQuery : undefined,
+      noResults: noResults || undefined,
+    };
   }
 
   async sendWelcome(conversationId: string): Promise<void> {

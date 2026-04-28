@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { AiChatService } from './ai-chat.service';
+import { AiChatController } from './ai-chat.controller';
 import {
   ChatMessage,
   ChatMessageSchema,
@@ -26,6 +27,7 @@ import { AiPropertyModule } from '../ai-property/ai-property.module';
     AiPropertyModule,
     forwardRef(() => ChatModule),
   ],
+  controllers: [AiChatController],
   providers: [AiChatService],
   exports: [AiChatService],
 })
