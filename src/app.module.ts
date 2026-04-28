@@ -26,6 +26,7 @@ import { DeveloperModule } from './modules/developer/developer.module';
 import { ProjectModule } from './modules/project/project.module';
 import { ProjectInquiryModule } from './modules/project-inquiry/project-inquiry.module';
 import { SiteSettingsModule } from './modules/site-settings/site-settings.module';
+import { ExchangeRateModule } from './modules/exchange-rate/exchange-rate.module';
 
 @Module({
   imports: [
@@ -72,6 +73,7 @@ import { SiteSettingsModule } from './modules/site-settings/site-settings.module
     ProjectModule,
     ProjectInquiryModule,
     SiteSettingsModule,
+    ExchangeRateModule,
   ],
   providers: [
     {
