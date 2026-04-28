@@ -4,4 +4,5 @@ export enum NotificationType {
   INQUIRY_RESPONSE = 'inquiry_response',
   PROPERTY_APPROVED = 'property_approved',
   PROPERTY_REJECTED = 'property_rejected',
+  PROJECT_INQUIRY = 'project_inquiry',
 }

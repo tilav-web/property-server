@@ -1,0 +1,51 @@
+<html>
+  <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; background: #f6f7f9; padding: 20px;">
+    <div style="max-width: 600px; margin: 0 auto; background: #fff; border-radius: 8px; overflow: hidden; border: 1px solid #e5e7eb;">
+      <div style="background: linear-gradient(135deg, #3b82f6, #6366f1); color: #fff; padding: 20px;">
+        <h2 style="margin: 0;">Yangi loyiha so'rovi</h2>
+        <p style="margin: 4px 0 0; opacity: 0.9; font-size: 14px;">{{projectName}}</p>
+      </div>
+
+      <div style="padding: 20px;">
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr>
+            <td style="padding: 8px 0; color: #6b7280; width: 140px;">Ism-familiya:</td>
+            <td style="padding: 8px 0; font-weight: 600;">{{fullName}}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; color: #6b7280;">Aloqa usuli:</td>
+            <td style="padding: 8px 0; font-weight: 600;">{{contactMethod}}</td>
+          </tr>
+          {{#if email}}
+          <tr>
+            <td style="padding: 8px 0; color: #6b7280;">Email:</td>
+            <td style="padding: 8px 0;"><a href="mailto:{{email}}" style="color: #3b82f6;">{{email}}</a></td>
+          </tr>
+          {{/if}}
+          {{#if phone}}
+          <tr>
+            <td style="padding: 8px 0; color: #6b7280;">Telefon:</td>
+            <td style="padding: 8px 0;"><a href="tel:{{phone}}" style="color: #3b82f6;">{{phone}}</a></td>
+          </tr>
+          {{/if}}
+          {{#if message}}
+          <tr>
+            <td style="padding: 8px 0; color: #6b7280; vertical-align: top;">Xabar:</td>
+            <td style="padding: 8px 0; white-space: pre-wrap;">{{message}}</td>
+          </tr>
+          {{/if}}
+        </table>
+
+        {{#if adminLink}}
+        <div style="margin-top: 24px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+          <a href="{{adminLink}}" style="display: inline-block; background: #3b82f6; color: #fff; text-decoration: none; padding: 10px 20px; border-radius: 6px; font-weight: 600;">Admin panelda ochish</a>
+        </div>
+        {{/if}}
+      </div>
+
+      <div style="background: #f9fafb; padding: 12px 20px; font-size: 12px; color: #9ca3af; text-align: center;">
+        Amaar Properties — avtomatik bildirishnoma
+      </div>
+    </div>
+  </body>
+</html>

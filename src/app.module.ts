@@ -22,6 +22,10 @@ import { PropertySearchCacheModule } from './modules/property/property-search.ca
 import { NotificationModule } from './modules/notification/notification.module';
 import { ChatModule } from './modules/chat/chat.module';
 import { AiChatModule } from './modules/ai-chat/ai-chat.module';
+import { DeveloperModule } from './modules/developer/developer.module';
+import { ProjectModule } from './modules/project/project.module';
+import { ProjectInquiryModule } from './modules/project-inquiry/project-inquiry.module';
+import { SiteSettingsModule } from './modules/site-settings/site-settings.module';
 
 @Module({
   imports: [
@@ -64,6 +68,10 @@ import { AiChatModule } from './modules/ai-chat/ai-chat.module';
     NotificationModule,
     ChatModule,
     AiChatModule,
+    DeveloperModule,
+    ProjectModule,
+    ProjectInquiryModule,
+    SiteSettingsModule,
   ],
   providers: [
     {
