@@ -15,15 +15,34 @@ import { CreateConversationDto } from './dto/create-conversation.dto';
 import { SendMessageDto } from './dto/send-message.dto';
 import { MessageType } from './enums/message-type.enum';
 import type { IRequestCustom } from 'src/interfaces/custom-request.interface';
+import { UserService } from '../user/user.service';
 
 @UseGuards(AuthGuard('jwt'))
 @Controller('chat')
 export class ChatController {
-  constructor(private readonly chatService: ChatService) {}
+  constructor(
+    private readonly chatService: ChatService,
+    private readonly userService: UserService,
+  ) {}
 
   @Get('conversations')
   async list(@Req() req: IRequestCustom) {
     return this.chatService.listForUser(String(req.user!._id));
+  }
+
+  /**
+   * AI yordamchi bilan suhbatni topadi yoki yaratadi va to'liq qaytaradi.
+   * Header'dagi tezkor tugmadan va alohida /ai-chat sahifadan ishlatiladi.
+   */
+  @Get('ai-conversation')
+  async aiConversation(@Req() req: IRequestCustom) {
+    const me = String(req.user!._id);
+    const aiUserId = await this.userService.getAiAgentId();
+    const { conversation } = await this.chatService.findOrCreateConversation(
+      me,
+      aiUserId,
+    );
+    return this.chatService.getConversation(me, String(conversation._id));
   }
 
   @Get('unread-count')

@@ -4,10 +4,10 @@ import { EskizClient } from './eskiz.client';
 export type SmsLanguage = 'uz' | 'ru' | 'en' | 'ms';
 
 const OTP_TEMPLATES: Record<SmsLanguage, (code: string) => string> = {
-  uz: (code) => `Amaar Properties: tasdiqlash kodingiz ${code}.`,
-  ru: (code) => `Amaar Properties: ваш код подтверждения ${code}.`,
-  en: (code) => `Amaar Properties: your verification code is ${code}.`,
-  ms: (code) => `Amaar Properties: kod pengesahan anda ${code}.`,
+  uz: (code) => `Amaar Properties sayti: tasdiqlash kodingiz ${code}.`,
+  ru: (code) => `Сайт Amaar Properties: ваш код подтверждения ${code}.`,
+  en: (code) => `Amaar Properties website: your verification code is ${code}.`,
+  ms: (code) => `Laman Amaar Properties: kod pengesahan anda ${code}.`,
 };
 
 @Injectable()
