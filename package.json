@@ -20,7 +20,9 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
-    "seed:developers": "ts-node -P tsconfig.scripts.json --transpile-only src/scripts/seed-developers.ts"
+    "seed:developers": "ts-node -P tsconfig.scripts.json --transpile-only src/scripts/seed-developers.ts",
+    "seed:projects": "ts-node -P tsconfig.scripts.json --transpile-only src/scripts/seed-projects.ts",
+    "seed:all": "npm run seed:developers && npm run seed:projects"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1036.0",
