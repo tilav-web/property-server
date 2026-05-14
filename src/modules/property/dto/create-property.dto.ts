@@ -8,6 +8,7 @@ import {
   ValidateIf,
 } from 'class-validator';
 import { Transform, Type } from 'class-transformer';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { EnumPropertyCategory } from '../enums/property-category.enum';
 import { CurrencyCode } from 'src/common/currencies';
 import { EnumAmenities } from 'src/enums/amenities.enum';
@@ -24,30 +25,47 @@ import { EnumRentalTarget } from '../enums/rental-target.enum';
  */
 export class CreatePropertyDto {
   // ---- Umumiy, majburiy ----
+  @ApiProperty({ example: '3-room apartment in Mont Kiara' })
   @IsString({ message: 'Sarlavha kiritilmagan!' })
   title: string;
 
+  @ApiProperty({ example: 'Fully furnished apartment near MRT and shops.' })
   @IsString({ message: 'Tavsif kiritilmagan!' })
   description: string;
 
+  @ApiProperty({ example: 'Mont Kiara, Kuala Lumpur' })
   @IsString({ message: 'Manzil kiritilmagan!' })
   address: string;
 
+  @ApiProperty({ example: 3.139 })
   @Type(() => Number)
   @IsNumber({}, { message: 'Latitude kiritilmagan!' })
   location_lat: number;
 
+  @ApiProperty({ example: 101.6869 })
   @Type(() => Number)
   @IsNumber({}, { message: 'Longitude kiritilmagan!' })
   location_lng: number;
 
+  @ApiProperty({ example: 850000 })
   @Type(() => Number)
   @IsNumber({}, { message: 'Narx kiritilmagan!' })
   price: number;
 
+  @ApiProperty({
+    enum: EnumPropertyCategory,
+    enumName: 'EnumPropertyCategory',
+    example: EnumPropertyCategory.APARTMENT_SALE,
+  })
   @IsEnum(EnumPropertyCategory, { message: 'Kategoriya tanlanmagan!' })
   category: EnumPropertyCategory;
 
+  @ApiPropertyOptional({
+    enum: CurrencyCode,
+    enumName: 'CurrencyCode',
+    description: 'Use ISO 4217 code, for example MYR, USD, UZS.',
+    example: CurrencyCode.MYR,
+  })
   @IsOptional()
   @Transform(({ value }) =>
     typeof value === 'string' ? value.toUpperCase() : value,

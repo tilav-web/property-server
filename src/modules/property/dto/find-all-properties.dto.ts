@@ -10,6 +10,7 @@ import {
   Max,
   MaxLength,
 } from 'class-validator';
+import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform as ClassTransformerTransform } from 'class-transformer';
 import { Type, Transform } from 'class-transformer';
 import { EnumPropertyCategory } from '../enums/property-category.enum';
@@ -19,12 +20,14 @@ import { SortOption } from '../enums/sort-option.enum';
 import { CurrencyCode } from 'src/common/currencies';
 
 export class FindAllPropertiesDto {
+  @ApiPropertyOptional({ example: 1, minimum: 1 })
   @IsOptional()
   @Type(() => Number)
   @IsNumber()
   @Min(1)
   page?: number;
 
+  @ApiPropertyOptional({ example: 12, minimum: 1, maximum: 200 })
   @IsOptional()
   @Type(() => Number)
   @IsNumber()
@@ -32,6 +35,12 @@ export class FindAllPropertiesDto {
   @Max(200)
   limit?: number;
 
+  @ApiPropertyOptional({
+    type: [Number],
+    description:
+      'Bedroom filter. Swagger yoki query uchun misollar: bedrooms=1,2 yoki [1,2]',
+    example: [1, 2],
+  })
   @IsOptional()
   @Transform(({ value }) => {
     if (value === undefined || value === null || value === '') return undefined;
@@ -72,6 +81,12 @@ export class FindAllPropertiesDto {
   @IsNumber({}, { each: true })
   bedrooms?: number[];
 
+  @ApiPropertyOptional({
+    type: [Number],
+    description:
+      'Bathroom filter. Swagger yoki query uchun misollar: bathrooms=1,2 yoki [1,2]',
+    example: [1, 2],
+  })
   @IsOptional()
   @Transform(({ value }) => {
     if (value === undefined || value === null || value === '') return undefined;
@@ -106,33 +121,58 @@ export class FindAllPropertiesDto {
   @IsNumber({}, { each: true })
   bathrooms?: number[];
 
+  @ApiPropertyOptional({ example: 101.6869 })
   @IsOptional()
   @IsNumber()
   @Type(() => Number)
   lng?: number;
 
+  @ApiPropertyOptional({ example: 3.139 })
   @IsOptional()
   @IsNumber()
   @Type(() => Number)
   lat?: number;
 
+  @ApiPropertyOptional({
+    enum: EnumPropertyCategory,
+    enumName: 'EnumPropertyCategory',
+    description: 'Allowed property categories',
+    example: EnumPropertyCategory.APARTMENT_SALE,
+  })
   @IsOptional()
   @ValidateIf((_, value) => value !== '')
   @ClassTransformerTransform(({ value }) => (value === '' ? undefined : value))
   @IsEnum(EnumPropertyCategory)
   category?: EnumPropertyCategory;
 
+  @ApiPropertyOptional({
+    enum: EnumPropertyCategoryFilter,
+    enumName: 'EnumPropertyCategoryFilter',
+    description: 'Category filter tab/type',
+    example: EnumPropertyCategoryFilter.APARTMENT,
+  })
   @IsOptional()
   @ValidateIf((_, value) => value !== '')
   @ClassTransformerTransform(({ value }) => (value === '' ? undefined : value))
   @IsEnum(EnumPropertyCategoryFilter)
   filterCategory?: EnumPropertyCategoryFilter;
 
+  @ApiPropertyOptional({
+    example: 'Mont Kiara condo',
+    maxLength: 200,
+  })
   @IsOptional()
   @IsString()
   @MaxLength(200)
   search?: string;
 
+  @ApiPropertyOptional({
+    enum: CurrencyCode,
+    enumName: 'CurrencyCode',
+    description:
+      'Currency context for price filtering/sorting. Use ISO code like MYR, USD, UZS.',
+    example: CurrencyCode.MYR,
+  })
   @IsOptional()
   @ValidateIf((_, value) => value !== '')
   @ClassTransformerTransform(({ value }) =>
@@ -145,61 +185,86 @@ export class FindAllPropertiesDto {
   @IsEnum(CurrencyCode)
   currency?: CurrencyCode;
 
+  @ApiPropertyOptional({
+    enum: SortOption,
+    enumName: 'SortOption',
+    example: SortOption.PRICE_ASC,
+  })
   @IsOptional()
   @IsEnum(SortOption)
   sort?: SortOption;
 
+  @ApiPropertyOptional({ example: true })
   @IsOptional()
   @IsBoolean()
   @Type(() => Boolean)
   is_premium?: boolean;
 
+  @ApiPropertyOptional({
+    enum: EnumPropertyStatus,
+    enumName: 'EnumPropertyStatus',
+    example: EnumPropertyStatus.APPROVED,
+  })
   @IsOptional()
   @ValidateIf((_, value) => value !== '')
   @ClassTransformerTransform(({ value }) => (value === '' ? undefined : value))
   @IsEnum(EnumPropertyStatus)
   status?: EnumPropertyStatus;
 
+  @ApiPropertyOptional({ example: false })
   @IsOptional()
   @IsBoolean()
   @Type(() => Boolean)
   is_archived?: boolean;
 
+  @ApiPropertyOptional({ example: true })
   @IsOptional()
   @IsBoolean()
   @Type(() => Boolean)
   is_new?: boolean;
 
+  @ApiPropertyOptional({ example: 4.5 })
   @IsOptional()
   @IsNumber()
   @Type(() => Number)
   rating?: number;
 
+  @ApiPropertyOptional({ example: 15, description: 'Radius in kilometers' })
   @IsOptional()
   @IsNumber()
   @Type(() => Number)
   radius?: number;
 
+  @ApiPropertyOptional({ example: 300000 })
   @IsOptional()
   @IsNumber()
   @Type(() => Number)
   minPrice?: number;
 
+  @ApiPropertyOptional({ example: 900000 })
   @IsOptional()
   @IsNumber()
   @Type(() => Number)
   maxPrice?: number;
 
+  @ApiPropertyOptional({ example: 45 })
   @IsOptional()
   @IsNumber()
   @Type(() => Number)
   minArea?: number;
 
+  @ApiPropertyOptional({ example: 180 })
   @IsOptional()
   @IsNumber()
   @Type(() => Number)
   maxArea?: number;
 
+  @ApiPropertyOptional({
+    type: [String],
+    description:
+      'Amenity filter. Swagger yoki query uchun misollar: amenities=balcony,parking yoki ["balcony","parking"]',
+    example: ['balcony', 'parking'],
+  })
   @IsOptional()
   @Transform(({ value }) => {
     if (value === undefined || value === null || value === '') return undefined;
@@ -223,31 +288,40 @@ export class FindAllPropertiesDto {
   @IsString({ each: true })
   amenities?: string[];
 
+  @ApiPropertyOptional({ example: true })
   @IsOptional()
   @IsBoolean()
   @Type(() => Boolean)
   furnished?: boolean;
 
+  @ApiPropertyOptional({
+    example: false,
+    description: 'Return sample data block instead of paginated list when true',
+  })
   @IsOptional()
   @IsBoolean()
   @Type(() => Boolean)
   sample?: boolean;
 
+  @ApiPropertyOptional({ example: 101.5 })
   @IsOptional()
   @IsNumber()
   @Type(() => Number)
   sw_lng?: number;
 
+  @ApiPropertyOptional({ example: 2.9 })
   @IsOptional()
   @IsNumber()
   @Type(() => Number)
   sw_lat?: number;
 
+  @ApiPropertyOptional({ example: 102.0 })
   @IsOptional()
   @IsNumber()
   @Type(() => Number)
   ne_lng?: number;
 
+  @ApiPropertyOptional({ example: 3.4 })
   @IsOptional()
   @IsNumber()
   @Type(() => Number)
