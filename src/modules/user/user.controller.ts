@@ -12,7 +12,17 @@ import {
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiCookieAuth,
+  ApiExtraModels,
+  ApiHeader,
+  ApiOkResponse,
+  ApiOperation,
+  ApiTags,
+  getSchemaPath,
+} from '@nestjs/swagger';
 import { UserService } from './user.service';
 import { type Response } from 'express';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -22,6 +32,20 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { Throttle } from '@nestjs/throttler';
 import type { SmsLanguage } from '../sms/sms.service';
+import {
+  AccessTokenResponseDto,
+  AuthResponseDto,
+  ChangePasswordDto,
+  ConfirmOtpDto,
+  ForgotPasswordDto,
+  LoginDto,
+  MessageResponseDto,
+  RefreshTokenDto,
+  ResendOtpDto,
+  ResetPasswordDto,
+  TokenPairResponseDto,
+  WebAuthResponseDto,
+} from './dto/auth.dto';
 
 type AuthTokens = {
   access_token: string;
@@ -85,6 +109,12 @@ function detectSmsLanguage(req: {
 }
 
 @ApiTags('User Auth')
+@ApiExtraModels(
+  AccessTokenResponseDto,
+  AuthResponseDto,
+  TokenPairResponseDto,
+  WebAuthResponseDto,
+)
 @Controller('users/auth')
 export class UserController {
   constructor(private readonly service: UserService) {}
@@ -166,9 +196,27 @@ export class UserController {
 
   @Throttle({ default: { limit: 3, ttl: 10000 } })
   @Post('/login')
+  @ApiOperation({ summary: 'Login with email/phone and password' })
+  @ApiHeader({
+    name: 'x-client-type',
+    required: false,
+    description: 'Mobile client uchun `mobile` yuboriladi.',
+    example: 'mobile',
+  })
+  @ApiBody({ type: LoginDto })
+  @ApiOkResponse({
+    description:
+      'Web response refresh tokenni cookie orqali beradi. Mobile response body ichida access_token va refresh_token qaytaradi.',
+    schema: {
+      oneOf: [
+        { $ref: getSchemaPath(WebAuthResponseDto) },
+        { $ref: getSchemaPath(AuthResponseDto) },
+      ],
+    },
+  })
   async login(
     @Body()
-    dto: { identifier?: string; email?: string; password: string },
+    dto: LoginDto,
     @Req() req: IRequestCustom,
     @Res() res: Response,
   ) {
@@ -203,6 +251,13 @@ export class UserController {
 
   @Throttle({ default: { limit: 3, ttl: 10000 } })
   @Post('/register')
+  @ApiOperation({ summary: 'Register user and send OTP' })
+  @ApiBody({ type: CreateUserDto })
+  @ApiOkResponse({
+    description:
+      'User yaratiladi yoki tasdiqlanmagan user yangilanadi, OTP yuboriladi. Token OTP confirmdan keyin beriladi.',
+    type: MessageResponseDto,
+  })
   async register(@Body() dto: CreateUserDto, @Req() req: IRequestCustom) {
     try {
       const language = detectSmsLanguage(req);
@@ -226,8 +281,26 @@ export class UserController {
 
   @Throttle({ default: { limit: 3, ttl: 10000 } })
   @Post('/confirm-otp')
+  @ApiOperation({ summary: 'Confirm registration OTP and login user' })
+  @ApiHeader({
+    name: 'x-client-type',
+    required: false,
+    description: 'Mobile client uchun `mobile` yuboriladi.',
+    example: 'mobile',
+  })
+  @ApiBody({ type: ConfirmOtpDto })
+  @ApiOkResponse({
+    description:
+      'Web response refresh tokenni cookie orqali beradi. Mobile response body ichida access_token va refresh_token qaytaradi.',
+    schema: {
+      oneOf: [
+        { $ref: getSchemaPath(WebAuthResponseDto) },
+        { $ref: getSchemaPath(AuthResponseDto) },
+      ],
+    },
+  })
   async confirmOtp(
-    @Body() dto: { id: string; code: string },
+    @Body() dto: ConfirmOtpDto,
     @Req() req: IRequestCustom,
     @Res() res: Response,
   ) {
@@ -258,7 +331,10 @@ export class UserController {
 
   @Throttle({ default: { limit: 3, ttl: 10000 } })
   @Post('/resend-otp')
-  async resendOtp(@Body() { id }: { id: string }, @Req() req: IRequestCustom) {
+  @ApiOperation({ summary: 'Resend registration OTP' })
+  @ApiBody({ type: ResendOtpDto })
+  @ApiOkResponse({ type: MessageResponseDto })
+  async resendOtp(@Body() { id }: ResendOtpDto, @Req() req: IRequestCustom) {
     try {
       const language = detectSmsLanguage(req);
       const result = await this.service.resendOtp(id, language);
@@ -281,8 +357,13 @@ export class UserController {
 
   @Throttle({ default: { limit: 3, ttl: 10000 } })
   @Post('/forgot-password')
+  @ApiOperation({ summary: 'Send password reset OTP' })
+  @ApiBody({ type: ForgotPasswordDto })
+  @ApiOkResponse({
+    description: 'Parolni tiklash kodi yuboriladi va userId qaytadi.',
+  })
   async forgotPassword(
-    @Body() { identifier, email }: { identifier?: string; email?: string },
+    @Body() { identifier, email }: ForgotPasswordDto,
     @Req() req: IRequestCustom,
   ) {
     try {
@@ -303,9 +384,10 @@ export class UserController {
 
   @Throttle({ default: { limit: 3, ttl: 10000 } })
   @Post('/reset-password')
-  async resetPassword(
-    @Body() dto: { userId: string; code: string; newPassword: string },
-  ) {
+  @ApiOperation({ summary: 'Reset password with OTP' })
+  @ApiBody({ type: ResetPasswordDto })
+  @ApiOkResponse({ type: MessageResponseDto })
+  async resetPassword(@Body() dto: ResetPasswordDto) {
     try {
       return await this.service.resetPassword(dto);
     } catch (error) {
@@ -321,8 +403,13 @@ export class UserController {
   @Throttle({ default: { limit: 5, ttl: 10000 } })
   @Post('/change-password')
   @UseGuards(AuthGuard('jwt'))
+  @ApiOperation({ summary: 'Change current authenticated user password' })
+  @ApiBearerAuth('bearer')
+  @ApiCookieAuth('access_token')
+  @ApiBody({ type: ChangePasswordDto })
+  @ApiOkResponse({ type: MessageResponseDto })
   async changePassword(
-    @Body() dto: { currentPassword: string; newPassword: string },
+    @Body() dto: ChangePasswordDto,
     @Req() req: IRequestCustom,
   ) {
     try {
@@ -343,8 +430,27 @@ export class UserController {
   }
 
   @Post('/refresh-token')
+  @ApiOperation({ summary: 'Refresh user access token' })
+  @ApiCookieAuth('refresh_token')
+  @ApiHeader({
+    name: 'x-client-type',
+    required: false,
+    description: 'Mobile client uchun `mobile` yuboriladi.',
+    example: 'mobile',
+  })
+  @ApiBody({ type: RefreshTokenDto, required: false })
+  @ApiOkResponse({
+    description:
+      'Web cookie flow string access_token qaytaradi. Mobile flow body ichida yangi access_token va refresh_token qaytaradi.',
+    schema: {
+      oneOf: [
+        { type: 'string', example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...' },
+        { $ref: getSchemaPath(TokenPairResponseDto) },
+      ],
+    },
+  })
   async refresh(
-    @Body() dto: { refresh_token?: string } = {},
+    @Body() dto: RefreshTokenDto = {},
     @Req() req: IRequestCustom & { cookies: { refresh_token?: string } },
   ) {
     try {
@@ -375,6 +481,9 @@ export class UserController {
   @Throttle({ default: { limit: 10, ttl: 10000 } })
   @Get('/me')
   @UseGuards(AuthGuard('jwt'))
+  @ApiOperation({ summary: 'Get current authenticated user' })
+  @ApiBearerAuth('bearer')
+  @ApiCookieAuth('access_token')
   async findMe(@Req() req: IRequestCustom) {
     try {
       const user = req.user;
@@ -400,6 +509,9 @@ export class UserController {
   @Put('/')
   @UseGuards(AuthGuard('jwt'))
   @UseInterceptors(FileInterceptor('avatar'))
+  @ApiOperation({ summary: 'Update current authenticated user profile' })
+  @ApiBearerAuth('bearer')
+  @ApiCookieAuth('access_token')
   async update(
     @Body() dto: UpdateUserDto,
     @Req() req: IRequestCustom,
