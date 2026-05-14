@@ -12,6 +12,25 @@ import { ApiPropertyOptional } from '@nestjs/swagger';
 import { EnumRole } from 'src/enums/role.enum';
 import { EnumLanguage } from 'src/enums/language.enum';
 
+const valueToBoolean = (value: unknown) => {
+  if (value === null || value === undefined || value === '') {
+    return undefined;
+  }
+  if (typeof value === 'boolean') {
+    return value;
+  }
+
+  const normalized = String(value).toLowerCase();
+  if (['true', '1', 'yes', 'on'].includes(normalized)) {
+    return true;
+  }
+  if (['false', '0', 'no', 'off'].includes(normalized)) {
+    return false;
+  }
+
+  return value;
+};
+
 export class UpdateUserDto {
   @ApiPropertyOptional()
   @IsOptional()
@@ -30,6 +49,7 @@ export class UpdateUserDto {
 
   @ApiPropertyOptional({ example: true })
   @IsOptional()
+  @Transform(({ value }) => valueToBoolean(value))
   @IsBoolean()
   emailIsVerified?: boolean;
 
@@ -40,6 +60,7 @@ export class UpdateUserDto {
 
   @ApiPropertyOptional({ example: true })
   @IsOptional()
+  @Transform(({ value }) => valueToBoolean(value))
   @IsBoolean()
   phoneIsVerified?: boolean;
 
