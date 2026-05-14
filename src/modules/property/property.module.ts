@@ -14,6 +14,7 @@ import { Seller, SellerSchema } from '../seller/schemas/seller.schema'; // Impor
 
 import { GenaiModule } from '../openai/openai.module';
 import { TagModule } from '../tag/tag.module';
+import { ExchangeRateModule } from '../exchange-rate/exchange-rate.module';
 
 @Module({
   imports: [
@@ -40,6 +41,7 @@ import { TagModule } from '../tag/tag.module';
     MessageModule,
     GenaiModule,
     TagModule,
+    ExchangeRateModule,
   ],
   providers: [PropertyService],
   controllers: [PropertyController],

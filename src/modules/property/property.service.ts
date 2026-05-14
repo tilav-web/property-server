@@ -15,7 +15,7 @@ import { EnumPropertyCategory } from './enums/property-category.enum';
 import { EnumPropertyCategoryFilter } from './enums/property-category-filter.enum';
 import { SortOption } from './enums/sort-option.enum';
 import { EnumLanguage } from 'src/enums/language.enum';
-import { CurrencyCode } from 'src/common/currencies';
+import { CurrencyCode, DEFAULT_CURRENCY } from 'src/common/currencies';
 import { FindAllPropertiesDto } from './dto/find-all-properties.dto';
 import { MessageService } from '../message/message.service';
 import { CreateMessageDto } from '../message/dto/create-message.dto';
@@ -26,6 +26,14 @@ import { EnumFilesFolder } from '../file/enums/files-folder.enum';
 import { ApartmentRentDocument } from './schemas/categories/apartment-rent.schema';
 import { ApartmentSaleDocument } from './schemas/categories/apartment-sale.schema';
 import { PropertySearchCache } from './property-search.cache';
+import { ExchangeRateService } from '../exchange-rate/exchange-rate.service';
+
+type CurrencyRateMap = Partial<Record<CurrencyCode, number>>;
+
+interface PriceConversionContext {
+  targetCurrency: CurrencyCode;
+  rates: CurrencyRateMap;
+}
 
 @Injectable()
 export class PropertyService {
@@ -43,6 +51,7 @@ export class PropertyService {
     private readonly messageService: MessageService,
     private readonly tagService: TagService,
     private readonly searchCache: PropertySearchCache,
+    private readonly exchangeRateService: ExchangeRateService,
   ) {}
 
   async onModuleInit() {
@@ -192,6 +201,15 @@ export class PropertyService {
       furnished,
       sort,
     } = dto;
+    const priceCurrency = currency ?? DEFAULT_CURRENCY;
+    const needsPriceConversion =
+      minPrice !== undefined ||
+      maxPrice !== undefined ||
+      sort === SortOption.PRICE_ASC ||
+      sort === SortOption.PRICE_DESC;
+    const priceConversion = needsPriceConversion
+      ? await this.getPriceConversionContext(priceCurrency)
+      : undefined;
 
     const isMapView =
       sw_lng !== undefined &&
@@ -222,8 +240,6 @@ export class PropertyService {
       lat,
       lng,
       radius,
-      minPrice,
-      maxPrice,
       minArea,
       maxArea,
       amenities,
@@ -237,6 +253,9 @@ export class PropertyService {
         language,
         category,
         isMapView,
+        priceConversion,
+        minPrice,
+        maxPrice,
       });
     }
 
@@ -248,6 +267,9 @@ export class PropertyService {
       category,
       isMapView,
       sort,
+      priceCurrency,
+      minPrice,
+      maxPrice,
     });
     const cached = this.searchCache.get<{
       properties: unknown[];
@@ -270,6 +292,9 @@ export class PropertyService {
       lat,
       lng,
       radius,
+      priceConversion,
+      minPrice,
+      maxPrice,
     });
 
     let areaKey: string | null = null;
@@ -420,7 +445,6 @@ export class PropertyService {
       };
     }
 
-    if (currency) match.currency = currency;
     if (is_premium !== undefined) match.is_premium = is_premium;
     if (is_new) {
       match.createdAt = { $gte: new Date(Date.now() - 604_800_000) };
@@ -460,18 +484,30 @@ export class PropertyService {
     language,
     category,
     isMapView,
+    priceConversion,
+    minPrice,
+    maxPrice,
   }: {
     match: FilterQuery<PropertyDocument>;
     limit: number;
     language: EnumLanguage;
     category?: string;
     isMapView?: boolean;
+    priceConversion?: PriceConversionContext;
+    minPrice?: number;
+    maxPrice?: number;
   }) {
     const pipeline: any[] = [];
 
     if (Object.keys(match).length > 0) {
       pipeline.push({ $match: match });
     }
+    this.appendPriceConversionStages(
+      pipeline,
+      priceConversion,
+      minPrice,
+      maxPrice,
+    );
 
     pipeline.push(
       { $sample: { size: limit } },
@@ -489,14 +525,23 @@ export class PropertyService {
     };
   }
 
-  private getSortStage(sort?: SortOption): Record<string, 1 | -1> {
+  private getSortStage(
+    sort?: SortOption,
+    priceConversion?: PriceConversionContext,
+  ): Record<string, 1 | -1> {
     switch (sort) {
       case SortOption.OLDEST:
         return { createdAt: 1 };
       case SortOption.PRICE_ASC:
-        return { price: 1, createdAt: -1 };
+        return {
+          [priceConversion ? 'convertedPrice' : 'price']: 1,
+          createdAt: -1,
+        };
       case SortOption.PRICE_DESC:
-        return { price: -1, createdAt: -1 };
+        return {
+          [priceConversion ? 'convertedPrice' : 'price']: -1,
+          createdAt: -1,
+        };
       case SortOption.RATING:
         return { rating: -1, createdAt: -1 };
       case SortOption.POPULAR:
@@ -504,6 +549,63 @@ export class PropertyService {
       case SortOption.NEWEST:
       default:
         return { createdAt: -1 };
+    }
+  }
+
+  private async getPriceConversionContext(
+    targetCurrency: CurrencyCode,
+  ): Promise<PriceConversionContext> {
+    const exchangeRate = await this.exchangeRateService.get();
+    return {
+      targetCurrency,
+      rates: { ...exchangeRate.rates },
+    };
+  }
+
+  private getConvertedPriceExpression(context: PriceConversionContext) {
+    const targetRate = context.rates[context.targetCurrency] ?? 1;
+    const branches = Object.values(CurrencyCode).map((code) => ({
+      case: { $eq: ['$currency', code] },
+      then: context.rates[code] ?? targetRate,
+    }));
+
+    return {
+      $multiply: [
+        '$price',
+        {
+          $divide: [
+            targetRate,
+            {
+              $switch: {
+                branches,
+                default: targetRate,
+              },
+            },
+          ],
+        },
+      ],
+    };
+  }
+
+  private appendPriceConversionStages(
+    pipeline: PipelineStage[],
+    context?: PriceConversionContext,
+    minPrice?: number,
+    maxPrice?: number,
+  ) {
+    if (!context) return;
+
+    pipeline.push({
+      $addFields: {
+        convertedPrice: this.getConvertedPriceExpression(context),
+      },
+    } as PipelineStage);
+
+    if (minPrice !== undefined || maxPrice !== undefined) {
+      const priceMatch: { $gte?: number; $lte?: number } = {};
+      if (minPrice !== undefined) priceMatch.$gte = minPrice;
+      if (maxPrice !== undefined) priceMatch.$lte = maxPrice;
+      pipeline.push({ $match: { convertedPrice: priceMatch } });
     }
   }
 
@@ -518,6 +620,9 @@ export class PropertyService {
     lat,
     lng,
     radius,
+    priceConversion,
+    minPrice,
+    maxPrice,
   }: {
     match: FilterQuery<PropertyDocument>;
     page: number;
@@ -529,6 +634,9 @@ export class PropertyService {
     lat?: number;
     lng?: number;
     radius?: number;
+    priceConversion?: PriceConversionContext;
+    minPrice?: number;
+    maxPrice?: number;
   }) {
     const pipeline: PipelineStage[] = [];
     const useGeoNear =
@@ -556,6 +664,12 @@ export class PropertyService {
           query: geoMatch,
         },
       });
+      this.appendPriceConversionStages(
+        pipeline,
+        priceConversion,
+        minPrice,
+        maxPrice,
+      );
       pipeline.push(
         { $skip: (page - 1) * limit },
         { $limit: limit },
@@ -565,8 +679,14 @@ export class PropertyService {
       if (Object.keys(match).length > 0) {
         pipeline.push({ $match: match });
       }
+      this.appendPriceConversionStages(
+        pipeline,
+        priceConversion,
+        minPrice,
+        maxPrice,
+      );
       pipeline.push(
-        { $sort: this.getSortStage(sort) },
+        { $sort: this.getSortStage(sort, priceConversion) },
         { $skip: (page - 1) * limit },
         { $limit: limit },
         { $project: projection },
@@ -579,7 +699,14 @@ export class PropertyService {
         : match;
       const [properties, totalItems] = await Promise.all([
         this.propertyModel.aggregate(pipeline).exec(),
-        this.getCount(countFilter),
+        priceConversion
+          ? this.getAggregateCount(
+              countFilter,
+              priceConversion,
+              minPrice,
+              maxPrice,
+            )
+          : this.getCount(countFilter),
       ]);
       return {
         properties,
@@ -627,6 +754,28 @@ export class PropertyService {
     match: FilterQuery<PropertyDocument>,
   ): Promise<number> {
     return this.propertyModel.countDocuments(match).exec();
+  }
+
+  private async getAggregateCount(
+    match: FilterQuery<PropertyDocument>,
+    priceConversion: PriceConversionContext,
+    minPrice?: number,
+    maxPrice?: number,
+  ): Promise<number> {
+    const pipeline: PipelineStage[] = [];
+    if (Object.keys(match).length > 0) {
+      pipeline.push({ $match: match });
+    }
+    this.appendPriceConversionStages(
+      pipeline,
+      priceConversion,
+      minPrice,
+      maxPrice,
+    );
+    pipeline.push({ $count: 'totalItems' });
+
+    const [result] = await this.propertyModel.aggregate(pipeline).exec();
+    return result?.totalItems ?? 0;
   }
 
   private getProjectionByCategory(
