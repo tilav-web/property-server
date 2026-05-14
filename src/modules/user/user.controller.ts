@@ -23,16 +23,62 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { Throttle } from '@nestjs/throttler';
 import type { SmsLanguage } from '../sms/sms.service';
 
+type AuthTokens = {
+  access_token: string;
+  refresh_token: string;
+};
+
+function isMobileClient(req: IRequestCustom): boolean {
+  const clientType = req.headers['x-client-type'];
+  const platform = req.headers['x-platform'];
+  const normalize = (value: string | string[] | undefined) =>
+    Array.isArray(value) ? value[0]?.toLowerCase() : value?.toLowerCase();
+
+  return (
+    normalize(clientType) === 'mobile' ||
+    ['ios', 'android', 'mobile'].includes(normalize(platform) ?? '')
+  );
+}
+
+function attachRefreshCookie(res: Response, refreshToken: string): Response {
+  return res.cookie('refresh_token', refreshToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+    path: '/',
+  });
+}
+
+function sendAuthResponse({
+  req,
+  res,
+  user,
+  tokens,
+}: {
+  req: IRequestCustom;
+  res: Response;
+  user: unknown;
+  tokens: AuthTokens;
+}) {
+  const body = isMobileClient(req)
+    ? {
+        user,
+        access_token: tokens.access_token,
+        refresh_token: tokens.refresh_token,
+      }
+    : { user, access_token: tokens.access_token };
+
+  return attachRefreshCookie(res, tokens.refresh_token).json(body);
+}
+
 // Accept-Language header'idan SMS tilini aniqlash. Noma'lum til → en fallback.
-function detectSmsLanguage(req: { headers: Record<string, unknown> }): SmsLanguage {
+function detectSmsLanguage(req: {
+  headers: Record<string, unknown>;
+}): SmsLanguage {
   const raw = (req.headers['accept-language'] as string | undefined) ?? '';
   const first = raw.split(',')[0]?.trim().toLowerCase();
-  if (
-    first === 'uz' ||
-    first === 'ru' ||
-    first === 'en' ||
-    first === 'ms'
-  ) {
+  if (first === 'uz' || first === 'ru' || first === 'en' || first === 'ms') {
     return first;
   }
   return 'en';
@@ -123,6 +169,7 @@ export class UserController {
   async login(
     @Body()
     dto: { identifier?: string; email?: string; password: string },
+    @Req() req: IRequestCustom,
     @Res() res: Response,
   ) {
     try {
@@ -132,15 +179,12 @@ export class UserController {
         password: dto.password,
       });
 
-      return res
-        .cookie('refresh_token', refresh_token, {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'strict',
-          maxAge: 7 * 24 * 60 * 60 * 1000,
-          path: '/',
-        })
-        .json({ user, access_token });
+      return sendAuthResponse({
+        req,
+        res,
+        user,
+        tokens: { access_token, refresh_token },
+      });
     } catch (error) {
       console.error(error);
 
@@ -184,20 +228,18 @@ export class UserController {
   @Post('/confirm-otp')
   async confirmOtp(
     @Body() dto: { id: string; code: string },
+    @Req() req: IRequestCustom,
     @Res() res: Response,
   ) {
     try {
       const { user, refresh_token, access_token } =
         await this.service.confirmOtp(dto);
-      return res
-        .cookie('refresh_token', refresh_token, {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'strict',
-          maxAge: 7 * 24 * 60 * 60 * 1000,
-          path: '/',
-        })
-        .json({ user, access_token });
+      return sendAuthResponse({
+        req,
+        res,
+        user,
+        tokens: { access_token, refresh_token },
+      });
     } catch (error) {
       console.error(error);
 
@@ -216,10 +258,7 @@ export class UserController {
 
   @Throttle({ default: { limit: 3, ttl: 10000 } })
   @Post('/resend-otp')
-  async resendOtp(
-    @Body() { id }: { id: string },
-    @Req() req: IRequestCustom,
-  ) {
+  async resendOtp(@Body() { id }: { id: string }, @Req() req: IRequestCustom) {
     try {
       const language = detectSmsLanguage(req);
       const result = await this.service.resendOtp(id, language);
@@ -305,13 +344,18 @@ export class UserController {
 
   @Post('/refresh-token')
   async refresh(
+    @Body() dto: { refresh_token?: string } = {},
     @Req() req: IRequestCustom & { cookies: { refresh_token?: string } },
   ) {
     try {
-      const refresh_token = req.cookies['refresh_token'];
+      const refresh_token = req.cookies['refresh_token'] ?? dto.refresh_token;
       if (!refresh_token) return null;
-      const result = await this.service.refresh(refresh_token);
-      return result;
+
+      if (isMobileClient(req) || dto.refresh_token) {
+        return this.service.refreshTokens(refresh_token);
+      }
+
+      return this.service.refresh(refresh_token);
     } catch (error) {
       console.error(error);
 

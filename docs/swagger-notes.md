@@ -12,6 +12,14 @@ Swagger UI is available at `/api/docs`; the OpenAPI JSON is available at
   - `bearer` for `Authorization: Bearer <token>`
   - `access_token` cookie for guarded user/admin requests
   - `refresh_token` cookie for refresh-token endpoints
+  - `admin_refresh_token` cookie for admin refresh-token endpoints
+- Mobile clients should send `x-client-type: mobile` or `x-platform:
+ios|android`. User auth endpoints then return tokens in the response body:
+  - `POST /users/auth/login` returns `user`, `access_token`, `refresh_token`
+  - `POST /users/auth/confirm-otp` returns `user`, `access_token`,
+    `refresh_token`
+  - `POST /users/auth/refresh-token` accepts `{ "refresh_token": "..." }` and
+    returns a new `access_token` and `refresh_token`
 - Multipart endpoints are discoverable in Swagger, but file field details should
   still be tightened with explicit `@ApiConsumes()` / `@ApiBody()` decorators
   when the API contract is frozen.

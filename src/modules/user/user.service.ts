@@ -52,6 +52,20 @@ export class UserService {
     );
     return { access_token, refresh_token };
   }
+
+  private async verifyRefreshToken(refresh_token: string) {
+    const payload = await this.jwtService.verifyAsync<{
+      _id: string;
+      role: EnumRole;
+      tokenType: string;
+    }>(refresh_token);
+
+    if (payload.tokenType !== 'refresh') {
+      throw new BadRequestException("Noto'g'ri token turi!");
+    }
+
+    return payload;
+  }
   async findById(id: string) {
     return this.model.findById(id);
   }
@@ -330,8 +344,7 @@ export class UserService {
     }
 
     // Target ni aniqlaymiz: phone tasdiqlanmagan bo'lsa phone, aks holda email
-    const usePhone =
-      user.phone?.value && !user.phone.isVerified ? true : false;
+    const usePhone = user.phone?.value && !user.phone.isVerified ? true : false;
     const target = usePhone ? OtpTarget.PHONE : OtpTarget.EMAIL;
     const code = generateOtp();
 
@@ -519,15 +532,7 @@ export class UserService {
   }
 
   async refresh(refresh_token: string) {
-    const payload = await this.jwtService.verifyAsync<{
-      _id: string;
-      role: EnumRole;
-      tokenType: string;
-    }>(refresh_token);
-
-    if (payload.tokenType !== 'refresh') {
-      throw new BadRequestException("Noto'g'ri token turi!");
-    }
+    const payload = await this.verifyRefreshToken(refresh_token);
 
     const access_token = this.jwtService.sign(
       {
@@ -539,6 +544,16 @@ export class UserService {
     );
 
     return access_token;
+  }
+
+  async refreshTokens(refresh_token: string) {
+    const payload = await this.verifyRefreshToken(refresh_token);
+    const user = await this.model.findById(payload._id);
+    if (!user) {
+      throw new NotFoundException('Foydalanuvchi topilmadi!');
+    }
+
+    return this.signTokens(user);
   }
 
   async socialLogin(req) {
