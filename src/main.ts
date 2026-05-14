@@ -100,6 +100,52 @@ async function bootstrap() {
 
   const swaggerDocument = SwaggerModule.createDocument(app, swaggerConfig);
   SwaggerModule.setup('api/docs', app, swaggerDocument, {
+    customSiteTitle: 'Property API Docs',
+    customCss: `
+      .swagger-ui .topbar .download-openapi-json {
+        align-items: center;
+        background: #ffffff;
+        border: 1px solid rgba(255, 255, 255, 0.7);
+        border-radius: 4px;
+        color: #173647;
+        display: inline-flex;
+        font-family: sans-serif;
+        font-size: 14px;
+        font-weight: 700;
+        height: 34px;
+        margin-left: 16px;
+        padding: 0 12px;
+        text-decoration: none;
+      }
+      .swagger-ui .topbar .download-openapi-json:hover {
+        background: #e8f6ff;
+      }
+    `,
+    customJsStr: `
+      (function addDownloadOpenApiButton() {
+        function addButton() {
+          var topbar = document.querySelector('.swagger-ui .topbar .wrapper');
+          if (!topbar || document.querySelector('.download-openapi-json')) {
+            return;
+          }
+
+          var link = document.createElement('a');
+          link.className = 'download-openapi-json';
+          link.href = '/api/docs-json';
+          link.download = 'property-api.openapi.json';
+          link.textContent = 'Download OpenAPI JSON';
+          topbar.appendChild(link);
+        }
+
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', addButton);
+        } else {
+          addButton();
+        }
+
+        setTimeout(addButton, 500);
+      })();
+    `,
     jsonDocumentUrl: 'api/docs-json',
     swaggerOptions: {
       persistAuthorization: true,
