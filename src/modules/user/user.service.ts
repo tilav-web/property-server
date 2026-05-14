@@ -118,8 +118,12 @@ export class UserService {
           : 'Foydalanuvchi mavjut emas. Email-ni tekshiring!',
       );
 
-    if (!password || !user.password)
-      throw new BadRequestException('Parol kiritilmagan!');
+    if (!password) throw new BadRequestException('Parol kiritilmagan!');
+
+    if (!user.password)
+      throw new BadRequestException(
+        "Akkauntda parol o'rnatilmagan. Iltimos, 'Parolni unutdim' orqali parol yarating. Yoki google orqali kiring!",
+      );
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) throw new BadRequestException('Parolda xatolik bor!');
