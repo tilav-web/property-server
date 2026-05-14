@@ -134,24 +134,41 @@ export class UserService {
   }
 
   async register({
+    identifier,
     email,
     phone,
     role,
     password,
     language,
   }: CreateUserDto & { language?: SmsLanguage }) {
-    if (!email && !phone) {
+    const rawIdentifier = (identifier || email || phone || '').trim();
+
+    if (!rawIdentifier) {
       throw new BadRequestException(
-        'Email yoki telefon raqamlardan birini kiriting!',
+        'Identifier, email yoki telefon raqamlardan birini kiriting!',
       );
     }
 
-    if (email) return this.registerWithEmail({ email, role, password });
-    return this.registerWithPhone({
-      phone: normalizePhone(phone as string),
+    if (isPhone(rawIdentifier)) {
+      return this.registerWithPhone({
+        phone: normalizePhone(rawIdentifier),
+        role,
+        password,
+        language: language ?? 'uz',
+      });
+    }
+
+    const normalizedEmail = rawIdentifier.toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+      throw new BadRequestException(
+        "Identifier email yoki telefon formatida bo'lishi kerak!",
+      );
+    }
+
+    return this.registerWithEmail({
+      email: normalizedEmail,
       role,
       password,
-      language: language ?? 'uz',
     });
   }
 

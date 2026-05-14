@@ -4,6 +4,7 @@ import {
   IsEnum,
   IsNotEmpty,
   IsOptional,
+  IsString,
   Matches,
   MinLength,
   ValidateIf,
@@ -12,25 +13,39 @@ import { EnumRole } from 'src/enums/role.enum';
 
 export class CreateUserDto {
   @ApiPropertyOptional({
-    description: 'Email orqali ro‘yxatdan o‘tishda ishlatiladi.',
+    description:
+      'Asosiy field. Email yoki telefon raqam yuboring. Tavsiya etilgan yangi contract.',
     example: 'user@example.com',
   })
-  @ValidateIf((o: CreateUserDto) => !o.phone)
+  @ValidateIf((o: CreateUserDto) => !o.email && !o.phone)
+  @IsString()
+  @IsNotEmpty({
+    message: 'Identifier, email yoki telefon raqamlardan birini kiriting!',
+  })
+  identifier?: string;
+
+  @ApiPropertyOptional({
+    description: 'Backward compatibility uchun email alias.',
+    example: 'user@example.com',
+  })
+  @ValidateIf((o: CreateUserDto) => !o.identifier && !o.phone)
   @IsEmail({}, { message: "Email to'g'ri ekanligiga ishonch hosil qiling!" })
   @IsNotEmpty({
-    message: 'Email yoki telefon raqamlardan birini kiriting!',
+    message: 'Identifier, email yoki telefon raqamlardan birini kiriting!',
   })
   email?: string;
 
   @ApiPropertyOptional({
-    description: 'Telefon orqali ro‘yxatdan o‘tishda ishlatiladi.',
+    description: 'Backward compatibility uchun phone alias.',
     example: '+998901234567',
   })
-  @ValidateIf((o: CreateUserDto) => !o.email)
+  @ValidateIf((o: CreateUserDto) => !o.identifier && !o.email)
   @Matches(/^\+?\d{9,15}$/, {
     message: 'Telefon raqami noto‘g‘ri formatda!',
   })
-  @IsNotEmpty({ message: 'Email yoki telefon raqamlardan birini kiriting!' })
+  @IsNotEmpty({
+    message: 'Identifier, email yoki telefon raqamlardan birini kiriting!',
+  })
   phone?: string;
 
   @ApiProperty({ example: 'Password123' })
@@ -43,7 +58,11 @@ export class CreateUserDto {
   })
   password: string;
 
-  @ApiPropertyOptional({ enum: EnumRole })
+  @ApiPropertyOptional({
+    enum: EnumRole,
+    enumName: 'EnumRole',
+    example: EnumRole.PHYSICAL,
+  })
   @IsOptional()
   @IsEnum(EnumRole)
   role: EnumRole;
