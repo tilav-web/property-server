@@ -16,6 +16,7 @@ import { type IRequestCustom } from 'src/interfaces/custom-request.interface';
 import { CreateCommissionerDto } from './dto/create-commissioner.dto';
 import { AuthRoleGuard } from '../user/guards/role.guard';
 import { AuthGuard } from '@nestjs/passport';
+import { ApiMultipartBody } from 'src/common/swagger/file-upload.decorator';
 
 @ApiTags('Commissioners')
 @Controller('commissioners')
@@ -27,6 +28,9 @@ export class CommissionerController {
   @Roles('legal')
   @UseGuards(AuthGuard('jwt'), AuthRoleGuard)
   @UseInterceptors(FileInterceptor('contract_file'))
+  @ApiMultipartBody(CreateCommissionerDto, [
+    { name: 'contract_file', required: true },
+  ])
   async create(
     @Body() dto: CreateCommissionerDto,
     @UploadedFile() contract_file: Express.Multer.File,

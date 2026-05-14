@@ -11,13 +11,20 @@ import {
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiCookieAuth,
+  ApiOperation,
+  ApiQuery,
+  ApiTags,
+} from '@nestjs/swagger';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { ProjectService } from './project.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { EnumProjectStatus } from './project.schema';
 import { AdminGuard } from '../admin/guards/admin.guard';
+import { ApiMultipartBody } from 'src/common/swagger/file-upload.decorator';
 
 const FILE_FIELDS = [
   { name: 'photos', maxCount: 20 },
@@ -30,6 +37,8 @@ export class ProjectController {
   constructor(private readonly service: ProjectService) {}
 
   @Get()
+  @ApiOperation({ summary: 'List projects' })
+  @ApiQuery({ name: 'bbox', required: false, example: '101.5,2.9,102.0,3.4' })
   async list(
     @Query('page') page?: string,
     @Query('limit') limit?: string,
@@ -91,6 +100,12 @@ export class ProjectController {
   @UseGuards(AdminGuard)
   @Post()
   @UseInterceptors(FileFieldsInterceptor(FILE_FIELDS))
+  @ApiOperation({ summary: 'Create project' })
+  @ApiBearerAuth('bearer')
+  @ApiMultipartBody(CreateProjectDto, [
+    { name: 'photos', isArray: true },
+    { name: 'brochure' },
+  ])
   async create(
     @Body() dto: CreateProjectDto,
     @UploadedFiles()
@@ -105,6 +120,12 @@ export class ProjectController {
   @UseGuards(AdminGuard)
   @Patch(':id')
   @UseInterceptors(FileFieldsInterceptor(FILE_FIELDS))
+  @ApiOperation({ summary: 'Update project' })
+  @ApiBearerAuth('bearer')
+  @ApiMultipartBody(UpdateProjectDto, [
+    { name: 'photos', isArray: true },
+    { name: 'brochure' },
+  ])
   async update(
     @Param('id') id: string,
     @Body() dto: UpdateProjectDto,

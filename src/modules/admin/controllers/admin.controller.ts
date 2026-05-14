@@ -12,7 +12,12 @@ import {
   Delete,
   Param,
 } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import {
+  ApiCookieAuth,
+  ApiOkResponse,
+  ApiOperation,
+  ApiTags,
+} from '@nestjs/swagger';
 import { type Response } from 'express';
 import { AdminGuard } from '../guards/admin.guard';
 import { type IAdminRequestCustom } from '../../../interfaces/admin-request.interface';
@@ -21,6 +26,11 @@ import { SuperAdminGuard } from '../guards/super-admin.guard';
 import { CreateAdminDto } from '../dto/create-admin.dto';
 import { UpdateAdminDto } from '../dto/update-admin.dto';
 import { UpdateAdminPasswordDto } from '../dto/update-admin-password.dto';
+import {
+  AdminAccessTokenResponseDto,
+  AdminAuthResponseDto,
+  AdminLoginDto,
+} from '../dto/admin-auth.dto';
 
 @ApiTags('Admins')
 @Controller('admins')
@@ -28,10 +38,9 @@ export class AdminController {
   constructor(private readonly service: AdminService) {}
 
   @Post('/login')
-  async login(
-    @Body() dto: { email: string; password: string },
-    @Res() res: Response,
-  ) {
+  @ApiOperation({ summary: 'Admin login' })
+  @ApiOkResponse({ type: AdminAuthResponseDto })
+  async login(@Body() dto: AdminLoginDto, @Res() res: Response) {
     try {
       const { admin, admin_refresh_token, admin_access_token } =
         await this.service.login(dto);
@@ -62,6 +71,9 @@ export class AdminController {
   }
 
   @Post('/refresh-token')
+  @ApiOperation({ summary: 'Refresh admin access token' })
+  @ApiCookieAuth('admin_refresh_token')
+  @ApiOkResponse({ type: AdminAccessTokenResponseDto })
   async refresh(
     @Req()
     req: IAdminRequestCustom & { cookies: { admin_refresh_token?: string } },

@@ -8,10 +8,11 @@ import {
   UseGuards,
   Query,
 } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AdminGuard } from '../guards/admin.guard';
 import { AdminTagService, PaginatedTags } from '../services/admin-tag.service'; // Import PaginatedTags
 import { Tag } from '../../tag/schemas/tag.schema';
+import { CreateTagDto } from '../dto/create-tag.dto';
 
 @UseGuards(AdminGuard)
 @ApiTags('Admin Tags')
@@ -33,8 +34,10 @@ export class AdminTagController {
   }
 
   @Post()
-  async create(@Body('value') value: string): Promise<Tag> {
-    return this.adminTagService.create(value);
+  @ApiOperation({ summary: 'Create tag' })
+  @ApiBody({ type: CreateTagDto })
+  async create(@Body() dto: CreateTagDto): Promise<Tag> {
+    return this.adminTagService.create(dto.value);
   }
 
   @Delete(':id')

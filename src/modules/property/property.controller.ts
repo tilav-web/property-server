@@ -15,7 +15,12 @@ import {
   Res,
   Patch,
 } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiCookieAuth,
+  ApiOperation,
+  ApiTags,
+} from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { PropertyService } from './property.service';
 import { FindAllPropertiesDto } from './dto/find-all-properties.dto';
@@ -30,6 +35,7 @@ import { FilterMyPropertiesDto } from './dto/filter-my-properties.dto';
 import { type Response } from 'express';
 import { UpdatePropertyDto } from './dto/update-property.dto';
 import { AdminGuard } from '../admin/guards/admin.guard';
+import { ApiMultipartBody } from 'src/common/swagger/file-upload.decorator';
 
 @ApiTags('Properties')
 @Controller('properties')
@@ -44,6 +50,13 @@ export class PropertyController {
       { name: 'videos', maxCount: 2 },
     ]),
   )
+  @ApiOperation({ summary: 'Create property' })
+  @ApiBearerAuth('bearer')
+  @ApiCookieAuth('access_token')
+  @ApiMultipartBody(CreatePropertyDto, [
+    { name: 'photos', isArray: true },
+    { name: 'videos', isArray: true },
+  ])
   create(
     @Body() dto: CreatePropertyDto,
     @UploadedFiles()
@@ -142,6 +155,13 @@ export class PropertyController {
       { name: 'new_videos', maxCount: 2 },
     ]),
   )
+  @ApiOperation({ summary: 'Update property' })
+  @ApiBearerAuth('bearer')
+  @ApiCookieAuth('access_token')
+  @ApiMultipartBody(UpdatePropertyDto, [
+    { name: 'new_photos', isArray: true },
+    { name: 'new_videos', isArray: true },
+  ])
   update(
     @Param('id') id: string,
     @Body() dto: UpdatePropertyDto,

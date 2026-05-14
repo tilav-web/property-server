@@ -16,7 +16,14 @@ import {
   UseInterceptors,
   Delete,
 } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiCookieAuth,
+  ApiOperation,
+  ApiQuery,
+  ApiTags,
+} from '@nestjs/swagger';
 import { SellerService } from './seller.service';
 import { AuthGuard } from '@nestjs/passport';
 import { type IRequestCustom } from 'src/interfaces/custom-request.interface';
@@ -32,6 +39,8 @@ import { CreatePhysicalSellerDto } from './dto/create-physical-seller.dto';
 import { Express } from 'express';
 import { UpdateSellerDto } from './dto/update-seller.dto';
 import { EnumLanguage } from 'src/enums/language.enum';
+import { ApiMultipartBody } from 'src/common/swagger/file-upload.decorator';
+import { CreateSellerRequestDto } from './dto/create-seller-request.dto';
 
 @ApiTags('Sellers')
 @Controller('sellers')
@@ -41,12 +50,13 @@ export class SellerController {
   @Throttle({ default: { limit: 3, ttl: 10000 } })
   @Post('/')
   @UseGuards(AuthGuard('jwt'))
+  @ApiOperation({ summary: 'Create seller base profile' })
+  @ApiBearerAuth('bearer')
+  @ApiCookieAuth('access_token')
+  @ApiBody({ type: CreateSellerRequestDto })
   async createSeller(
     @Body()
-    {
-      business_type,
-      passport,
-    }: { business_type: EnumSellerBusinessType; passport: string },
+    { business_type, passport }: CreateSellerRequestDto,
     @Req() req: IRequestCustom,
   ) {
     try {
@@ -75,6 +85,10 @@ export class SellerController {
   }
 
   @Get()
+  @ApiOperation({ summary: 'List sellers' })
+  @ApiQuery({ name: 'page', required: false })
+  @ApiQuery({ name: 'limit', required: false })
+  @ApiQuery({ name: 'search', required: false })
   async findAll(
     @Query('page') page: string,
     @Query('limit') limit: string,
@@ -217,6 +231,14 @@ export class SellerController {
       { name: 'vat_file', maxCount: 1 },
     ]),
   )
+  @ApiOperation({ summary: 'Create YTT seller' })
+  @ApiBearerAuth('bearer')
+  @ApiCookieAuth('access_token')
+  @ApiMultipartBody(CreateYttSellerDto, [
+    { name: 'passport_file' },
+    { name: 'ytt_certificate_file' },
+    { name: 'vat_file' },
+  ])
   async createYttSeller(
     @Body() dto: CreateYttSellerDto,
     @UploadedFiles()
@@ -261,6 +283,18 @@ export class SellerController {
       { name: 'vat_file', maxCount: 1 },
     ]),
   )
+  @ApiOperation({ summary: 'Create MCHJ seller' })
+  @ApiBearerAuth('bearer')
+  @ApiCookieAuth('access_token')
+  @ApiMultipartBody(CreateMchjSellerDto, [
+    { name: 'ustav_file' },
+    { name: 'mchj_license' },
+    { name: 'director_appointment_file' },
+    { name: 'director_passport_file' },
+    { name: 'legal_address_file' },
+    { name: 'kadastr_file' },
+    { name: 'vat_file' },
+  ])
   async createMchjSeller(
     @Body() dto: CreateMchjSellerDto,
     @UploadedFiles()
@@ -304,6 +338,13 @@ export class SellerController {
       { name: 'self_employment_certificate', maxCount: 1 },
     ]),
   )
+  @ApiOperation({ summary: 'Create self-employed seller' })
+  @ApiBearerAuth('bearer')
+  @ApiCookieAuth('access_token')
+  @ApiMultipartBody(CreateSelfEmployedSellerDto, [
+    { name: 'passport_file' },
+    { name: 'self_employment_certificate' },
+  ])
   async createSelfEmployedSeller(
     @Body() dto: CreateSelfEmployedSellerDto,
     @UploadedFiles()
@@ -342,6 +383,10 @@ export class SellerController {
   @UseInterceptors(
     FileFieldsInterceptor([{ name: 'passport_file', maxCount: 1 }]),
   )
+  @ApiOperation({ summary: 'Create physical seller' })
+  @ApiBearerAuth('bearer')
+  @ApiCookieAuth('access_token')
+  @ApiMultipartBody(CreatePhysicalSellerDto, [{ name: 'passport_file' }])
   async createPhysicalSeller(
     @Body() dto: CreatePhysicalSellerDto,
     @UploadedFiles()

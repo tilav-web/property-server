@@ -9,18 +9,18 @@ import {
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiCookieAuth,
+  ApiOperation,
+  ApiParam,
+  ApiTags,
+} from '@nestjs/swagger';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { SiteSettingsService } from './site-settings.service';
 import { AdminGuard } from '../admin/guards/admin.guard';
-
-interface UpdateSiteSettingsDto {
-  hero_title_override?: string;
-  hero_subtitle_override?: string;
-  hero_image_srcset?: string;
-  hero_image_buy_srcset?: string;
-  hero_image_rent_srcset?: string;
-}
+import { UpdateSiteSettingsDto } from './dto/update-site-settings.dto';
+import { ApiMultipartBody } from 'src/common/swagger/file-upload.decorator';
 
 type HeroSlot = 'main' | 'buy' | 'rent';
 
@@ -43,6 +43,13 @@ export class SiteSettingsController {
       { name: 'hero_image_rent', maxCount: 1 },
     ]),
   )
+  @ApiOperation({ summary: 'Update site settings' })
+  @ApiBearerAuth('bearer')
+  @ApiMultipartBody(UpdateSiteSettingsDto, [
+    { name: 'hero_image' },
+    { name: 'hero_image_buy' },
+    { name: 'hero_image_rent' },
+  ])
   async update(
     @Body() dto: UpdateSiteSettingsDto,
     @UploadedFiles()
@@ -57,6 +64,8 @@ export class SiteSettingsController {
 
   @UseGuards(AdminGuard)
   @Delete('hero-image/:slot')
+  @ApiOperation({ summary: 'Clear hero image by slot' })
+  @ApiParam({ name: 'slot', enum: ['main', 'buy', 'rent'] })
   async clearHero(@Param('slot') slot: HeroSlot) {
     return this.service.clearHeroImage(slot);
   }

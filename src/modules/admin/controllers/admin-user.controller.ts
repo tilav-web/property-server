@@ -12,12 +12,13 @@ import {
   FileTypeValidator,
   Put,
 } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AdminUserService } from '../services/admin-user.service';
 import { FindUsersDto } from '../dto/find-users.dto';
 import { AdminGuard } from '../guards/admin.guard';
 import { UpdateUserDto } from '../dto/update-user.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { ApiMultipartBody } from 'src/common/swagger/file-upload.decorator';
 
 @UseGuards(AdminGuard)
 @ApiTags('Admin Users')
@@ -32,6 +33,9 @@ export class AdminUserController {
 
   @Put(':id')
   @UseInterceptors(FileInterceptor('avatar'))
+  @ApiOperation({ summary: 'Update user by admin' })
+  @ApiBearerAuth('bearer')
+  @ApiMultipartBody(UpdateUserDto, [{ name: 'avatar' }])
   async update(
     @Param('id') userId: string,
     @Body() dto: UpdateUserDto,

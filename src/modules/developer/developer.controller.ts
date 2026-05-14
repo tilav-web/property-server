@@ -11,12 +11,18 @@ import {
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiCookieAuth,
+  ApiOperation,
+  ApiTags,
+} from '@nestjs/swagger';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { DeveloperService } from './developer.service';
 import { CreateDeveloperDto } from './dto/create-developer.dto';
 import { UpdateDeveloperDto } from './dto/update-developer.dto';
 import { AdminGuard } from '../admin/guards/admin.guard';
+import { ApiMultipartBody } from 'src/common/swagger/file-upload.decorator';
 
 const FILE_FIELDS = [
   { name: 'logo', maxCount: 1 },
@@ -51,6 +57,9 @@ export class DeveloperController {
   @UseGuards(AdminGuard)
   @Post()
   @UseInterceptors(FileFieldsInterceptor(FILE_FIELDS))
+  @ApiOperation({ summary: 'Create developer' })
+  @ApiBearerAuth('bearer')
+  @ApiMultipartBody(CreateDeveloperDto, [{ name: 'logo' }, { name: 'cover' }])
   async create(
     @Body() dto: CreateDeveloperDto,
     @UploadedFiles()
@@ -62,6 +71,9 @@ export class DeveloperController {
   @UseGuards(AdminGuard)
   @Patch(':id')
   @UseInterceptors(FileFieldsInterceptor(FILE_FIELDS))
+  @ApiOperation({ summary: 'Update developer' })
+  @ApiBearerAuth('bearer')
+  @ApiMultipartBody(UpdateDeveloperDto, [{ name: 'logo' }, { name: 'cover' }])
   async update(
     @Param('id') id: string,
     @Body() dto: UpdateDeveloperDto,

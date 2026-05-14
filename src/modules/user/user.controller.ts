@@ -46,6 +46,7 @@ import {
   TokenPairResponseDto,
   WebAuthResponseDto,
 } from './dto/auth.dto';
+import { ApiMultipartBody } from 'src/common/swagger/file-upload.decorator';
 
 type AuthTokens = {
   access_token: string;
@@ -512,6 +513,7 @@ export class UserController {
   @ApiOperation({ summary: 'Update current authenticated user profile' })
   @ApiBearerAuth('bearer')
   @ApiCookieAuth('access_token')
+  @ApiMultipartBody(UpdateUserDto, [{ name: 'avatar' }])
   async update(
     @Body() dto: UpdateUserDto,
     @Req() req: IRequestCustom,

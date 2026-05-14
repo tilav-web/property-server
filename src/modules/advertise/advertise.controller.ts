@@ -17,7 +17,12 @@ import {
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiCookieAuth,
+  ApiOperation,
+  ApiTags,
+} from '@nestjs/swagger';
 import { AdvertiseService } from './advertise.service';
 import { AuthGuard } from '@nestjs/passport';
 import { CreateAdvertiseDto } from './dto/create-advertise.dto';
@@ -26,13 +31,15 @@ import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { EnumAdvertiseType } from 'src/enums/advertise-type.enum';
 import { UpdateAdvertiseDto } from './dto/update-advertise.dto';
 import { Types } from 'mongoose';
+import { ApiMultipartBody } from 'src/common/swagger/file-upload.decorator';
 
 @ApiTags('Advertise')
 @Controller('advertise')
 export class AdvertiseController {
-  constructor(private readonly service: AdvertiseService) { }
+  constructor(private readonly service: AdvertiseService) {}
 
   @Get('/public')
+  @ApiOperation({ summary: 'List public advertises' })
   async findPublic(
     @Query('page') page?: string,
     @Query('limit') limit?: string,
@@ -86,6 +93,10 @@ export class AdvertiseController {
   @UseGuards(AuthGuard('jwt'))
   @Patch(':id')
   @UseInterceptors(FileFieldsInterceptor([{ name: 'image', maxCount: 1 }]))
+  @ApiOperation({ summary: 'Update advertise' })
+  @ApiBearerAuth('bearer')
+  @ApiCookieAuth('access_token')
+  @ApiMultipartBody(UpdateAdvertiseDto, [{ name: 'image' }])
   async update(
     @Param('id') id: string,
     @Body() dto: UpdateAdvertiseDto,
@@ -100,12 +111,7 @@ export class AdvertiseController {
       if (!user) {
         throw new UnauthorizedException('Ruxsat berilmagan');
       }
-      return await this.service.update(
-        id,
-        dto,
-        user._id as string,
-        files,
-      );
+      return await this.service.update(id, dto, user._id as string, files);
     } catch (error) {
       console.error(error);
 
@@ -150,6 +156,10 @@ export class AdvertiseController {
   @Post('/')
   @UseGuards(AuthGuard('jwt'))
   @UseInterceptors(FileFieldsInterceptor([{ name: 'image', maxCount: 1 }]))
+  @ApiOperation({ summary: 'Create advertise' })
+  @ApiBearerAuth('bearer')
+  @ApiCookieAuth('access_token')
+  @ApiMultipartBody(CreateAdvertiseDto, [{ name: 'image' }])
   async create(
     @UploadedFiles()
     files: {
@@ -217,7 +227,7 @@ export class AdvertiseController {
 
   @Get(':id')
   async findOne(@Param('id') id: string) {
-    if (!id) throw new NotAcceptableException('Ads not found!')
+    if (!id) throw new NotAcceptableException('Ads not found!');
     return this.service.findById(id);
   }
 }
