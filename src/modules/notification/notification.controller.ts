@@ -8,11 +8,13 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
 import { NotificationService } from './notification.service';
 import type { IRequestCustom } from 'src/interfaces/custom-request.interface';
 
 @UseGuards(AuthGuard('jwt'))
+@ApiTags('Notifications')
 @Controller('notifications')
 export class NotificationController {
   constructor(private readonly service: NotificationService) {}

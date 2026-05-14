@@ -1,10 +1,12 @@
 import { Controller, Get, Param, Post, Req, UseGuards } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
 import type { IRequestCustom } from 'src/interfaces/custom-request.interface';
 import { LikeService } from '../services/like.service';
 import { Throttle } from '@nestjs/throttler';
 import { EnumLanguage } from 'src/enums/language.enum';
 
+@ApiTags('Likes')
 @Controller('likes')
 export class LikeController {
   constructor(private readonly likeService: LikeService) {}

@@ -1,4 +1,5 @@
 import { Body, Controller, Post } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { AiChatService } from './ai-chat.service';
 
@@ -11,6 +12,7 @@ interface AnonymousChatDto {
   history: AnonymousMessage[];
 }
 
+@ApiTags('AI Chat')
 @Controller('chat/ai-anonymous')
 export class AiChatController {
   constructor(private readonly aiChatService: AiChatService) {}

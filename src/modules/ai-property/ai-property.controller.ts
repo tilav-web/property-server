@@ -1,4 +1,5 @@
 import { Body, Controller, Post, Req } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { AiPropertyService } from './ai-property.service';
 import { AiSearchDto } from './dto/ai-search.dto';
@@ -16,6 +17,7 @@ function resolveLanguage(header: unknown): EnumLanguage {
     : EnumLanguage.EN;
 }
 
+@ApiTags('AI Property')
 @Controller('ai-property')
 export class AiPropertyController {
   constructor(private readonly aiPropertyService: AiPropertyService) {}

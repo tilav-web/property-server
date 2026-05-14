@@ -9,6 +9,7 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
 import { ChatService } from './chat.service';
 import { CreateConversationDto } from './dto/create-conversation.dto';
@@ -18,6 +19,7 @@ import type { IRequestCustom } from 'src/interfaces/custom-request.interface';
 import { UserService } from '../user/user.service';
 
 @UseGuards(AuthGuard('jwt'))
+@ApiTags('Chat')
 @Controller('chat')
 export class ChatController {
   constructor(

@@ -16,6 +16,7 @@ import {
   UseInterceptors,
   Delete,
 } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { SellerService } from './seller.service';
 import { AuthGuard } from '@nestjs/passport';
 import { type IRequestCustom } from 'src/interfaces/custom-request.interface';
@@ -32,6 +33,7 @@ import { Express } from 'express';
 import { UpdateSellerDto } from './dto/update-seller.dto';
 import { EnumLanguage } from 'src/enums/language.enum';
 
+@ApiTags('Sellers')
 @Controller('sellers')
 export class SellerController {
   constructor(private readonly service: SellerService) {}

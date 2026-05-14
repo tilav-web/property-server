@@ -7,6 +7,7 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { BankAccountService } from './bank-account.service';
 import { AuthGuard } from '@nestjs/passport';
 import { AuthRoleGuard } from '../user/guards/role.guard';
@@ -15,6 +16,7 @@ import { CreateBankAccountDto } from './dto/create-bank-account.dto';
 import { type IRequestCustom } from 'src/interfaces/custom-request.interface';
 import { Throttle } from '@nestjs/throttler';
 
+@ApiTags('Bank Accounts')
 @Controller('bank-accounts')
 export class BankAccountController {
   constructor(private readonly service: BankAccountService) {}

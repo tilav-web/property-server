@@ -12,6 +12,7 @@ import {
   Delete,
   Param,
 } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { type Response } from 'express';
 import { AdminGuard } from '../guards/admin.guard';
 import { type IAdminRequestCustom } from '../../../interfaces/admin-request.interface';
@@ -21,6 +22,7 @@ import { CreateAdminDto } from '../dto/create-admin.dto';
 import { UpdateAdminDto } from '../dto/update-admin.dto';
 import { UpdateAdminPasswordDto } from '../dto/update-admin-password.dto';
 
+@ApiTags('Admins')
 @Controller('admins')
 export class AdminController {
   constructor(private readonly service: AdminService) {}

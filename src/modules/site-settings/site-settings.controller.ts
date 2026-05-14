@@ -9,6 +9,7 @@ import {
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { SiteSettingsService } from './site-settings.service';
 import { AdminGuard } from '../admin/guards/admin.guard';
@@ -23,6 +24,7 @@ interface UpdateSiteSettingsDto {
 
 type HeroSlot = 'main' | 'buy' | 'rent';
 
+@ApiTags('Site Settings')
 @Controller('site-settings')
 export class SiteSettingsController {
   constructor(private readonly service: SiteSettingsService) {}

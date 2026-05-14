@@ -7,12 +7,14 @@ import {
   Body,
   Patch,
 } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { AdminGuard } from '../guards/admin.guard';
 import { AdminSellerService } from '../services/admin-seller.service';
 import { FindSellersDto } from '../dto/find-sellers.dto';
 import { UpdateSellerDto } from '../dto/update-seller.dto';
 
 @UseGuards(AdminGuard)
+@ApiTags('Admin Sellers')
 @Controller('admins/sellers')
 export class AdminSellerController {
   constructor(private readonly adminSellerService: AdminSellerService) {}

@@ -12,6 +12,7 @@ import {
   FileTypeValidator,
   Put,
 } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { AdminUserService } from '../services/admin-user.service';
 import { FindUsersDto } from '../dto/find-users.dto';
 import { AdminGuard } from '../guards/admin.guard';
@@ -19,6 +20,7 @@ import { UpdateUserDto } from '../dto/update-user.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 
 @UseGuards(AdminGuard)
+@ApiTags('Admin Users')
 @Controller('admins/users')
 export class AdminUserController {
   constructor(private readonly adminUserService: AdminUserService) {}

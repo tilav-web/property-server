@@ -8,12 +8,14 @@ import {
   InternalServerErrorException,
   Get,
 } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
 import type { IRequestCustom } from 'src/interfaces/custom-request.interface';
 import { EnumLanguage } from 'src/enums/language.enum';
 import { InquiryService } from '../services/inquiry.service';
 import { CreateInquiryDto } from '../dto/create-inquiry.dto';
 
+@ApiTags('Inquiry')
 @Controller('inquiry')
 export class InquiryController {
   constructor(private readonly inquiryService: InquiryService) {}

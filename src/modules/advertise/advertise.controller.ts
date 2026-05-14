@@ -17,6 +17,7 @@ import {
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { AdvertiseService } from './advertise.service';
 import { AuthGuard } from '@nestjs/passport';
 import { CreateAdvertiseDto } from './dto/create-advertise.dto';
@@ -26,6 +27,7 @@ import { EnumAdvertiseType } from 'src/enums/advertise-type.enum';
 import { UpdateAdvertiseDto } from './dto/update-advertise.dto';
 import { Types } from 'mongoose';
 
+@ApiTags('Advertise')
 @Controller('advertise')
 export class AdvertiseController {
   constructor(private readonly service: AdvertiseService) { }

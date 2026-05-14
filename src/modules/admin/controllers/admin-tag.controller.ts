@@ -8,11 +8,13 @@ import {
   UseGuards,
   Query,
 } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { AdminGuard } from '../guards/admin.guard';
 import { AdminTagService, PaginatedTags } from '../services/admin-tag.service'; // Import PaginatedTags
 import { Tag } from '../../tag/schemas/tag.schema';
 
 @UseGuards(AdminGuard)
+@ApiTags('Admin Tags')
 @Controller('admins/tags')
 export class AdminTagController {
   constructor(private readonly adminTagService: AdminTagService) {}

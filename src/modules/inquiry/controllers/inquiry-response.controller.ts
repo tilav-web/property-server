@@ -1,9 +1,11 @@
 import { Controller, Post, Body, UseGuards, Req } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { InquiryResponseService } from '../services/inquiry-response.service';
 import { CreateInquiryResponseDto } from '../dto/create-inquiry-response.dto';
 import { AuthGuard } from '@nestjs/passport';
 import { type IRequestCustom } from 'src/interfaces/custom-request.interface';
 
+@ApiTags('Inquiry Responses')
 @Controller('inquiry-responses')
 export class InquiryResponseController {
   constructor(

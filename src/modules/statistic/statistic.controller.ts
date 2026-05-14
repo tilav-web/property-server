@@ -5,10 +5,12 @@ import {
   UseGuards,
   UnauthorizedException,
 } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
 import { StatisticService } from './statistic.service';
 import { type IRequestCustom } from 'src/interfaces/custom-request.interface';
 
+@ApiTags('Statistics')
 @Controller('statistics')
 export class StatisticController {
   constructor(private readonly statisticService: StatisticService) {}

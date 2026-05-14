@@ -11,6 +11,7 @@ import {
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { DeveloperService } from './developer.service';
 import { CreateDeveloperDto } from './dto/create-developer.dto';
@@ -22,6 +23,7 @@ const FILE_FIELDS = [
   { name: 'cover', maxCount: 1 },
 ];
 
+@ApiTags('Developers')
 @Controller('developers')
 export class DeveloperController {
   constructor(private readonly service: DeveloperService) {}

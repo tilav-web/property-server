@@ -15,6 +15,7 @@ import {
   Res,
   Patch,
 } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { PropertyService } from './property.service';
 import { FindAllPropertiesDto } from './dto/find-all-properties.dto';
@@ -30,6 +31,7 @@ import { type Response } from 'express';
 import { UpdatePropertyDto } from './dto/update-property.dto';
 import { AdminGuard } from '../admin/guards/admin.guard';
 
+@ApiTags('Properties')
 @Controller('properties')
 export class PropertyController {
   constructor(private readonly service: PropertyService) {}

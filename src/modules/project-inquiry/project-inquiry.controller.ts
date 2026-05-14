@@ -9,6 +9,7 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { ProjectInquiryService } from './project-inquiry.service';
 import { CreateProjectInquiryDto } from './dto/create-project-inquiry.dto';
@@ -16,6 +17,7 @@ import { EnumProjectInquiryStatus } from './project-inquiry.schema';
 import { AdminGuard } from '../admin/guards/admin.guard';
 import type { IRequestCustom } from 'src/interfaces/custom-request.interface';
 
+@ApiTags('Project Inquiries')
 @Controller('project-inquiries')
 export class ProjectInquiryController {
   constructor(private readonly service: ProjectInquiryService) {}

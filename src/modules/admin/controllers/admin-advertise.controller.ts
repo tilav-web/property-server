@@ -7,12 +7,14 @@ import {
   Param,
   Body,
 } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { AdminGuard } from '../guards/admin.guard';
 import { AdminAdvertiseService } from '../services/admin-advertise.service';
 import { FindAdvertisesDto } from '../dto/find-advertises.dto';
 import { UpdateAdvertiseStatusDto } from '../dto/update-advertise-status.dto';
 
 @UseGuards(AdminGuard)
+@ApiTags('Admin Advertises')
 @Controller('admins/advertises')
 export class AdminAdvertiseController {
   constructor(private readonly adminAdvertiseService: AdminAdvertiseService) {}

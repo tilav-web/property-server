@@ -7,12 +7,14 @@ import {
   Body,
   Put,
 } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { AdminGuard } from '../guards/admin.guard';
 import { AdminPropertyService } from '../services/admin-property.service';
 import { FindPropertiesDto } from '../dto/find-properties.dto';
 import { UpdatePropertyDto } from '../dto/update-property.dto';
 
 @UseGuards(AdminGuard)
+@ApiTags('Admin Properties')
 @Controller('admins/properties')
 export class AdminPropertyController {
   constructor(private readonly adminPropertyService: AdminPropertyService) {}

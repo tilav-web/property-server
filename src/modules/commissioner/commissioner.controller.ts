@@ -7,6 +7,7 @@ import {
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { CommissionerService } from './commissioner.service';
 import { Throttle } from '@nestjs/throttler';
 import { Roles } from '../user/decorators/roles.decorator';
@@ -16,6 +17,7 @@ import { CreateCommissionerDto } from './dto/create-commissioner.dto';
 import { AuthRoleGuard } from '../user/guards/role.guard';
 import { AuthGuard } from '@nestjs/passport';
 
+@ApiTags('Commissioners')
 @Controller('commissioners')
 export class CommissionerController {
   constructor(private readonly commissionerService: CommissionerService) {}

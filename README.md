@@ -37,6 +37,22 @@ npm run test          # Unit testlar
 npm run seed:all      # Boshlang'ich ma'lumotlarni yuklash
 ```
 
+## API hujjatlari
+
+Server ishga tushgandan keyin Swagger UI quyidagi manzilda ochiladi:
+
+```text
+http://localhost:3000/api/docs
+```
+
+OpenAPI JSON:
+
+```text
+http://localhost:3000/api/docs-json
+```
+
+Swagger qamrovi va topilgan endpoint izohlari: [docs/swagger-notes.md](docs/swagger-notes.md)
+
 ---
 
 **Tilovov Shavqiddin**

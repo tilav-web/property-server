@@ -1,9 +1,11 @@
 import { Controller, Get, Param, Post, Req, UseGuards } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
 import type { IRequestCustom } from 'src/interfaces/custom-request.interface';
 import { SaveService } from '../services/save.service';
 import { EnumLanguage } from 'src/enums/language.enum';
 
+@ApiTags('Saves')
 @Controller('saves')
 export class SaveController {
   constructor(private readonly saveService: SaveService) {}

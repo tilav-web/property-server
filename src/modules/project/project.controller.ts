@@ -11,6 +11,7 @@ import {
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { ProjectService } from './project.service';
 import { CreateProjectDto } from './dto/create-project.dto';
@@ -23,6 +24,7 @@ const FILE_FIELDS = [
   { name: 'brochure', maxCount: 1 },
 ];
 
+@ApiTags('Projects')
 @Controller('projects')
 export class ProjectController {
   constructor(private readonly service: ProjectService) {}

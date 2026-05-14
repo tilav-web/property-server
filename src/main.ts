@@ -9,6 +9,7 @@ import cookieParser from 'cookie-parser';
 import * as express from 'express';
 import { join } from 'path';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 /**
  * Class-validator errorlarini tekis (flat) ro'yxatga aylantiradi —
@@ -64,6 +65,49 @@ async function bootstrap() {
       },
     }),
   );
+
+  const swaggerConfig = new DocumentBuilder()
+    .setTitle('Property API')
+    .setDescription(
+      'Amaar Property server API. User protected endpoints accept JWT through Authorization: Bearer token or the access_token cookie. Admin protected endpoints use Authorization: Bearer token. User refresh uses refresh_token cookie; admin refresh uses admin_refresh_token cookie.',
+    )
+    .setVersion('1.0')
+    .addBearerAuth(
+      {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT',
+        description: 'User/Admin JWT access token',
+      },
+      'bearer',
+    )
+    .addCookieAuth('access_token', {
+      type: 'apiKey',
+      in: 'cookie',
+      description: 'JWT access token cookie',
+    })
+    .addCookieAuth('refresh_token', {
+      type: 'apiKey',
+      in: 'cookie',
+      description: 'JWT refresh token cookie',
+    })
+    .addCookieAuth('admin_refresh_token', {
+      type: 'apiKey',
+      in: 'cookie',
+      description: 'Admin JWT refresh token cookie',
+    })
+    .build();
+
+  const swaggerDocument = SwaggerModule.createDocument(app, swaggerConfig);
+  SwaggerModule.setup('api/docs', app, swaggerDocument, {
+    jsonDocumentUrl: 'api/docs-json',
+    swaggerOptions: {
+      persistAuthorization: true,
+      tagsSorter: 'alpha',
+      operationsSorter: 'alpha',
+      displayRequestDuration: true,
+    },
+  });
 
   await app.listen(process.env.PORT ?? 3000);
 }

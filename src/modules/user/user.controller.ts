@@ -12,6 +12,7 @@ import {
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { UserService } from './user.service';
 import { type Response } from 'express';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -37,6 +38,7 @@ function detectSmsLanguage(req: { headers: Record<string, unknown> }): SmsLangua
   return 'en';
 }
 
+@ApiTags('User Auth')
 @Controller('users/auth')
 export class UserController {
   constructor(private readonly service: UserService) {}

@@ -13,12 +13,14 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { MessageService } from './message.service';
 import { AuthGuard } from '@nestjs/passport';
 import { type IRequestCustom } from 'src/interfaces/custom-request.interface';
 import { EnumLanguage } from 'src/enums/language.enum';
 import { CreateMessageDto } from './dto/create-message.dto';
 
+@ApiTags('Messages')
 @Controller('messages')
 export class MessageController {
   constructor(private readonly service: MessageService) {}
@@ -102,32 +104,6 @@ export class MessageController {
   ) {
     try {
       const result = await this.service.findByProperty(id, page, limit);
-      return result;
-    } catch (error) {
-      console.error(error);
-
-      if (error instanceof HttpException) {
-        throw error;
-      }
-
-      if (error instanceof Error) {
-        throw new InternalServerErrorException(error.message);
-      }
-      throw new InternalServerErrorException(
-        "Tizimda xatolik ketdi. Iltimos birozdan so'ng qayta urinib ko'ring!",
-      );
-    }
-  }
-
-  @Delete('/:id')
-  @UseGuards(AuthGuard('jwt'))
-  async delete(@Param('id') id: string, @Req() req: IRequestCustom) {
-    try {
-      const user = req.user;
-      const result = await this.service.delete({
-        id,
-        user: user?._id as string,
-      });
       return result;
     } catch (error) {
       console.error(error);
@@ -274,6 +250,32 @@ export class MessageController {
     try {
       const user = req.user;
       const result = await this.service.findMessageUnread(user?._id as string);
+      return result;
+    } catch (error) {
+      console.error(error);
+
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
+      if (error instanceof Error) {
+        throw new InternalServerErrorException(error.message);
+      }
+      throw new InternalServerErrorException(
+        "Tizimda xatolik ketdi. Iltimos birozdan so'ng qayta urinib ko'ring!",
+      );
+    }
+  }
+
+  @Delete('/:id')
+  @UseGuards(AuthGuard('jwt'))
+  async delete(@Param('id') id: string, @Req() req: IRequestCustom) {
+    try {
+      const user = req.user;
+      const result = await this.service.delete({
+        id,
+        user: user?._id as string,
+      });
       return result;
     } catch (error) {
       console.error(error);

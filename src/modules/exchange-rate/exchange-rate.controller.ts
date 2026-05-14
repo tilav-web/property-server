@@ -6,6 +6,7 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { ExchangeRateService } from './exchange-rate.service';
 import { AdminGuard } from '../admin/guards/admin.guard';
 import { type IAdminRequestCustom } from '../../interfaces/admin-request.interface';
@@ -16,6 +17,7 @@ interface UpdateExchangeRateDto {
   notes?: string;
 }
 
+@ApiTags('Exchange Rates')
 @Controller('exchange-rates')
 export class ExchangeRateController {
   constructor(private readonly service: ExchangeRateService) {}
