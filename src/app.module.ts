@@ -28,6 +28,7 @@ import { ProjectInquiryModule } from './modules/project-inquiry/project-inquiry.
 import { SiteSettingsModule } from './modules/site-settings/site-settings.module';
 import { ExchangeRateModule } from './modules/exchange-rate/exchange-rate.module';
 import { CountryConfigModule } from './common/config/country-config.module';
+import { PaymentModule } from './modules/payment/payment.module';
 
 @Module({
   imports: [
@@ -76,6 +77,7 @@ import { CountryConfigModule } from './common/config/country-config.module';
     ProjectInquiryModule,
     SiteSettingsModule,
     ExchangeRateModule,
+    PaymentModule,
   ],
   providers: [
     {
