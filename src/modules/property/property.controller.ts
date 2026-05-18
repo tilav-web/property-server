@@ -36,6 +36,7 @@ import { type Response } from 'express';
 import { UpdatePropertyDto } from './dto/update-property.dto';
 import { AdminGuard } from '../admin/guards/admin.guard';
 import { ApiMultipartBody } from 'src/common/swagger/file-upload.decorator';
+import { ApiStandardErrors } from 'src/common/swagger/api-errors.decorator';
 
 @ApiTags('Properties')
 @Controller('properties')
@@ -53,6 +54,7 @@ export class PropertyController {
   @ApiOperation({ summary: 'Create property' })
   @ApiBearerAuth('bearer')
   @ApiCookieAuth('access_token')
+  @ApiStandardErrors({ auth: true, validation: true })
   @ApiMultipartBody(CreatePropertyDto, [
     { name: 'photos', isArray: true },
     { name: 'videos', isArray: true },
@@ -68,8 +70,10 @@ export class PropertyController {
 
   @Throttle({ default: { limit: 60, ttl: 60_000 } })
   @Get()
+  @ApiOperation({ summary: 'E’lonlar bo‘yicha qidiruv (public)' })
+  @ApiStandardErrors({ validation: true, throttle: true })
   findAll(@Query() query: FindAllPropertiesDto, @Req() req: IRequestCustom) {
-    const raw = (req.headers['accept-language'] as string | undefined) ?? '';
+    const raw = req.headers['accept-language'] ?? '';
     const first = raw.split(',')[0]?.trim().toLowerCase();
     const language = (Object.values(EnumLanguage) as string[]).includes(first)
       ? (first as EnumLanguage)
@@ -79,6 +83,7 @@ export class PropertyController {
   }
 
   @Get('share/:id')
+  @ApiOperation({ summary: 'Sharing uchun OG meta sahifa (HTML)' })
   async shareProperty(
     @Param('id') id: string,
     @Req() req: IRequestCustom,
@@ -132,6 +137,10 @@ export class PropertyController {
 
   @Get('/my')
   @UseGuards(AuthGuard('jwt'))
+  @ApiOperation({ summary: 'Joriy foydalanuvchi e’lonlari' })
+  @ApiBearerAuth('bearer')
+  @ApiCookieAuth('access_token')
+  @ApiStandardErrors({ auth: true })
   async findMyProperties(
     @Req() req: IRequestCustom,
     @Query() filter: FilterMyPropertiesDto,
@@ -158,6 +167,12 @@ export class PropertyController {
   @ApiOperation({ summary: 'Update property' })
   @ApiBearerAuth('bearer')
   @ApiCookieAuth('access_token')
+  @ApiStandardErrors({
+    auth: true,
+    forbidden: true,
+    notFound: true,
+    validation: true,
+  })
   @ApiMultipartBody(UpdatePropertyDto, [
     { name: 'new_photos', isArray: true },
     { name: 'new_videos', isArray: true },
@@ -186,6 +201,10 @@ export class PropertyController {
 
   @Delete('/:id')
   @UseGuards(AuthGuard('jwt'))
+  @ApiOperation({ summary: 'E’lonni o‘chirish' })
+  @ApiBearerAuth('bearer')
+  @ApiCookieAuth('access_token')
+  @ApiStandardErrors({ auth: true, forbidden: true, notFound: true })
   async deleteById(@Param('id') id: string, @Req() req: IRequestCustom) {
     const user = req.user;
     if (!user) {
@@ -196,6 +215,14 @@ export class PropertyController {
 
   @Put(':id/status')
   @UseGuards(AuthGuard('jwt'), AdminGuard)
+  @ApiOperation({ summary: 'E’lon statusini admin tomonidan o‘zgartirish' })
+  @ApiBearerAuth('bearer')
+  @ApiStandardErrors({
+    auth: true,
+    forbidden: true,
+    notFound: true,
+    validation: true,
+  })
   updateStatus(@Param('id') id: string, @Body() dto: UpdatePropertyStatusDto) {
     return this.service.updateStatus({
       id,
@@ -205,6 +232,10 @@ export class PropertyController {
 
   @Post('/message')
   @UseGuards(AuthGuard('jwt'))
+  @ApiOperation({ summary: 'E’lon egasi bilan xabar yuborish' })
+  @ApiBearerAuth('bearer')
+  @ApiCookieAuth('access_token')
+  @ApiStandardErrors({ auth: true, validation: true, notFound: true })
   async sendMessage(@Body() dto: CreateMessageDto, @Req() req: IRequestCustom) {
     const user = req.user;
     return this.service.sendMessage({
@@ -215,23 +246,32 @@ export class PropertyController {
 
   @Put(':id/archive')
   @UseGuards(AuthGuard('jwt'))
+  @ApiOperation({ summary: 'E’lonni arxivga olish / arxivdan chiqarish' })
+  @ApiBearerAuth('bearer')
+  @ApiCookieAuth('access_token')
+  @ApiStandardErrors({ auth: true, forbidden: true, notFound: true })
   toggleArchive(@Param('id') id: string, @Req() req: IRequestCustom) {
-    // The service method checks for ownership
     return this.service.toggleArchive({ id, userId: req.user?._id as string });
   }
 
   @Get('/categories/list')
+  @ApiOperation({ summary: 'Kategoriya turlari ro‘yxati' })
   async getCategories() {
     return this.service.getCategories();
   }
 
   @Get('/stats/transactions')
+  @ApiOperation({ summary: 'Transaction statistikasi' })
   async getTransactionStats() {
     return this.service.getTransactionStats();
   }
 
   @Get('/update/:id')
   @UseGuards(AuthGuard('jwt'))
+  @ApiOperation({ summary: 'Update sahifasi uchun e’lon (faqat ega)' })
+  @ApiBearerAuth('bearer')
+  @ApiCookieAuth('access_token')
+  @ApiStandardErrors({ auth: true, forbidden: true, notFound: true })
   async findOnePropertyForUpdate(
     @Param('id') id: string,
     @Req() req: IRequestCustom,
@@ -247,9 +287,11 @@ export class PropertyController {
   }
 
   @Get(':id')
+  @ApiOperation({ summary: 'E’lon tafsiloti (id bo‘yicha)' })
+  @ApiStandardErrors({ notFound: true })
   findById(@Param('id') id: string, @Req() req: IRequestCustom) {
     const language = req.headers['accept-language'] as EnumLanguage;
-    const userId = req.user?._id as string | undefined;
+    const userId = req.user?._id;
     return this.service.findById({ id, language, userId });
   }
 }

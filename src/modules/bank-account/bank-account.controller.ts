@@ -7,7 +7,12 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiCookieAuth,
+  ApiOperation,
+  ApiTags,
+} from '@nestjs/swagger';
 import { BankAccountService } from './bank-account.service';
 import { AuthGuard } from '@nestjs/passport';
 import { AuthRoleGuard } from '../user/guards/role.guard';
@@ -15,6 +20,7 @@ import { Roles } from '../user/decorators/roles.decorator';
 import { CreateBankAccountDto } from './dto/create-bank-account.dto';
 import { type IRequestCustom } from 'src/interfaces/custom-request.interface';
 import { Throttle } from '@nestjs/throttler';
+import { ApiStandardErrors } from 'src/common/swagger/api-errors.decorator';
 
 @ApiTags('Bank Accounts')
 @Controller('bank-accounts')
@@ -25,6 +31,15 @@ export class BankAccountController {
   @Post('/')
   @Roles('legal')
   @UseGuards(AuthGuard('jwt'), AuthRoleGuard)
+  @ApiOperation({ summary: 'Yangi bank hisobi qo‘shish (faqat legal role)' })
+  @ApiBearerAuth('bearer')
+  @ApiCookieAuth('access_token')
+  @ApiStandardErrors({
+    auth: true,
+    forbidden: true,
+    validation: true,
+    throttle: true,
+  })
   async create(@Body() dto: CreateBankAccountDto, @Req() req: IRequestCustom) {
     try {
       const user = req.user;

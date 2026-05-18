@@ -5,11 +5,7 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types, FilterQuery } from 'mongoose';
-import {
-  Project,
-  ProjectDocument,
-  EnumProjectStatus,
-} from './project.schema';
+import { Project, ProjectDocument, EnumProjectStatus } from './project.schema';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { FileService } from '../file/file.service';

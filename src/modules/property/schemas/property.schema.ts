@@ -79,19 +79,22 @@ export class Property {
 
 export const PropertySchema = SchemaFactory.createForClass(Property);
 PropertySchema.index({ location: '2dsphere' });
-PropertySchema.index({
-  'title.uz': 'text',
-  'title.ru': 'text',
-  'title.en': 'text',
-  'description.uz': 'text',
-  'description.ru': 'text',
-  'description.en': 'text',
-  'address.uz': 'text',
-  'address.ru': 'text',
-  'address.en': 'text',
-}, {
-  default_language: 'none'
-});
+PropertySchema.index(
+  {
+    'title.uz': 'text',
+    'title.ru': 'text',
+    'title.en': 'text',
+    'description.uz': 'text',
+    'description.ru': 'text',
+    'description.en': 'text',
+    'address.uz': 'text',
+    'address.ru': 'text',
+    'address.en': 'text',
+  },
+  {
+    default_language: 'none',
+  },
+);
 
 // Yangi filterlar uchun indexlar
 PropertySchema.index({ price: 1 });
@@ -102,8 +105,19 @@ PropertySchema.index({ status: 1, is_archived: 1, category: 1, price: 1 });
 
 // Keng tarqalgan search + sort kombinatsiyalari
 PropertySchema.index({ status: 1, is_archived: 1, createdAt: -1 });
-PropertySchema.index({ status: 1, is_archived: 1, is_premium: -1, createdAt: -1 });
-PropertySchema.index({ status: 1, is_archived: 1, category: 1, bedrooms: 1, price: 1 });
+PropertySchema.index({
+  status: 1,
+  is_archived: 1,
+  is_premium: -1,
+  createdAt: -1,
+});
+PropertySchema.index({
+  status: 1,
+  is_archived: 1,
+  category: 1,
+  bedrooms: 1,
+  price: 1,
+});
 PropertySchema.index({ status: 1, is_archived: 1, category: 1, rating: -1 });
 PropertySchema.index({ status: 1, is_archived: 1, liked: -1, createdAt: -1 });
 PropertySchema.index({ status: 1, is_archived: 1, currency: 1, price: 1 });

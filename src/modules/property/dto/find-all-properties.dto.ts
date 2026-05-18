@@ -274,7 +274,8 @@ export class FindAllPropertiesDto {
       if (s.startsWith('[') && s.endsWith(']')) {
         try {
           const parsed: unknown = JSON.parse(s);
-          if (Array.isArray(parsed)) return (parsed as unknown[]).map((v) => String(v));
+          if (Array.isArray(parsed))
+            return (parsed as unknown[]).map((v) => String(v));
         } catch (e) {
           console.error(e);
         }

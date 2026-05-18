@@ -1,10 +1,11 @@
 import { Body, Controller, Post, Req } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { AiPropertyService } from './ai-property.service';
 import { AiSearchDto } from './dto/ai-search.dto';
 import { type IRequestCustom } from 'src/interfaces/custom-request.interface';
 import { EnumLanguage } from 'src/enums/language.enum';
+import { ApiStandardErrors } from 'src/common/swagger/api-errors.decorator';
 
 const SUPPORTED_LANGUAGES = new Set<string>(Object.values(EnumLanguage));
 
@@ -24,6 +25,12 @@ export class AiPropertyController {
 
   @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @Post('search')
+  @ApiOperation({
+    summary: 'AI prompt orqali e’lon qidirish',
+    description:
+      "Tabiiy tilda berilgan promptni Mongo so'roviga aylantirib, mos e'lonlarni qaytaradi.",
+  })
+  @ApiStandardErrors({ validation: true, throttle: true, serverError: true })
   search(@Body() dto: AiSearchDto, @Req() req: IRequestCustom) {
     const language = resolveLanguage(req.headers['accept-language']);
     return this.aiPropertyService.findByPrompt({

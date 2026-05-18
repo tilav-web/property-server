@@ -18,11 +18,7 @@ export class AdminTagService {
     @InjectModel(Tag.name) private readonly tagModel: Model<TagDocument>,
   ) {}
 
-  async findAll(
-    page = 1,
-    limit = 10,
-    query?: string,
-  ): Promise<PaginatedTags> {
+  async findAll(page = 1, limit = 10, query?: string): Promise<PaginatedTags> {
     const skip = (page - 1) * limit;
     const findQuery = query
       ? { value: new RegExp(`^${query.trim()}`, 'i') }

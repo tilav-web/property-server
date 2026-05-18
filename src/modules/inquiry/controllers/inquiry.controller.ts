@@ -8,20 +8,30 @@ import {
   InternalServerErrorException,
   Get,
 } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiCookieAuth,
+  ApiOperation,
+  ApiTags,
+} from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
 import type { IRequestCustom } from 'src/interfaces/custom-request.interface';
 import { EnumLanguage } from 'src/enums/language.enum';
 import { InquiryService } from '../services/inquiry.service';
 import { CreateInquiryDto } from '../dto/create-inquiry.dto';
+import { ApiStandardErrors } from 'src/common/swagger/api-errors.decorator';
 
+@UseGuards(AuthGuard('jwt'))
+@ApiBearerAuth('bearer')
+@ApiCookieAuth('access_token')
 @ApiTags('Inquiry')
+@ApiStandardErrors({ auth: true })
 @Controller('inquiry')
 export class InquiryController {
   constructor(private readonly inquiryService: InquiryService) {}
 
-  @UseGuards(AuthGuard('jwt'))
   @Get()
+  @ApiOperation({ summary: 'Sotuvchi uchun barcha inquiry’lar' })
   findAll(@Req() req: IRequestCustom) {
     try {
       const language = (req.headers['accept-language'] || 'en')
@@ -43,8 +53,8 @@ export class InquiryController {
     }
   }
 
-  @UseGuards(AuthGuard('jwt'))
   @Get('my-responses')
+  @ApiOperation({ summary: 'Mening inquiry javoblarim' })
   findMyResponses(@Req() req: IRequestCustom) {
     try {
       const language = (req.headers['accept-language'] || 'en')
@@ -66,8 +76,9 @@ export class InquiryController {
     }
   }
 
-  @UseGuards(AuthGuard('jwt'))
   @Post()
+  @ApiOperation({ summary: 'Yangi inquiry yaratish' })
+  @ApiStandardErrors({ auth: true, validation: true })
   create(@Body() dto: CreateInquiryDto, @Req() req: IRequestCustom) {
     try {
       const user = req.user;

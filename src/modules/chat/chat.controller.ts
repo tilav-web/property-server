@@ -9,7 +9,12 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiCookieAuth,
+  ApiOperation,
+  ApiTags,
+} from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
 import { ChatService } from './chat.service';
 import { CreateConversationDto } from './dto/create-conversation.dto';
@@ -17,9 +22,13 @@ import { SendMessageDto } from './dto/send-message.dto';
 import { MessageType } from './enums/message-type.enum';
 import type { IRequestCustom } from 'src/interfaces/custom-request.interface';
 import { UserService } from '../user/user.service';
+import { ApiStandardErrors } from 'src/common/swagger/api-errors.decorator';
 
 @UseGuards(AuthGuard('jwt'))
+@ApiBearerAuth('bearer')
+@ApiCookieAuth('access_token')
 @ApiTags('Chat')
+@ApiStandardErrors({ auth: true })
 @Controller('chat')
 export class ChatController {
   constructor(
@@ -28,6 +37,7 @@ export class ChatController {
   ) {}
 
   @Get('conversations')
+  @ApiOperation({ summary: 'Mening conversation’larim ro‘yxati' })
   async list(@Req() req: IRequestCustom) {
     return this.chatService.listForUser(String(req.user!._id));
   }
@@ -37,6 +47,9 @@ export class ChatController {
    * Header'dagi tezkor tugmadan va alohida /ai-chat sahifadan ishlatiladi.
    */
   @Get('ai-conversation')
+  @ApiOperation({
+    summary: 'AI yordamchi bilan conversation’ni olish/yaratish',
+  })
   async aiConversation(@Req() req: IRequestCustom) {
     const me = String(req.user!._id);
     const aiUserId = await this.userService.getAiAgentId();
@@ -48,12 +61,15 @@ export class ChatController {
   }
 
   @Get('unread-count')
+  @ApiOperation({ summary: 'O‘qilmagan xabarlar soni' })
   async unreadCount(@Req() req: IRequestCustom) {
     const count = await this.chatService.totalUnread(String(req.user!._id));
     return { count };
   }
 
   @Post('conversations')
+  @ApiOperation({ summary: 'Conversation yaratish yoki mavjudini olish' })
+  @ApiStandardErrors({ auth: true, validation: true, notFound: true })
   async createOrGet(
     @Req() req: IRequestCustom,
     @Body() dto: CreateConversationDto,
@@ -66,9 +82,6 @@ export class ChatController {
         dto.propertyId,
       );
 
-    // Har safar yangi e'lon kontekstiga o'tganda PROPERTY_REFERENCE
-    // system message yuboriladi. Shu bilan bitta chat ichida turli e'lonlar
-    // bo'yicha muloqot tarixi aniq ko'rinadi.
     if (dto.propertyId && propertyContextChanged) {
       await this.chatService.createSystemMessage({
         conversationId: conversation._id,
@@ -91,11 +104,17 @@ export class ChatController {
   }
 
   @Get('conversations/:id')
+  @ApiOperation({ summary: 'Conversation tafsiloti' })
+  @ApiStandardErrors({ auth: true, notFound: true })
   async get(@Req() req: IRequestCustom, @Param('id') id: string) {
     return this.chatService.getConversation(String(req.user!._id), id);
   }
 
   @Get('conversations/:id/messages')
+  @ApiOperation({
+    summary: 'Conversation xabarlari (paginatsiya before+limit)',
+  })
+  @ApiStandardErrors({ auth: true, notFound: true })
   async messages(
     @Req() req: IRequestCustom,
     @Param('id') id: string,
@@ -109,6 +128,8 @@ export class ChatController {
   }
 
   @Post('messages')
+  @ApiOperation({ summary: 'Xabar yuborish' })
+  @ApiStandardErrors({ auth: true, validation: true, notFound: true })
   async send(@Req() req: IRequestCustom, @Body() dto: SendMessageDto) {
     const msg = await this.chatService.sendText(
       String(req.user!._id),
@@ -119,6 +140,8 @@ export class ChatController {
   }
 
   @Patch('conversations/:id/read')
+  @ApiOperation({ summary: 'Conversation’ni o‘qilgan deb belgilash' })
+  @ApiStandardErrors({ auth: true, notFound: true })
   async markRead(@Req() req: IRequestCustom, @Param('id') id: string) {
     await this.chatService.markRead(String(req.user!._id), id);
     return { ok: true };

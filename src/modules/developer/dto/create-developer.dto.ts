@@ -15,8 +15,9 @@ export class CreateDeveloperDto {
   @IsOptional() @IsString() city?: string;
 
   @IsOptional()
-  @Transform(({ value }) =>
-    value === 'true' || value === true || value === '1' || value === 1,
+  @Transform(
+    ({ value }) =>
+      value === 'true' || value === true || value === '1' || value === 1,
   )
   @IsBoolean()
   is_active?: boolean;

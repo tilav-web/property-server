@@ -13,12 +13,18 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiCookieAuth,
+  ApiOperation,
+  ApiTags,
+} from '@nestjs/swagger';
 import { MessageService } from './message.service';
 import { AuthGuard } from '@nestjs/passport';
 import { type IRequestCustom } from 'src/interfaces/custom-request.interface';
 import { EnumLanguage } from 'src/enums/language.enum';
 import { CreateMessageDto } from './dto/create-message.dto';
+import { ApiStandardErrors } from 'src/common/swagger/api-errors.decorator';
 
 @ApiTags('Messages')
 @Controller('messages')
@@ -27,6 +33,10 @@ export class MessageController {
 
   @Post()
   @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth('bearer')
+  @ApiCookieAuth('access_token')
+  @ApiOperation({ summary: 'Property uchun xabar yaratish' })
+  @ApiStandardErrors({ auth: true, validation: true })
   async create(@Body() dto: CreateMessageDto, @Req() req: IRequestCustom) {
     try {
       const user = req.user;
@@ -53,6 +63,10 @@ export class MessageController {
 
   @Get('/id/:id')
   @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth('bearer')
+  @ApiCookieAuth('access_token')
+  @ApiOperation({ summary: 'Xabar tafsiloti' })
+  @ApiStandardErrors({ auth: true, notFound: true })
   async findById(@Param('id') id: string) {
     try {
       const result = await this.service.findById(id);
@@ -75,6 +89,10 @@ export class MessageController {
 
   @Get('/user')
   @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth('bearer')
+  @ApiCookieAuth('access_token')
+  @ApiOperation({ summary: 'Foydalanuvchi xabarlari' })
+  @ApiStandardErrors({ auth: true })
   async findByUser(@Req() req: IRequestCustom) {
     try {
       const user = req?.user;
@@ -97,6 +115,8 @@ export class MessageController {
   }
 
   @Get('/property/:id')
+  @ApiOperation({ summary: 'Property bo‘yicha xabarlar (public)' })
+  @ApiStandardErrors({ validation: true })
   async findByProperty(
     @Param('id') id: string,
     @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
@@ -123,6 +143,10 @@ export class MessageController {
 
   @Get('/status')
   @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth('bearer')
+  @ApiCookieAuth('access_token')
+  @ApiOperation({ summary: 'Sotuvchi uchun xabar statusi' })
+  @ApiStandardErrors({ auth: true })
   async findMessageStatusBySeller(@Req() req: IRequestCustom) {
     try {
       const language = (req.headers['accept-language'] || 'en')
@@ -152,6 +176,10 @@ export class MessageController {
 
   @Delete('/status/all')
   @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth('bearer')
+  @ApiCookieAuth('access_token')
+  @ApiOperation({ summary: 'Barcha xabar statuslarini o‘chirish' })
+  @ApiStandardErrors({ auth: true })
   async deleteStatusMessageAll(@Req() req: IRequestCustom) {
     try {
       const user = req.user;
@@ -177,6 +205,10 @@ export class MessageController {
 
   @Delete('/status/:id')
   @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth('bearer')
+  @ApiCookieAuth('access_token')
+  @ApiOperation({ summary: 'Xabar statusini o‘chirish' })
+  @ApiStandardErrors({ auth: true, notFound: true })
   async deleteStatusMessageById(@Param('id') id: string) {
     try {
       const result = await this.service.deleteStatusMessageById(id);
@@ -199,6 +231,10 @@ export class MessageController {
 
   @Get('/status/read/:id')
   @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth('bearer')
+  @ApiCookieAuth('access_token')
+  @ApiOperation({ summary: 'Xabar statusini o‘qilgan deb belgilash' })
+  @ApiStandardErrors({ auth: true, notFound: true })
   async readMessageStatus(@Param('id') id: string) {
     try {
       const result = await this.service.readMessageStatus(id);
@@ -221,6 +257,10 @@ export class MessageController {
 
   @Get('/status/read-all')
   @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth('bearer')
+  @ApiCookieAuth('access_token')
+  @ApiOperation({ summary: 'Barcha xabar statuslarini o‘qilgan deb belgilash' })
+  @ApiStandardErrors({ auth: true })
   async readMessageStatusAll(@Req() req: IRequestCustom) {
     try {
       const user = req.user;
@@ -246,6 +286,10 @@ export class MessageController {
 
   @Get('/status/unread-count')
   @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth('bearer')
+  @ApiCookieAuth('access_token')
+  @ApiOperation({ summary: 'O‘qilmagan xabarlar soni' })
+  @ApiStandardErrors({ auth: true })
   async findMessageUnread(@Req() req: IRequestCustom) {
     try {
       const user = req.user;
@@ -269,6 +313,10 @@ export class MessageController {
 
   @Delete('/:id')
   @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth('bearer')
+  @ApiCookieAuth('access_token')
+  @ApiOperation({ summary: 'Xabarni o‘chirish' })
+  @ApiStandardErrors({ auth: true, forbidden: true, notFound: true })
   async delete(@Param('id') id: string, @Req() req: IRequestCustom) {
     try {
       const user = req.user;

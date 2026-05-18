@@ -19,14 +19,18 @@ import { AdminGuard } from '../guards/admin.guard';
 import { UpdateUserDto } from '../dto/update-user.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiMultipartBody } from 'src/common/swagger/file-upload.decorator';
+import { ApiStandardErrors } from 'src/common/swagger/api-errors.decorator';
 
 @UseGuards(AdminGuard)
+@ApiBearerAuth('bearer')
 @ApiTags('Admin Users')
+@ApiStandardErrors({ auth: true, forbidden: true })
 @Controller('admins/users')
 export class AdminUserController {
   constructor(private readonly adminUserService: AdminUserService) {}
 
   @Get()
+  @ApiOperation({ summary: 'Userlar ro‘yxati (admin)' })
   async findUsers(@Query() dto: FindUsersDto) {
     return this.adminUserService.findUsers(dto);
   }
@@ -34,7 +38,7 @@ export class AdminUserController {
   @Put(':id')
   @UseInterceptors(FileInterceptor('avatar'))
   @ApiOperation({ summary: 'Update user by admin' })
-  @ApiBearerAuth('bearer')
+  @ApiStandardErrors({ auth: true, validation: true, notFound: true })
   @ApiMultipartBody(UpdateUserDto, [{ name: 'avatar' }])
   async update(
     @Param('id') userId: string,

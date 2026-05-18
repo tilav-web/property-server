@@ -1,7 +1,8 @@
 import { Body, Controller, Post } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { AiChatService } from './ai-chat.service';
+import { ApiStandardErrors } from 'src/common/swagger/api-errors.decorator';
 
 interface AnonymousMessage {
   role: 'user' | 'assistant';
@@ -24,6 +25,12 @@ export class AiChatController {
    */
   @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @Post()
+  @ApiOperation({
+    summary: 'Anonim AI suhbat (login talab qilinmaydi)',
+    description:
+      "History client tomonida saqlanadi va har so'rov bilan yuboriladi. Server'da hech narsa saqlanmaydi.",
+  })
+  @ApiStandardErrors({ validation: true, throttle: true, serverError: true })
   async ask(@Body() dto: AnonymousChatDto) {
     const history = Array.isArray(dto.history) ? dto.history : [];
     const reply = await this.aiChatService.generateAnonymousReply(history);

@@ -436,7 +436,7 @@ export class UserService {
     try {
       if (usingPhone) {
         await this.smsService.sendOtp(
-          user.phone.value as string,
+          user.phone.value,
           code,
           language,
           'reset_password',

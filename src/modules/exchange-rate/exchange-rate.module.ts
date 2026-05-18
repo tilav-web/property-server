@@ -1,9 +1,6 @@
 import { Module, forwardRef } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
-import {
-  ExchangeRate,
-  ExchangeRateSchema,
-} from './exchange-rate.schema';
+import { ExchangeRate, ExchangeRateSchema } from './exchange-rate.schema';
 import { ExchangeRateService } from './exchange-rate.service';
 import { ExchangeRateController } from './exchange-rate.controller';
 import { AdminModule } from '../admin/admin.module';

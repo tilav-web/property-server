@@ -1,4 +1,12 @@
-import { IsEnum, IsNotEmpty, IsNumber, IsOptional, IsString, IsBoolean, ValidateIf } from 'class-validator';
+import {
+  IsEnum,
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsString,
+  IsBoolean,
+  ValidateIf,
+} from 'class-validator';
 import { Type, Transform } from 'class-transformer';
 import { EnumAdvertiseType } from 'src/enums/advertise-type.enum';
 

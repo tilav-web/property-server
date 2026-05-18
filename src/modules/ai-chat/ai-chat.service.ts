@@ -1,9 +1,4 @@
-import {
-  Inject,
-  Injectable,
-  Logger,
-  forwardRef,
-} from '@nestjs/common';
+import { Inject, Injectable, Logger, forwardRef } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { OpenaiService } from '../openai/openai.service';
@@ -154,9 +149,7 @@ export class AiChatService {
    * yozmaydi, faqat AI javobini va topilgan property'larni qaytaradi.
    * History client tarafda saqlanadi va har so'rov bilan yuboriladi.
    */
-  async generateAnonymousReply(
-    history: MessageRecord[],
-  ): Promise<{
+  async generateAnonymousReply(history: MessageRecord[]): Promise<{
     body: string;
     properties?: CompactProperty[];
     searchQuery?: string;
@@ -201,17 +194,14 @@ export class AiChatService {
         conversationId,
         senderId: aiUserId,
         type: MessageType.TEXT,
-        body:
-          "Salom! Men Amaar Properties AI yordamchisiman 🤖\n\nHozircha asosan Malayziya ko'chmas mulki bo'yicha yordam beraman.\n\nMulk qidirish uchun oddiy tilda yozing:\n• \"KLda 3 xonali kvartira\"\n• \"Selangorda ijara 2000 dan arzon\"\n• \"pool bilan yangi kvartira\"\n\nYoki platforma haqida savol bering.",
+        body: 'Salom! Men Amaar Properties AI yordamchisiman 🤖\n\nHozircha asosan Malayziya ko\'chmas mulki bo\'yicha yordam beraman.\n\nMulk qidirish uchun oddiy tilda yozing:\n• "KLda 3 xonali kvartira"\n• "Selangorda ijara 2000 dan arzon"\n• "pool bilan yangi kvartira"\n\nYoki platforma haqida savol bering.',
       });
     } catch (err) {
       this.logger.warn(`AI welcome failed: ${String(err)}`);
     }
   }
 
-  private async classify(
-    history: MessageRecord[],
-  ): Promise<ClassifiedReply> {
+  private async classify(history: MessageRecord[]): Promise<ClassifiedReply> {
     const conversationText = history
       .map((m) => {
         const prefix = m.role === 'user' ? 'User' : 'Assistant';
@@ -223,13 +213,15 @@ export class AiChatService {
     const user = `Suhbat:\n${conversationText}\n\nOxirgi User xabariga javob bering.`;
 
     try {
-      const { data } = await this.openai.generateJson<Partial<ClassifiedReply>>({
-        system,
-        user,
-        model: 'gpt-4o-mini',
-        temperature: 0.4,
-        maxTokens: 600,
-      });
+      const { data } = await this.openai.generateJson<Partial<ClassifiedReply>>(
+        {
+          system,
+          user,
+          model: 'gpt-4o-mini',
+          temperature: 0.4,
+          maxTokens: 600,
+        },
+      );
 
       return {
         reply:
@@ -250,9 +242,7 @@ export class AiChatService {
     }
   }
 
-  private async searchProperties(
-    query: string,
-  ): Promise<CompactProperty[]> {
+  private async searchProperties(query: string): Promise<CompactProperty[]> {
     try {
       const res = await this.aiPropertyService.findByPrompt({
         userPrompt: query,
@@ -281,17 +271,13 @@ export class AiChatService {
         typeof p.address === 'string'
           ? p.address
           : ((p.address as Record<string, string>) ?? {}).en,
-      category:
-        typeof p.category === 'string' ? (p.category as string) : undefined,
-      price: typeof p.price === 'number' ? (p.price as number) : undefined,
-      currency:
-        typeof p.currency === 'string' ? (p.currency as string) : undefined,
+      category: typeof p.category === 'string' ? p.category : undefined,
+      price: typeof p.price === 'number' ? p.price : undefined,
+      currency: typeof p.currency === 'string' ? p.currency : undefined,
       photo: photos[0],
-      bedrooms:
-        typeof p.bedrooms === 'number' ? (p.bedrooms as number) : undefined,
-      bathrooms:
-        typeof p.bathrooms === 'number' ? (p.bathrooms as number) : undefined,
-      area: typeof p.area === 'number' ? (p.area as number) : undefined,
+      bedrooms: typeof p.bedrooms === 'number' ? p.bedrooms : undefined,
+      bathrooms: typeof p.bathrooms === 'number' ? p.bathrooms : undefined,
+      area: typeof p.area === 'number' ? p.area : undefined,
     };
   }
 }

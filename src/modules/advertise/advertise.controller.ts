@@ -32,6 +32,7 @@ import { EnumAdvertiseType } from 'src/enums/advertise-type.enum';
 import { UpdateAdvertiseDto } from './dto/update-advertise.dto';
 import { Types } from 'mongoose';
 import { ApiMultipartBody } from 'src/common/swagger/file-upload.decorator';
+import { ApiStandardErrors } from 'src/common/swagger/api-errors.decorator';
 
 @ApiTags('Advertise')
 @Controller('advertise')
@@ -40,6 +41,7 @@ export class AdvertiseController {
 
   @Get('/public')
   @ApiOperation({ summary: 'List public advertises' })
+  @ApiStandardErrors({ validation: true })
   async findPublic(
     @Query('page') page?: string,
     @Query('limit') limit?: string,
@@ -81,11 +83,15 @@ export class AdvertiseController {
   }
 
   @Put(':id/view')
+  @ApiOperation({ summary: 'Reklama ko‘rishlar sonini oshirish' })
+  @ApiStandardErrors({ notFound: true })
   async incrementView(@Param('id') id: string) {
     return this.service.incrementView(id);
   }
 
   @Put(':id/click')
+  @ApiOperation({ summary: 'Reklama bosishlar sonini oshirish' })
+  @ApiStandardErrors({ notFound: true })
   async incrementClick(@Param('id') id: string) {
     return this.service.incrementClick(id);
   }
@@ -96,6 +102,12 @@ export class AdvertiseController {
   @ApiOperation({ summary: 'Update advertise' })
   @ApiBearerAuth('bearer')
   @ApiCookieAuth('access_token')
+  @ApiStandardErrors({
+    auth: true,
+    forbidden: true,
+    notFound: true,
+    validation: true,
+  })
   @ApiMultipartBody(UpdateAdvertiseDto, [{ name: 'image' }])
   async update(
     @Param('id') id: string,
@@ -111,7 +123,7 @@ export class AdvertiseController {
       if (!user) {
         throw new UnauthorizedException('Ruxsat berilmagan');
       }
-      return await this.service.update(id, dto, user._id as string, files);
+      return await this.service.update(id, dto, user._id, files);
     } catch (error) {
       console.error(error);
 
@@ -130,13 +142,17 @@ export class AdvertiseController {
 
   @UseGuards(AuthGuard('jwt'))
   @Delete(':id')
+  @ApiOperation({ summary: 'Reklamani o‘chirish' })
+  @ApiBearerAuth('bearer')
+  @ApiCookieAuth('access_token')
+  @ApiStandardErrors({ auth: true, forbidden: true, notFound: true })
   async remove(@Param('id') id: string, @Req() req: IRequestCustom) {
     try {
       const user = req.user;
       if (!user) {
         throw new UnauthorizedException('Ruxsat berilmagan');
       }
-      return await this.service.remove(id, user._id as string);
+      return await this.service.remove(id, user._id);
     } catch (error) {
       console.error(error);
 
@@ -159,6 +175,7 @@ export class AdvertiseController {
   @ApiOperation({ summary: 'Create advertise' })
   @ApiBearerAuth('bearer')
   @ApiCookieAuth('access_token')
+  @ApiStandardErrors({ auth: true, validation: true })
   @ApiMultipartBody(CreateAdvertiseDto, [{ name: 'image' }])
   async create(
     @UploadedFiles()
@@ -194,6 +211,10 @@ export class AdvertiseController {
 
   @Get('/')
   @UseGuards(AuthGuard('jwt'))
+  @ApiOperation({ summary: 'Mening reklamalarim' })
+  @ApiBearerAuth('bearer')
+  @ApiCookieAuth('access_token')
+  @ApiStandardErrors({ auth: true })
   async findMy(@Req() req: IRequestCustom) {
     try {
       const user = req.user;
@@ -226,6 +247,8 @@ export class AdvertiseController {
   }
 
   @Get(':id')
+  @ApiOperation({ summary: 'Reklama tafsiloti' })
+  @ApiStandardErrors({ notFound: true })
   async findOne(@Param('id') id: string) {
     if (!id) throw new NotAcceptableException('Ads not found!');
     return this.service.findById(id);

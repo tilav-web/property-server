@@ -21,6 +21,7 @@ import { SiteSettingsService } from './site-settings.service';
 import { AdminGuard } from '../admin/guards/admin.guard';
 import { UpdateSiteSettingsDto } from './dto/update-site-settings.dto';
 import { ApiMultipartBody } from 'src/common/swagger/file-upload.decorator';
+import { ApiStandardErrors } from 'src/common/swagger/api-errors.decorator';
 
 type HeroSlot = 'main' | 'buy' | 'rent';
 
@@ -30,6 +31,7 @@ export class SiteSettingsController {
   constructor(private readonly service: SiteSettingsService) {}
 
   @Get()
+  @ApiOperation({ summary: 'Site settings (public)' })
   async getPublic() {
     return this.service.get();
   }
@@ -45,6 +47,7 @@ export class SiteSettingsController {
   )
   @ApiOperation({ summary: 'Update site settings' })
   @ApiBearerAuth('bearer')
+  @ApiStandardErrors({ auth: true, validation: true })
   @ApiMultipartBody(UpdateSiteSettingsDto, [
     { name: 'hero_image' },
     { name: 'hero_image_buy' },
@@ -64,8 +67,10 @@ export class SiteSettingsController {
 
   @UseGuards(AdminGuard)
   @Delete('hero-image/:slot')
+  @ApiBearerAuth('bearer')
   @ApiOperation({ summary: 'Clear hero image by slot' })
   @ApiParam({ name: 'slot', enum: ['main', 'buy', 'rent'] })
+  @ApiStandardErrors({ auth: true, validation: true, notFound: true })
   async clearHero(@Param('slot') slot: HeroSlot) {
     return this.service.clearHeroImage(slot);
   }
@@ -73,6 +78,9 @@ export class SiteSettingsController {
   // Backward compatibility
   @UseGuards(AdminGuard)
   @Delete('hero-image')
+  @ApiBearerAuth('bearer')
+  @ApiOperation({ summary: 'Clear main hero image (legacy)' })
+  @ApiStandardErrors({ auth: true })
   async clearMainHero() {
     return this.service.clearHeroImage('main');
   }

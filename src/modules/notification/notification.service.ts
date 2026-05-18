@@ -41,7 +41,9 @@ export class NotificationService {
     { before, limit = 20 }: { before?: string; limit?: number },
   ): Promise<{ items: NotificationDocument[]; nextCursor: string | null }> {
     const safeLimit = Math.min(Math.max(limit, 1), 50);
-    const filter: Record<string, unknown> = { user: new Types.ObjectId(userId) };
+    const filter: Record<string, unknown> = {
+      user: new Types.ObjectId(userId),
+    };
     if (before && Types.ObjectId.isValid(before)) {
       filter._id = { $lt: new Types.ObjectId(before) };
     }
@@ -54,9 +56,7 @@ export class NotificationService {
 
     const hasMore = items.length > safeLimit;
     const result = hasMore ? items.slice(0, safeLimit) : items;
-    const nextCursor = hasMore
-      ? String(result[result.length - 1]._id)
-      : null;
+    const nextCursor = hasMore ? String(result[result.length - 1]._id) : null;
 
     return { items: result, nextCursor };
   }

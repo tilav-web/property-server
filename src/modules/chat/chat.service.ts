@@ -176,9 +176,7 @@ export class ChatService {
 
     const hasMore = items.length > safeLimit;
     const result = hasMore ? items.slice(0, safeLimit) : items;
-    const nextCursor = hasMore
-      ? String(result[result.length - 1]._id)
-      : null;
+    const nextCursor = hasMore ? String(result[result.length - 1]._id) : null;
 
     return {
       items: result.reverse() as unknown as ChatMessageDocument[],
@@ -199,7 +197,9 @@ export class ChatService {
     });
   }
 
-  async createSystemMessage(input: SystemMessageInput): Promise<ChatMessageDocument> {
+  async createSystemMessage(
+    input: SystemMessageInput,
+  ): Promise<ChatMessageDocument> {
     const conv = await this.conversationModel
       .findById(input.conversationId)
       .exec();
@@ -293,7 +293,11 @@ export class ChatService {
     const payload = this.serializeMessage(message, conv);
 
     // Real-time push: both participants (sender's other tabs + peer)
-    this.gateway.emitToConversation(String(conv._id), 'chat:new_message', payload);
+    this.gateway.emitToConversation(
+      String(conv._id),
+      'chat:new_message',
+      payload,
+    );
     if (peer) this.gateway.emitToUser(peer, 'chat:new_message', payload);
     this.gateway.emitToUser(senderId, 'chat:new_message', payload);
 
@@ -338,7 +342,9 @@ export class ChatService {
       });
       this.aiChatService
         .generateReply(String(conv._id))
-        .catch((err) => this.logger.warn(`AI reply task failed: ${String(err)}`))
+        .catch((err) =>
+          this.logger.warn(`AI reply task failed: ${String(err)}`),
+        )
         .finally(() => {
           this.gateway.emitToUser(senderId, 'chat:typing', {
             conversationId: String(conv._id),
@@ -371,17 +377,11 @@ export class ChatService {
     return String(p);
   }
 
-  private isParticipant(
-    conv: ConversationDocument,
-    userId: string,
-  ): boolean {
+  private isParticipant(conv: ConversationDocument, userId: string): boolean {
     return conv.participants.some((p) => this.participantId(p) === userId);
   }
 
-  private peerOf(
-    conv: ConversationDocument,
-    userId: string,
-  ): string | null {
+  private peerOf(conv: ConversationDocument, userId: string): string | null {
     const peer = conv.participants.find(
       (p) => this.participantId(p) !== userId,
     );

@@ -1,9 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
-import {
-  Location,
-  LocationSchema,
-} from 'src/common/location/location.schema';
+import { Location, LocationSchema } from 'src/common/location/location.schema';
 
 export type ProjectDocument = Project & Document;
 

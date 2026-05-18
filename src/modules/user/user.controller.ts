@@ -47,6 +47,7 @@ import {
   WebAuthResponseDto,
 } from './dto/auth.dto';
 import { ApiMultipartBody } from 'src/common/swagger/file-upload.decorator';
+import { ApiStandardErrors } from 'src/common/swagger/api-errors.decorator';
 
 type AuthTokens = {
   access_token: string;
@@ -197,7 +198,13 @@ export class UserController {
 
   @Throttle({ default: { limit: 3, ttl: 10000 } })
   @Post('/login')
-  @ApiOperation({ summary: 'Login with email/phone and password' })
+  @ApiOperation({
+    summary: 'Login with email/phone and password',
+    description:
+      "Muvaffaqiyatli login bo'lsa, response body'da `access_token` qaytadi. " +
+      "Swagger UI'da uni qo'lda yuqori-o'ngdagi **Authorize** tugmasi orqali `bearer` field'iga kiriting (yoki maxsus skript avtomatik qo'yadi). " +
+      "Refresh token cookie'ga (`refresh_token`) o'rnatiladi.",
+  })
   @ApiHeader({
     name: 'x-client-type',
     required: false,
@@ -213,6 +220,16 @@ export class UserController {
         { $ref: getSchemaPath(WebAuthResponseDto) },
         { $ref: getSchemaPath(AuthResponseDto) },
       ],
+    },
+  })
+  @ApiStandardErrors({
+    validation: true,
+    auth: true,
+    throttle: true,
+    notFound: true,
+    messages: {
+      unauthorized: "Login yoki parol noto'g'ri",
+      notFound: 'Bunday foydalanuvchi topilmadi',
     },
   })
   async login(
@@ -259,6 +276,7 @@ export class UserController {
       'User yaratiladi yoki tasdiqlanmagan user yangilanadi, OTP yuboriladi. Token OTP confirmdan keyin beriladi.',
     type: MessageResponseDto,
   })
+  @ApiStandardErrors({ validation: true, conflict: true, throttle: true })
   async register(@Body() dto: CreateUserDto, @Req() req: IRequestCustom) {
     try {
       const language = detectSmsLanguage(req);
@@ -300,6 +318,15 @@ export class UserController {
       ],
     },
   })
+  @ApiStandardErrors({
+    validation: true,
+    notFound: true,
+    throttle: true,
+    messages: {
+      badRequest: "OTP noto'g'ri yoki muddati o'tgan",
+      notFound: 'OTP yoki user topilmadi',
+    },
+  })
   async confirmOtp(
     @Body() dto: ConfirmOtpDto,
     @Req() req: IRequestCustom,
@@ -335,6 +362,7 @@ export class UserController {
   @ApiOperation({ summary: 'Resend registration OTP' })
   @ApiBody({ type: ResendOtpDto })
   @ApiOkResponse({ type: MessageResponseDto })
+  @ApiStandardErrors({ validation: true, notFound: true, throttle: true })
   async resendOtp(@Body() { id }: ResendOtpDto, @Req() req: IRequestCustom) {
     try {
       const language = detectSmsLanguage(req);
@@ -363,6 +391,7 @@ export class UserController {
   @ApiOkResponse({
     description: 'Parolni tiklash kodi yuboriladi va userId qaytadi.',
   })
+  @ApiStandardErrors({ validation: true, notFound: true, throttle: true })
   async forgotPassword(
     @Body() { identifier, email }: ForgotPasswordDto,
     @Req() req: IRequestCustom,
@@ -388,6 +417,7 @@ export class UserController {
   @ApiOperation({ summary: 'Reset password with OTP' })
   @ApiBody({ type: ResetPasswordDto })
   @ApiOkResponse({ type: MessageResponseDto })
+  @ApiStandardErrors({ validation: true, notFound: true, throttle: true })
   async resetPassword(@Body() dto: ResetPasswordDto) {
     try {
       return await this.service.resetPassword(dto);
@@ -409,6 +439,15 @@ export class UserController {
   @ApiCookieAuth('access_token')
   @ApiBody({ type: ChangePasswordDto })
   @ApiOkResponse({ type: MessageResponseDto })
+  @ApiStandardErrors({
+    auth: true,
+    validation: true,
+    throttle: true,
+    messages: {
+      badRequest:
+        "Joriy parol noto'g'ri yoki yangi parol talablarga javob bermaydi",
+    },
+  })
   async changePassword(
     @Body() dto: ChangePasswordDto,
     @Req() req: IRequestCustom,
@@ -450,6 +489,10 @@ export class UserController {
       ],
     },
   })
+  @ApiStandardErrors({
+    auth: true,
+    messages: { unauthorized: "Refresh token noto'g'ri yoki muddati o'tgan" },
+  })
   async refresh(
     @Body() dto: RefreshTokenDto = {},
     @Req() req: IRequestCustom & { cookies: { refresh_token?: string } },
@@ -485,6 +528,7 @@ export class UserController {
   @ApiOperation({ summary: 'Get current authenticated user' })
   @ApiBearerAuth('bearer')
   @ApiCookieAuth('access_token')
+  @ApiStandardErrors({ auth: true, throttle: true })
   async findMe(@Req() req: IRequestCustom) {
     try {
       const user = req.user;
@@ -513,6 +557,7 @@ export class UserController {
   @ApiOperation({ summary: 'Update current authenticated user profile' })
   @ApiBearerAuth('bearer')
   @ApiCookieAuth('access_token')
+  @ApiStandardErrors({ auth: true, validation: true, throttle: true })
   @ApiMultipartBody(UpdateUserDto, [{ name: 'avatar' }])
   async update(
     @Body() dto: UpdateUserDto,

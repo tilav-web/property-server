@@ -9,10 +9,7 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { Transform, Type } from 'class-transformer';
-import {
-  EnumProjectStatus,
-  EnumProjectUnitCategory,
-} from '../project.schema';
+import { EnumProjectStatus, EnumProjectUnitCategory } from '../project.schema';
 
 class UnitTypeInput {
   @IsEnum(EnumProjectUnitCategory)
@@ -79,8 +76,9 @@ export class CreateProjectDto {
   @IsOptional() @IsString() video_url?: string;
 
   @IsOptional()
-  @Transform(({ value }) =>
-    value === 'true' || value === true || value === '1' || value === 1,
+  @Transform(
+    ({ value }) =>
+      value === 'true' || value === true || value === '1' || value === 1,
   )
   @IsBoolean()
   is_featured?: boolean;

@@ -12,7 +12,7 @@ import { Type } from 'class-transformer';
 export class AiSearchDto {
   @IsString()
   @IsNotEmpty()
-  @MaxLength(500, { message: 'Prompt 500 belgidan uzun bo\'lmasligi kerak' })
+  @MaxLength(500, { message: "Prompt 500 belgidan uzun bo'lmasligi kerak" })
   prompt: string;
 
   @IsOptional()

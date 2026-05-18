@@ -1,10 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import {
-  SiteSettings,
-  SiteSettingsDocument,
-} from './site-settings.schema';
+import { SiteSettings, SiteSettingsDocument } from './site-settings.schema';
 import { FileService } from '../file/file.service';
 import { EnumFilesFolder } from '../file/enums/files-folder.enum';
 
@@ -91,12 +88,11 @@ export class SiteSettingsService {
     const cfg = SLOT_FIELDS[slot];
     if (!cfg) return settings;
 
-    const current = settings[cfg.image] as string | null | undefined;
+    const current = settings[cfg.image];
     if (current) {
       await this.fileService.deleteFile(current);
       (settings as unknown as Record<string, string | null>)[cfg.image] = null;
-      (settings as unknown as Record<string, string | null>)[cfg.srcset] =
-        null;
+      (settings as unknown as Record<string, string | null>)[cfg.srcset] = null;
       await settings.save();
     }
     return settings;
@@ -108,7 +104,7 @@ export class SiteSettingsService {
     file: Express.Multer.File | undefined,
   ) {
     if (!file) return;
-    const existing = settings[field] as string | null | undefined;
+    const existing = settings[field];
     if (existing) {
       await this.fileService.deleteFile(existing);
     }

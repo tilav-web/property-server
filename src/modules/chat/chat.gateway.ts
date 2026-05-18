@@ -32,9 +32,7 @@ interface JwtPayload {
     credentials: true,
   },
 })
-export class ChatGateway
-  implements OnGatewayConnection, OnGatewayDisconnect
-{
+export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private readonly logger = new Logger(ChatGateway.name);
 
   @WebSocketServer()
@@ -134,13 +132,11 @@ export class ChatGateway
   ) {
     const userId = client.data.userId;
     if (!userId || !data?.conversationId) return { ok: false };
-    client
-      .to(this.conversationRoom(data.conversationId))
-      .emit('chat:typing', {
-        conversationId: data.conversationId,
-        userId,
-        typing: Boolean(data.typing),
-      });
+    client.to(this.conversationRoom(data.conversationId)).emit('chat:typing', {
+      conversationId: data.conversationId,
+      userId,
+      typing: Boolean(data.typing),
+    });
     return { ok: true };
   }
 
@@ -170,9 +166,7 @@ export class ChatGateway
     event: string,
     payload: unknown,
   ): void {
-    this.server
-      ?.to(this.conversationRoom(conversationId))
-      .emit(event, payload);
+    this.server?.to(this.conversationRoom(conversationId)).emit(event, payload);
   }
 
   private userRoom(userId: string): string {

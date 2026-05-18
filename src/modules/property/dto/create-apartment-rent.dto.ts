@@ -14,7 +14,7 @@ import { EnumHeating } from '../enums/heating.enum';
 import { Type } from 'class-transformer';
 
 export class CreateApartmentRentDto extends CreatePropertyBaseDto {
-@IsOptional()
+  @IsOptional()
   @IsNumber()
   @Type(() => Number)
   bedrooms?: number;

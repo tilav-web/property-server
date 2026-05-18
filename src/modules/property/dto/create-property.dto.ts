@@ -103,7 +103,10 @@ export class CreatePropertyDto {
   @IsOptional() @IsBoolean() mortgage_available?: boolean;
 
   // ---- Rent uchun ----
-  @IsOptional() @Type(() => Number) @IsNumber() contract_duration_months?: number;
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  contract_duration_months?: number;
 
   @IsOptional()
   @IsArray()

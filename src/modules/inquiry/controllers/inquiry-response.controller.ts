@@ -1,9 +1,15 @@
 import { Controller, Post, Body, UseGuards, Req } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiCookieAuth,
+  ApiOperation,
+  ApiTags,
+} from '@nestjs/swagger';
 import { InquiryResponseService } from '../services/inquiry-response.service';
 import { CreateInquiryResponseDto } from '../dto/create-inquiry-response.dto';
 import { AuthGuard } from '@nestjs/passport';
 import { type IRequestCustom } from 'src/interfaces/custom-request.interface';
+import { ApiStandardErrors } from 'src/common/swagger/api-errors.decorator';
 
 @ApiTags('Inquiry Responses')
 @Controller('inquiry-responses')
@@ -14,6 +20,10 @@ export class InquiryResponseController {
 
   @Post()
   @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth('bearer')
+  @ApiCookieAuth('access_token')
+  @ApiOperation({ summary: 'Inquiry javobini yaratish' })
+  @ApiStandardErrors({ auth: true, validation: true, notFound: true })
   create(
     @Body() createInquiryResponseDto: CreateInquiryResponseDto,
     @Req() req: IRequestCustom,

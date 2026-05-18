@@ -13,6 +13,7 @@ import {
   Param,
 } from '@nestjs/common';
 import {
+  ApiBearerAuth,
   ApiCookieAuth,
   ApiOkResponse,
   ApiOperation,
@@ -31,6 +32,7 @@ import {
   AdminAuthResponseDto,
   AdminLoginDto,
 } from '../dto/admin-auth.dto';
+import { ApiStandardErrors } from 'src/common/swagger/api-errors.decorator';
 
 @ApiTags('Admins')
 @Controller('admins')
@@ -38,8 +40,15 @@ export class AdminController {
   constructor(private readonly service: AdminService) {}
 
   @Post('/login')
-  @ApiOperation({ summary: 'Admin login' })
+  @ApiOperation({
+    summary: 'Admin login',
+    description:
+      "Muvaffaqiyatli login bo'lsa, response body'da `admin_access_token` qaytadi. " +
+      "Swagger'da bu tokenni qo'lda olib, yuqori-o'ngdagi **Authorize** tugmasi orqali `bearer` field'iga kiriting " +
+      '(yoki sahifaga maxsus skript bu ishni avtomatik bajaradi).',
+  })
   @ApiOkResponse({ type: AdminAuthResponseDto })
+  @ApiStandardErrors({ validation: true, auth: true })
   async login(@Body() dto: AdminLoginDto, @Res() res: Response) {
     try {
       const { admin, admin_refresh_token, admin_access_token } =
@@ -71,9 +80,14 @@ export class AdminController {
   }
 
   @Post('/refresh-token')
-  @ApiOperation({ summary: 'Refresh admin access token' })
+  @ApiOperation({
+    summary: 'Refresh admin access token',
+    description:
+      "`admin_refresh_token` cookie'sidan foydalanadi. Mobile client'lar uchun body'da yuborilishi qo'llab-quvvatlanmaydi.",
+  })
   @ApiCookieAuth('admin_refresh_token')
   @ApiOkResponse({ type: AdminAccessTokenResponseDto })
+  @ApiStandardErrors({ auth: true, forbidden: true })
   async refresh(
     @Req()
     req: IAdminRequestCustom & { cookies: { admin_refresh_token?: string } },
@@ -101,6 +115,9 @@ export class AdminController {
   }
 
   @Post('/logout')
+  @ApiOperation({
+    summary: 'Admin logout (admin_refresh_token cookie tozalanadi)',
+  })
   logout(@Res() res: Response) {
     return res
       .clearCookie('admin_refresh_token', {
@@ -114,18 +131,32 @@ export class AdminController {
 
   @Post('/')
   @UseGuards(AdminGuard, SuperAdminGuard)
+  @ApiBearerAuth('bearer')
+  @ApiOperation({ summary: 'Yangi admin yaratish (faqat super admin)' })
+  @ApiStandardErrors({
+    auth: true,
+    forbidden: true,
+    validation: true,
+    conflict: true,
+  })
   create(@Body() dto: CreateAdminDto) {
     return this.service.create(dto);
   }
 
   @Get('/')
   @UseGuards(AdminGuard, SuperAdminGuard)
+  @ApiBearerAuth('bearer')
+  @ApiOperation({ summary: "Adminlar ro'yxati (faqat super admin)" })
+  @ApiStandardErrors({ auth: true, forbidden: true })
   findAll() {
     return this.service.findAll();
   }
 
   @Patch('/password')
   @UseGuards(AdminGuard)
+  @ApiBearerAuth('bearer')
+  @ApiOperation({ summary: 'Joriy admin parolini yangilash' })
+  @ApiStandardErrors({ auth: true, validation: true })
   updatePassword(
     @Req() req: IAdminRequestCustom,
     @Body() dto: UpdateAdminPasswordDto,
@@ -136,18 +167,32 @@ export class AdminController {
 
   @Patch('/:id')
   @UseGuards(AdminGuard, SuperAdminGuard)
+  @ApiBearerAuth('bearer')
+  @ApiOperation({ summary: 'Adminni yangilash (faqat super admin)' })
+  @ApiStandardErrors({
+    auth: true,
+    forbidden: true,
+    notFound: true,
+    validation: true,
+  })
   update(@Param('id') id: string, @Body() dto: UpdateAdminDto) {
     return this.service.update(id, dto);
   }
 
   @Delete('/:id')
   @UseGuards(AdminGuard, SuperAdminGuard)
+  @ApiBearerAuth('bearer')
+  @ApiOperation({ summary: "Adminni o'chirish (faqat super admin)" })
+  @ApiStandardErrors({ auth: true, forbidden: true, notFound: true })
   remove(@Param('id') id: string) {
     return this.service.remove(id);
   }
 
   @Get('/profile')
   @UseGuards(AdminGuard)
+  @ApiBearerAuth('bearer')
+  @ApiOperation({ summary: 'Joriy admin profili' })
+  @ApiStandardErrors({ auth: true })
   getProfile(@Req() req: IAdminRequestCustom) {
     return req.admin;
   }

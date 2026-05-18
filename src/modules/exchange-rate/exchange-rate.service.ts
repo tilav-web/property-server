@@ -1,10 +1,7 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
-import {
-  ExchangeRate,
-  ExchangeRateDocument,
-} from './exchange-rate.schema';
+import { ExchangeRate, ExchangeRateDocument } from './exchange-rate.schema';
 import { CurrencyCode } from 'src/common/currencies/currency.enum';
 import { SUPPORTED_CURRENCIES } from 'src/common/currencies/currencies.constant';
 

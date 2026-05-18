@@ -41,6 +41,7 @@ import { UpdateSellerDto } from './dto/update-seller.dto';
 import { EnumLanguage } from 'src/enums/language.enum';
 import { ApiMultipartBody } from 'src/common/swagger/file-upload.decorator';
 import { CreateSellerRequestDto } from './dto/create-seller-request.dto';
+import { ApiStandardErrors } from 'src/common/swagger/api-errors.decorator';
 
 @ApiTags('Sellers')
 @Controller('sellers')
@@ -54,6 +55,12 @@ export class SellerController {
   @ApiBearerAuth('bearer')
   @ApiCookieAuth('access_token')
   @ApiBody({ type: CreateSellerRequestDto })
+  @ApiStandardErrors({
+    auth: true,
+    validation: true,
+    conflict: true,
+    throttle: true,
+  })
   async createSeller(
     @Body()
     { business_type, passport }: CreateSellerRequestDto,
@@ -89,6 +96,7 @@ export class SellerController {
   @ApiQuery({ name: 'page', required: false })
   @ApiQuery({ name: 'limit', required: false })
   @ApiQuery({ name: 'search', required: false })
+  @ApiStandardErrors({ validation: true })
   async findAll(
     @Query('page') page: string,
     @Query('limit') limit: string,
@@ -119,6 +127,7 @@ export class SellerController {
   }
 
   @Get('/top')
+  @ApiOperation({ summary: 'Top sellers' })
   async findTop() {
     try {
       const result = await this.service.findTop();
@@ -143,6 +152,10 @@ export class SellerController {
   @Throttle({ default: { limit: 10, ttl: 10000 } })
   @Get('/me')
   @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth('bearer')
+  @ApiCookieAuth('access_token')
+  @ApiOperation({ summary: 'Joriy foydalanuvchining seller profili' })
+  @ApiStandardErrors({ auth: true, throttle: true })
   async findSellerByUser(@Req() req: IRequestCustom) {
     try {
       const user = req.user;
@@ -166,6 +179,8 @@ export class SellerController {
   }
 
   @Get(':id')
+  @ApiOperation({ summary: 'Seller tafsiloti' })
+  @ApiStandardErrors({ notFound: true })
   async findOne(
     @Param('id') id: string,
     @Req() req: IRequestCustom,
@@ -191,6 +206,15 @@ export class SellerController {
 
   @Put(':id')
   @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth('bearer')
+  @ApiCookieAuth('access_token')
+  @ApiOperation({ summary: 'Sellerni yangilash (faqat ega)' })
+  @ApiStandardErrors({
+    auth: true,
+    forbidden: true,
+    notFound: true,
+    validation: true,
+  })
   async update(
     @Param('id') id: string,
     @Body() dto: UpdateSellerDto,
@@ -234,6 +258,12 @@ export class SellerController {
   @ApiOperation({ summary: 'Create YTT seller' })
   @ApiBearerAuth('bearer')
   @ApiCookieAuth('access_token')
+  @ApiStandardErrors({
+    auth: true,
+    forbidden: true,
+    validation: true,
+    throttle: true,
+  })
   @ApiMultipartBody(CreateYttSellerDto, [
     { name: 'passport_file' },
     { name: 'ytt_certificate_file' },
@@ -286,6 +316,12 @@ export class SellerController {
   @ApiOperation({ summary: 'Create MCHJ seller' })
   @ApiBearerAuth('bearer')
   @ApiCookieAuth('access_token')
+  @ApiStandardErrors({
+    auth: true,
+    forbidden: true,
+    validation: true,
+    throttle: true,
+  })
   @ApiMultipartBody(CreateMchjSellerDto, [
     { name: 'ustav_file' },
     { name: 'mchj_license' },
@@ -341,6 +377,12 @@ export class SellerController {
   @ApiOperation({ summary: 'Create self-employed seller' })
   @ApiBearerAuth('bearer')
   @ApiCookieAuth('access_token')
+  @ApiStandardErrors({
+    auth: true,
+    forbidden: true,
+    validation: true,
+    throttle: true,
+  })
   @ApiMultipartBody(CreateSelfEmployedSellerDto, [
     { name: 'passport_file' },
     { name: 'self_employment_certificate' },
@@ -386,6 +428,12 @@ export class SellerController {
   @ApiOperation({ summary: 'Create physical seller' })
   @ApiBearerAuth('bearer')
   @ApiCookieAuth('access_token')
+  @ApiStandardErrors({
+    auth: true,
+    forbidden: true,
+    validation: true,
+    throttle: true,
+  })
   @ApiMultipartBody(CreatePhysicalSellerDto, [{ name: 'passport_file' }])
   async createPhysicalSeller(
     @Body() dto: CreatePhysicalSellerDto,
@@ -419,6 +467,10 @@ export class SellerController {
 
   @Delete(':id')
   @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth('bearer')
+  @ApiCookieAuth('access_token')
+  @ApiOperation({ summary: 'Sellerni o‘chirish (faqat ega)' })
+  @ApiStandardErrors({ auth: true, forbidden: true, notFound: true })
   async remove(@Param('id') id: string, @Req() req: IRequestCustom) {
     try {
       return await this.service.remove(id, req.user?._id as string);

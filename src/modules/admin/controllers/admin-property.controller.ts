@@ -7,34 +7,44 @@ import {
   Body,
   Put,
 } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AdminGuard } from '../guards/admin.guard';
 import { AdminPropertyService } from '../services/admin-property.service';
 import { FindPropertiesDto } from '../dto/find-properties.dto';
 import { UpdatePropertyDto } from '../dto/update-property.dto';
+import { ApiStandardErrors } from 'src/common/swagger/api-errors.decorator';
 
 @UseGuards(AdminGuard)
+@ApiBearerAuth('bearer')
 @ApiTags('Admin Properties')
+@ApiStandardErrors({ auth: true })
 @Controller('admins/properties')
 export class AdminPropertyController {
   constructor(private readonly adminPropertyService: AdminPropertyService) {}
 
   @Get()
+  @ApiOperation({ summary: "E'lonlar ro‘yxati (admin)" })
   async findAll(@Query() dto: FindPropertiesDto) {
     return this.adminPropertyService.findAll(dto);
   }
 
   @Get('/seller/:sellerId')
+  @ApiOperation({ summary: 'Sotuvchi bo‘yicha e’lonlar' })
+  @ApiStandardErrors({ auth: true, notFound: true })
   async findBySeller(@Param('sellerId') sellerId: string) {
     return this.adminPropertyService.findBySeller(sellerId);
   }
 
   @Get(':id')
+  @ApiOperation({ summary: 'E’lon tafsiloti' })
+  @ApiStandardErrors({ auth: true, notFound: true })
   async findOne(@Param('id') id: string) {
     return this.adminPropertyService.findOne(id);
   }
 
   @Put(':id')
+  @ApiOperation({ summary: 'E’lonni yangilash (admin)' })
+  @ApiStandardErrors({ auth: true, notFound: true, validation: true })
   async update(
     @Param('id') propertyId: string,
     @Body() dto: UpdatePropertyDto,

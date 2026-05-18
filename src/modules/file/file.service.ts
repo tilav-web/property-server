@@ -233,8 +233,7 @@ export class FileService {
       const isHttpUrl = /^https?:\/\//i.test(fileUrl);
       if (
         isHttpUrl &&
-        (!this.legacyBaseUrl ||
-          !fileUrl.startsWith(`${this.legacyBaseUrl}/`))
+        (!this.legacyBaseUrl || !fileUrl.startsWith(`${this.legacyBaseUrl}/`))
       ) {
         this.logger.warn(`External URL, skipping delete: ${fileUrl}`);
         return true;

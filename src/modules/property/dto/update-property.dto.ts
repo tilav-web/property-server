@@ -71,15 +71,15 @@ export class UpdatePropertyDto {
   @IsNumber()
   @Transform(({ value }) => Number(value))
   @IsOptional()
-  @Min(-90, { message: 'Latitude noto\'g\'ri!' })
-  @Max(90, { message: 'Latitude noto\'g\'ri!' })
+  @Min(-90, { message: "Latitude noto'g'ri!" })
+  @Max(90, { message: "Latitude noto'g'ri!" })
   location_lat?: number;
 
   @IsNumber()
   @Transform(({ value }) => Number(value))
   @IsOptional()
-  @Min(-180, { message: 'Longitude noto\'g\'ri!' })
-  @Max(180, { message: 'Longitude noto\'g\'ri!' })
+  @Min(-180, { message: "Longitude noto'g'ri!" })
+  @Max(180, { message: "Longitude noto'g'ri!" })
   location_lng?: number;
 
   @IsOptional()
@@ -102,7 +102,7 @@ export class UpdatePropertyDto {
 
   @IsOptional()
   @IsNumber()
-  @Min(0, { message: 'Narx manfiy bo\'lishi mumkin emas!' })
+  @Min(0, { message: "Narx manfiy bo'lishi mumkin emas!" })
   @Transform(({ value }) => Number(value))
   price?: number;
 

@@ -5,10 +5,16 @@ import {
   UseGuards,
   UnauthorizedException,
 } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiCookieAuth,
+  ApiOperation,
+  ApiTags,
+} from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
 import { StatisticService } from './statistic.service';
 import { type IRequestCustom } from 'src/interfaces/custom-request.interface';
+import { ApiStandardErrors } from 'src/common/swagger/api-errors.decorator';
 
 @ApiTags('Statistics')
 @Controller('statistics')
@@ -17,6 +23,10 @@ export class StatisticController {
 
   @Get('/seller-dashboard')
   @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth('bearer')
+  @ApiCookieAuth('access_token')
+  @ApiOperation({ summary: 'Seller dashboard statistikasi' })
+  @ApiStandardErrors({ auth: true })
   async getSellerDashboard(@Req() req: IRequestCustom) {
     const user = req.user;
     if (!user?._id) {

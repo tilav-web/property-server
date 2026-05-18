@@ -58,9 +58,7 @@ export class InquiryResponseService {
       inquiry: inquiry._id,
     });
     if (existing) {
-      throw new BadRequestException(
-        "Ushbu so'rovga allaqachon javob berilgan",
-      );
+      throw new BadRequestException("Ushbu so'rovga allaqachon javob berilgan");
     }
 
     const seller = await this.sellerModel.findOne({
@@ -84,10 +82,7 @@ export class InquiryResponseService {
         ? EnumInquiryStatus.ACCEPTED
         : EnumInquiryStatus.REJECTED;
 
-    await this.inquiryService.updateStatus(
-      String(inquiry._id),
-      inquiryStatus,
-    );
+    await this.inquiryService.updateStatus(String(inquiry._id), inquiryStatus);
 
     // --- Chat'ga SYSTEM message yuborish — buyer chatda javob ko'radi ---
     try {
@@ -100,9 +95,7 @@ export class InquiryResponseService {
         dto.status === EnumInquiryResponseStatus.APPROVED
           ? '✅ Taklif qabul qilindi'
           : '❌ Taklif rad etildi';
-      const body = dto.description
-        ? `${prefix}: ${dto.description}`
-        : prefix;
+      const body = dto.description ? `${prefix}: ${dto.description}` : prefix;
 
       await this.chatService.createSystemMessage({
         conversationId: conversation._id,

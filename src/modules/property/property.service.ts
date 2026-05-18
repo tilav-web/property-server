@@ -109,9 +109,7 @@ export class PropertyService {
     if (providedPhotos < requiredPhotos) {
       throw new BadRequestException(
         `Kamida ${requiredPhotos} ta rasm yuklash talab qilinadi` +
-          (bedrooms && bedrooms >= 1
-            ? ` (xonalar soni: ${bedrooms})`
-            : ''),
+          (bedrooms && bedrooms >= 1 ? ` (xonalar soni: ${bedrooms})` : ''),
       );
     }
 
@@ -658,9 +656,7 @@ export class PropertyService {
           near: { type: 'Point', coordinates: [lng, lat] },
           distanceField: 'distance_m',
           spherical: true,
-          ...(radius && radius > 0
-            ? { maxDistance: radius * 1000 }
-            : {}),
+          ...(radius && radius > 0 ? { maxDistance: radius * 1000 } : {}),
           query: geoMatch,
         },
       });
@@ -695,7 +691,7 @@ export class PropertyService {
 
     if (page === 1) {
       const countFilter = useGeoNear
-        ? this.countFilterForDistance(match, lat!, lng!, radius)
+        ? this.countFilterForDistance(match, lat, lng, radius)
         : match;
       const [properties, totalItems] = await Promise.all([
         this.propertyModel.aggregate(pipeline).exec(),
@@ -914,7 +910,15 @@ export class PropertyService {
     };
   }
 
-  async findById({ id, language, userId }: { id: string; language?: EnumLanguage; userId?: string }) {
+  async findById({
+    id,
+    language,
+    userId,
+  }: {
+    id: string;
+    language?: EnumLanguage;
+    userId?: string;
+  }) {
     const property = await this.propertyModel
       .findById(id)
       .populate('author')
@@ -924,8 +928,12 @@ export class PropertyService {
       throw new NotFoundException('Property not found!');
     }
 
-    const isOwner = userId && property.author?._id?.toString() === userId.toString();
-    if (!isOwner && (property.is_archived || property.status !== EnumPropertyStatus.APPROVED)) {
+    const isOwner =
+      userId && property.author?._id?.toString() === userId.toString();
+    if (
+      !isOwner &&
+      (property.is_archived || property.status !== EnumPropertyStatus.APPROVED)
+    ) {
       throw new NotFoundException('Property not found!');
     }
 

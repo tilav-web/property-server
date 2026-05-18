@@ -4,10 +4,7 @@ import {
   Conversation,
   ConversationSchema,
 } from './schemas/conversation.schema';
-import {
-  ChatMessage,
-  ChatMessageSchema,
-} from './schemas/chat-message.schema';
+import { ChatMessage, ChatMessageSchema } from './schemas/chat-message.schema';
 import { ChatService } from './chat.service';
 import { ChatController } from './chat.controller';
 import { ChatGateway } from './chat.gateway';

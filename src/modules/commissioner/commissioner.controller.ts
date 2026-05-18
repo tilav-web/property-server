@@ -7,7 +7,12 @@ import {
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiCookieAuth,
+  ApiOperation,
+  ApiTags,
+} from '@nestjs/swagger';
 import { CommissionerService } from './commissioner.service';
 import { Throttle } from '@nestjs/throttler';
 import { Roles } from '../user/decorators/roles.decorator';
@@ -17,6 +22,7 @@ import { CreateCommissionerDto } from './dto/create-commissioner.dto';
 import { AuthRoleGuard } from '../user/guards/role.guard';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiMultipartBody } from 'src/common/swagger/file-upload.decorator';
+import { ApiStandardErrors } from 'src/common/swagger/api-errors.decorator';
 
 @ApiTags('Commissioners')
 @Controller('commissioners')
@@ -28,6 +34,15 @@ export class CommissionerController {
   @Roles('legal')
   @UseGuards(AuthGuard('jwt'), AuthRoleGuard)
   @UseInterceptors(FileInterceptor('contract_file'))
+  @ApiOperation({ summary: 'Commissioner yaratish (faqat legal role)' })
+  @ApiBearerAuth('bearer')
+  @ApiCookieAuth('access_token')
+  @ApiStandardErrors({
+    auth: true,
+    forbidden: true,
+    validation: true,
+    throttle: true,
+  })
   @ApiMultipartBody(CreateCommissionerDto, [
     { name: 'contract_file', required: true },
   ])

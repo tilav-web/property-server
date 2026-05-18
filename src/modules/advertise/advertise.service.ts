@@ -216,7 +216,7 @@ export class AdvertiseService {
       days,
       totalPrice,
       currency: isSupportedCurrency(process.env.ADVERTISE_CURRENCY)
-        ? process.env.ADVERTISE_CURRENCY!.toUpperCase()
+        ? process.env.ADVERTISE_CURRENCY.toUpperCase()
         : DEFAULT_CURRENCY,
     };
   }

@@ -1,9 +1,6 @@
 import { Module, forwardRef } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
-import {
-  ProjectInquiry,
-  ProjectInquirySchema,
-} from './project-inquiry.schema';
+import { ProjectInquiry, ProjectInquirySchema } from './project-inquiry.schema';
 import { ProjectInquiryService } from './project-inquiry.service';
 import { ProjectInquiryController } from './project-inquiry.controller';
 import { ProjectModule } from '../project/project.module';

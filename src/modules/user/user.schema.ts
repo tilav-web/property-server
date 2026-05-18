@@ -82,9 +82,17 @@ export const UserSchema = SchemaFactory.createForClass(User);
 // Sparse unique indexes — null qiymatga ruxsat, lekin dublikat yo'q
 UserSchema.index(
   { 'email.value': 1 },
-  { unique: true, sparse: true, partialFilterExpression: { 'email.value': { $type: 'string' } } },
+  {
+    unique: true,
+    sparse: true,
+    partialFilterExpression: { 'email.value': { $type: 'string' } },
+  },
 );
 UserSchema.index(
   { 'phone.value': 1 },
-  { unique: true, sparse: true, partialFilterExpression: { 'phone.value': { $type: 'string' } } },
+  {
+    unique: true,
+    sparse: true,
+    partialFilterExpression: { 'phone.value': { $type: 'string' } },
+  },
 );

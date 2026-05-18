@@ -25,6 +25,7 @@ import { UpdateProjectDto } from './dto/update-project.dto';
 import { EnumProjectStatus } from './project.schema';
 import { AdminGuard } from '../admin/guards/admin.guard';
 import { ApiMultipartBody } from 'src/common/swagger/file-upload.decorator';
+import { ApiStandardErrors } from 'src/common/swagger/api-errors.decorator';
 
 const FILE_FIELDS = [
   { name: 'photos', maxCount: 20 },
@@ -39,6 +40,7 @@ export class ProjectController {
   @Get()
   @ApiOperation({ summary: 'List projects' })
   @ApiQuery({ name: 'bbox', required: false, example: '101.5,2.9,102.0,3.4' })
+  @ApiStandardErrors({ validation: true })
   async list(
     @Query('page') page?: string,
     @Query('limit') limit?: string,
@@ -91,6 +93,8 @@ export class ProjectController {
   }
 
   @Get(':id')
+  @ApiOperation({ summary: 'Project tafsiloti' })
+  @ApiStandardErrors({ notFound: true })
   async getOne(@Param('id') id: string) {
     return this.service.findById(id, true);
   }
@@ -102,6 +106,7 @@ export class ProjectController {
   @UseInterceptors(FileFieldsInterceptor(FILE_FIELDS))
   @ApiOperation({ summary: 'Create project' })
   @ApiBearerAuth('bearer')
+  @ApiStandardErrors({ auth: true, validation: true })
   @ApiMultipartBody(CreateProjectDto, [
     { name: 'photos', isArray: true },
     { name: 'brochure' },
@@ -122,6 +127,7 @@ export class ProjectController {
   @UseInterceptors(FileFieldsInterceptor(FILE_FIELDS))
   @ApiOperation({ summary: 'Update project' })
   @ApiBearerAuth('bearer')
+  @ApiStandardErrors({ auth: true, notFound: true, validation: true })
   @ApiMultipartBody(UpdateProjectDto, [
     { name: 'photos', isArray: true },
     { name: 'brochure' },
@@ -140,12 +146,18 @@ export class ProjectController {
 
   @UseGuards(AdminGuard)
   @Delete(':id/photo')
+  @ApiBearerAuth('bearer')
+  @ApiOperation({ summary: 'Project rasmini o‘chirish' })
+  @ApiStandardErrors({ auth: true, notFound: true, validation: true })
   async deletePhoto(@Param('id') id: string, @Query('url') url: string) {
     return this.service.removePhoto({ id, url });
   }
 
   @UseGuards(AdminGuard)
   @Delete(':id')
+  @ApiBearerAuth('bearer')
+  @ApiOperation({ summary: 'Project o‘chirish' })
+  @ApiStandardErrors({ auth: true, notFound: true })
   async remove(@Param('id') id: string) {
     return this.service.remove(id);
   }
