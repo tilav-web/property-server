@@ -51,6 +51,14 @@ export class Property {
   @Prop({ type: Boolean, default: false })
   is_premium: boolean;
 
+  /**
+   * Premium muddati tugash sanasi. Premium yoqilganda set qilinadi
+   * (createdAt + PREMIUM_DURATION_DAYS). Cron job shu sana o'tganda
+   * is_premium = false qiladi (kelajakda qo'shiladi).
+   */
+  @Prop({ type: Date, required: false, default: null })
+  is_premium_until: Date | null;
+
   @Prop({
     type: String,
     enum: EnumPropertyStatus,

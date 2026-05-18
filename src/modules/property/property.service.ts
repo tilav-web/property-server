@@ -1028,6 +1028,65 @@ export class PropertyService {
     return this.messageService.createForProperty({ dto, user });
   }
 
+  /**
+   * Premium upgrade boshlanishidan oldin egasi to'g'ri ekanini tekshiradi.
+   * Premium yoqilgan e'lonni qayta to'lash mumkin emas (muddat tugashini kuting).
+   */
+  async ensureOwnedAndPremiumEligible({
+    propertyId,
+    userId,
+  }: {
+    propertyId: string;
+    userId: string;
+  }) {
+    const property = await this.propertyModel.findById(propertyId);
+    if (!property) throw new NotFoundException('Property not found!');
+    if (property.author.toString() !== userId.toString()) {
+      throw new ForbiddenException('You can only upgrade your own property.');
+    }
+    if (
+      property.is_premium &&
+      property.is_premium_until &&
+      property.is_premium_until.getTime() > Date.now()
+    ) {
+      throw new BadRequestException(
+        `Bu e'lon allaqachon premium (${property.is_premium_until.toISOString()} gacha)`,
+      );
+    }
+    return property;
+  }
+
+  /**
+   * Admin approve qilganda chaqiriladi: e'lonni premium qiladi va
+   * muddati tugash sanasini o'rnatadi.
+   *
+   * Joriy premium muddati hali tugamagan bo'lsa, davomidan davom etadi
+   * (qaytma extend). Aks holda hozirgi vaqtdan boshlanadi.
+   */
+  async markPremium({
+    propertyId,
+    durationDays,
+  }: {
+    propertyId: string;
+    durationDays: number;
+  }) {
+    const property = await this.propertyModel.findById(propertyId);
+    if (!property) throw new NotFoundException('Property not found!');
+
+    const now = Date.now();
+    const base =
+      property.is_premium_until && property.is_premium_until.getTime() > now
+        ? property.is_premium_until.getTime()
+        : now;
+    const newUntil = new Date(base + durationDays * 24 * 60 * 60 * 1000);
+
+    property.is_premium = true;
+    property.is_premium_until = newUntil;
+    const saved = await property.save();
+    this.searchCache.invalidate();
+    return saved;
+  }
+
   async getCategories(): Promise<{ category: string; count: number }[]> {
     // 1 ta database call - super tez!
     const pipeline: PipelineStage[] = [

@@ -29,6 +29,8 @@ import { SiteSettingsModule } from './modules/site-settings/site-settings.module
 import { ExchangeRateModule } from './modules/exchange-rate/exchange-rate.module';
 import { CountryConfigModule } from './common/config/country-config.module';
 import { PaymentModule } from './modules/payment/payment.module';
+import { PropertyPremiumModule } from './modules/property-premium/property-premium.module';
+import { AdminPaymentModule } from './modules/admin-payment/admin-payment.module';
 
 @Module({
   imports: [
@@ -78,6 +80,8 @@ import { PaymentModule } from './modules/payment/payment.module';
     SiteSettingsModule,
     ExchangeRateModule,
     PaymentModule,
+    PropertyPremiumModule,
+    AdminPaymentModule,
   ],
   providers: [
     {
