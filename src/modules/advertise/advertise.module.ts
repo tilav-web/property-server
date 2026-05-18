@@ -4,6 +4,7 @@ import { Advertise, AdvertiseSchema } from './advertise.schema';
 import { AdvertiseController } from './advertise.controller';
 import { AdvertiseService } from './advertise.service';
 import { FileModule } from '../file/file.module';
+import { PaymentModule } from '../payment/payment.module';
 
 @Module({
   imports: [
@@ -11,6 +12,7 @@ import { FileModule } from '../file/file.module';
       { name: Advertise.name, schema: AdvertiseSchema },
     ]),
     FileModule,
+    PaymentModule,
   ],
   controllers: [AdvertiseController],
   providers: [AdvertiseService],

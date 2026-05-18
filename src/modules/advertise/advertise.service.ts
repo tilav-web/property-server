@@ -1,10 +1,12 @@
 import {
   BadRequestException,
   Injectable,
+  InternalServerErrorException,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { FilterQuery, Model, Types } from 'mongoose';
+import { FilterQuery, Model } from 'mongoose';
 import { Advertise, AdvertiseDocument } from './advertise.schema';
 import { CreateAdvertiseDto } from './dto/create-advertise.dto';
 import { FileService } from '../file/file.service';
@@ -13,14 +15,51 @@ import { EnumAdvertiseType } from 'src/enums/advertise-type.enum';
 import { EnumPaymentStatus } from 'src/enums/advertise-payment-status.enum';
 import { EnumFilesFolder } from '../file/enums/files-folder.enum';
 import { UpdateAdvertiseDto } from './dto/update-advertise.dto';
-import { DEFAULT_CURRENCY, isSupportedCurrency } from 'src/common/currencies';
+import {
+  CurrencyCode,
+  DEFAULT_CURRENCY,
+  isSupportedCurrency,
+} from 'src/common/currencies';
+import { TransactionService } from '../payment/services/transaction.service';
+import { OrderTypeEnum } from 'src/enums/order-type.enum';
+import { PaymentProviderEnum } from 'src/enums/payment-provider.enum';
+import { generatePaymeUrl } from 'src/utils/generate-payme-url';
+import { ApprovalHandler } from '../payment/services/payment-approval.service';
 
+export interface CreateAdvertiseResult {
+  advertise: AdvertiseDocument;
+  /** PAYMENT_PROVIDER=none bo'lsa null (Malaysia uchun — admin qo'lda paid qiladi). */
+  transactionId: string | null;
+  /** PAYMENT_PROVIDER=none bo'lsa null. */
+  checkoutUrl: string | null;
+  provider: PaymentProviderEnum | 'NONE';
+}
+
+/**
+ * Reklama yaratish va to'lov flow:
+ *
+ * PAYMENT_PROVIDER=payme (UZ):
+ *   1. Advertise yaratiladi (PENDING, payment_status: PENDING)
+ *   2. Transaction yaratiladi va Payme checkout URL qaytariladi
+ *   3. User Payme'da to'laydi -> webhook -> Transaction SUCCESS + AWAITING
+ *   4. Admin approve -> activate(advertiseId):
+ *      payment_status = PAID, status = APPROVED, from = now, to = now + days
+ *
+ * PAYMENT_PROVIDER=none (MY):
+ *   1. Advertise yaratiladi (PENDING)
+ *   2. Transaction yaratilmaydi, checkout URL null
+ *   3. Admin qo'lda payment_status = PAID + status = APPROVED qiladi
+ *      (eski advertise admin controller orqali)
+ */
 @Injectable()
-export class AdvertiseService {
+export class AdvertiseService implements ApprovalHandler {
+  private readonly logger = new Logger(AdvertiseService.name);
+
   constructor(
     @InjectModel(Advertise.name)
     private readonly advertiseModel: Model<AdvertiseDocument>,
     private readonly fileService: FileService,
+    private readonly transactionService: TransactionService,
   ) {}
 
   async create({
@@ -31,30 +70,99 @@ export class AdvertiseService {
     dto: CreateAdvertiseDto;
     author: string;
     files: { image: Express.Multer.File[] };
-  }) {
+  }): Promise<CreateAdvertiseResult> {
     if (!files?.image?.[0]) {
       throw new BadRequestException('Reklama rasmini yuborishingiz shart!');
     }
 
-    const { totalPrice } = this.priceCalculus(dto.days);
+    const { totalPrice, currency } = this.priceCalculus(dto.days);
     const image = await this.fileService.saveFile({
       folder: EnumFilesFolder.PHOTOS,
       file: files.image[0],
     });
 
+    let newAdvertise: AdvertiseDocument;
     try {
-      const newAdvertise = await this.advertiseModel.create({
+      newAdvertise = await this.advertiseModel.create({
         ...dto,
         author,
         price: totalPrice,
+        currency,
         image,
       });
-
-      return this.advertiseModel.findById(newAdvertise._id).exec();
     } catch (error) {
       await this.fileService.deleteFile(image);
       throw error;
     }
+
+    const provider = this.resolveProvider();
+
+    // Payment provider yo'q -> eski flow (admin qo'lda)
+    if (provider === 'NONE') {
+      return {
+        advertise: newAdvertise,
+        transactionId: null,
+        checkoutUrl: null,
+        provider: 'NONE',
+      };
+    }
+
+    // To'lov yaratish
+    try {
+      const transaction = await this.transactionService.createPending({
+        user: author,
+        orderType: OrderTypeEnum.ADVERTISE,
+        orderId: String(newAdvertise._id),
+        amount: totalPrice,
+        currency,
+        provider,
+      });
+
+      const transactionId = String(transaction._id);
+      const checkoutUrl = generatePaymeUrl({
+        amount: totalPrice,
+        orderId: transactionId,
+      });
+
+      return {
+        advertise: newAdvertise,
+        transactionId,
+        checkoutUrl,
+        provider,
+      };
+    } catch (err) {
+      // Transaction yaratish xato bo'lsa, advertise saqlanib qoldi —
+      // foydalanuvchi qaytadan checkout boshlashi mumkin (kelajakda)
+      this.logger.error(
+        `Advertise yaratildi (${String(newAdvertise._id)}) lekin Transaction yaratilmadi: ${(err as Error).message}`,
+      );
+      throw err;
+    }
+  }
+
+  /**
+   * ApprovalHandler implementatsiyasi — admin approve qilganda chaqiriladi.
+   * orderId = Advertise._id (string).
+   *
+   * Bu yerda Advertise PAID + APPROVED qilinadi va from/to oraliq belgilanadi.
+   * `from` = hozir, `to` = hozir + days.
+   */
+  async activate(orderId: string) {
+    const advertise = await this.advertiseModel.findById(orderId);
+    if (!advertise) {
+      throw new NotFoundException('Advertise topilmadi');
+    }
+
+    const now = new Date();
+    const to = new Date(now.getTime() + advertise.days * 24 * 60 * 60 * 1000);
+
+    advertise.payment_status = EnumPaymentStatus.PAID;
+    advertise.status = EnumAdvertiseStatus.APPROVED;
+    advertise.from = now;
+    advertise.to = to;
+    await advertise.save();
+
+    return advertise;
   }
 
   async findAll(params: {
@@ -163,8 +271,8 @@ export class AdvertiseService {
 
     advertise.status = EnumAdvertiseStatus.PENDING;
 
-    // remove image_to_delete from dto
-    const { image_to_delete, ...restDto } = dto;
+    const { image_to_delete: _ignored, ...restDto } = dto;
+    void _ignored;
 
     Object.assign(advertise, restDto);
 
@@ -204,7 +312,11 @@ export class AdvertiseService {
     );
   }
 
-  priceCalculus(days: number) {
+  priceCalculus(days: number): {
+    days: number;
+    totalPrice: number;
+    currency: CurrencyCode;
+  } {
     const dailyPrice = Number(process.env.ADVERTISE_DAILY_PRICE);
     if (!dailyPrice || Number.isNaN(dailyPrice) || dailyPrice < 0) {
       throw new BadRequestException('Serverda kunlik narx noto‘g‘ri sozlangan');
@@ -212,12 +324,16 @@ export class AdvertiseService {
 
     const totalPrice = days * dailyPrice;
 
+    const currency: CurrencyCode = isSupportedCurrency(
+      process.env.ADVERTISE_CURRENCY,
+    )
+      ? (process.env.ADVERTISE_CURRENCY.toUpperCase() as CurrencyCode)
+      : DEFAULT_CURRENCY;
+
     return {
       days,
       totalPrice,
-      currency: isSupportedCurrency(process.env.ADVERTISE_CURRENCY)
-        ? process.env.ADVERTISE_CURRENCY.toUpperCase()
-        : DEFAULT_CURRENCY,
+      currency,
     };
   }
 
@@ -228,12 +344,10 @@ export class AdvertiseService {
       payment_status: EnumPaymentStatus.PAID,
     });
 
-    if (count === 0) return null; // Agar reklama bo'lmasa
+    if (count === 0) return null;
 
-    // Tasodifiy offset tanlaymiz
     const offset = Math.floor(Math.random() * count);
 
-    // Bitta tasodifiy reklamani olamiz
     const [advertise] = await this.advertiseModel
       .find({
         type,
@@ -244,5 +358,17 @@ export class AdvertiseService {
       .limit(1);
 
     return advertise ?? null;
+  }
+
+  // ---- privates ----
+
+  private resolveProvider(): PaymentProviderEnum | 'NONE' {
+    const raw = (process.env.PAYMENT_PROVIDER || 'payme').toLowerCase();
+    if (raw === 'none') return 'NONE';
+    if (raw === 'payme') return PaymentProviderEnum.PAYME;
+    if (raw === 'click') return PaymentProviderEnum.CLICK;
+    throw new InternalServerErrorException(
+      `Noma'lum PAYMENT_PROVIDER: ${raw}`,
+    );
   }
 }
