@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import {
@@ -8,6 +8,7 @@ import {
 } from './schemas/notification.schema';
 import { NotificationType } from './enums/notification-type.enum';
 import { Admin, AdminDocument } from '../admin/admin.schema';
+import { AdminNotificationGateway } from './admin-notification.gateway';
 
 export interface CreateNotificationInput {
   user: string | Types.ObjectId;
@@ -29,6 +30,8 @@ export class NotificationService {
     private readonly model: Model<NotificationDocument>,
     @InjectModel(Admin.name)
     private readonly adminModel: Model<AdminDocument>,
+    @Optional()
+    private readonly adminGateway?: AdminNotificationGateway,
   ) {}
 
   async create(input: CreateNotificationInput): Promise<NotificationDocument> {
@@ -67,7 +70,21 @@ export class NotificationService {
       read: false,
     }));
 
-    await this.model.insertMany(docs, { ordered: false });
+    const inserted = await this.model.insertMany(docs, { ordered: false });
+
+    // Real-time: barcha ulanagan adminlarga event yuborish
+    if (this.adminGateway && inserted.length > 0) {
+      // Bitta umumiy event — har bir adminga moslab payload ham yuborilishi
+      // mumkin, lekin client tomonida shu user uchun count yangilanishi yetadi
+      this.adminGateway.emitToAllAdmins('notification:new', {
+        type: input.type,
+        title: input.title,
+        body: input.body,
+        link: input.link,
+        payload: input.payload,
+      });
+    }
+
     return docs.length;
   }
 
