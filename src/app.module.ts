@@ -27,12 +27,14 @@ import { ProjectModule } from './modules/project/project.module';
 import { ProjectInquiryModule } from './modules/project-inquiry/project-inquiry.module';
 import { SiteSettingsModule } from './modules/site-settings/site-settings.module';
 import { ExchangeRateModule } from './modules/exchange-rate/exchange-rate.module';
+import { CountryConfigModule } from './common/config/country-config.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
     }),
+    CountryConfigModule,
     ThrottlerModule.forRoot([
       {
         ttl: 10,

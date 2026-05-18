@@ -1,6 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
 import { Location, LocationSchema } from 'src/common/location/location.schema';
+import { resolveDefaultCurrency } from 'src/common/currencies/currencies.constant';
 
 export type ProjectDocument = Project & Document;
 
@@ -100,7 +101,7 @@ export class Project {
   @Prop({ type: Number, required: false, min: 0 })
   launch_price?: number;
 
-  @Prop({ type: String, required: false, default: 'MYR' })
+  @Prop({ type: String, required: false, default: () => resolveDefaultCurrency() })
   currency?: string;
 
   @Prop({ type: [ProjectUnitTypeSchema], default: [] })

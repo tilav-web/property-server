@@ -67,6 +67,24 @@ export const CURRENCIES: Record<CurrencyCode, CurrencyMeta> = {
   },
 };
 
-export const DEFAULT_CURRENCY: CurrencyCode = CurrencyCode.MYR;
+/**
+ * ENV'dan DEFAULT_CURRENCY o'qiydi. Aniqlanmagan/noto'g'ri qiymat bo'lsa
+ * COUNTRY env'iga qarab tanlaydi (UZ -> UZS, MY -> MYR). Hech narsa
+ * berilmasa UZS qaytaradi.
+ *
+ * Bu helper DI'siz joylarda (schema default, constant export) ishlatiladi.
+ * NestJS kontekstida CountryConfigService tavsiya etiladi.
+ */
+export function resolveDefaultCurrency(): CurrencyCode {
+  const raw = process.env.DEFAULT_CURRENCY?.toUpperCase();
+  if (raw && (Object.values(CurrencyCode) as string[]).includes(raw)) {
+    return raw as CurrencyCode;
+  }
+  const country = process.env.COUNTRY?.toUpperCase();
+  if (country === 'MY') return CurrencyCode.MYR;
+  return CurrencyCode.UZS;
+}
+
+export const DEFAULT_CURRENCY: CurrencyCode = resolveDefaultCurrency();
 
 export const SUPPORTED_CURRENCIES: CurrencyCode[] = Object.values(CurrencyCode);
