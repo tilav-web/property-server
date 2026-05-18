@@ -1087,6 +1087,28 @@ export class PropertyService {
     return saved;
   }
 
+  /**
+   * Premium muddati tugagan barcha e'lonlarni topib `is_premium = false`
+   * qiladi. Cron job kuniga 1 marta chaqiradi.
+   *
+   * @returns expire qilingan e'lonlar soni
+   */
+  async expirePremiums(): Promise<number> {
+    const result = await this.propertyModel.updateMany(
+      {
+        is_premium: true,
+        is_premium_until: { $ne: null, $lte: new Date() },
+      },
+      {
+        $set: { is_premium: false },
+      },
+    );
+    if (result.modifiedCount > 0) {
+      this.searchCache.invalidate();
+    }
+    return result.modifiedCount;
+  }
+
   async getCategories(): Promise<{ category: string; count: number }[]> {
     // 1 ta database call - super tez!
     const pipeline: PipelineStage[] = [

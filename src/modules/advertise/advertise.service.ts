@@ -296,6 +296,25 @@ export class AdvertiseService implements ApprovalHandler {
     return { message: 'Eʼlon muvaffaqiyatli oʻchirildi' };
   }
 
+  /**
+   * `to` sanasi o'tgan APPROVED reklamalarni EXPIRED qiladi. Cron har kun
+   * 1 marta chaqiradi.
+   *
+   * @returns expire qilingan reklamalar soni
+   */
+  async expireOldAdvertises(): Promise<number> {
+    const result = await this.advertiseModel.updateMany(
+      {
+        status: EnumAdvertiseStatus.APPROVED,
+        to: { $ne: null, $lt: new Date() },
+      },
+      {
+        $set: { status: EnumAdvertiseStatus.EXPIRED },
+      },
+    );
+    return result.modifiedCount;
+  }
+
   async incrementView(id: string) {
     return this.advertiseModel.findByIdAndUpdate(
       id,

@@ -8,6 +8,7 @@ import { MessageModule } from './modules/message/message.module';
 import { SellerModule } from './modules/seller/seller.module';
 import { BankAccountModule } from './modules/bank-account/bank-account.module';
 import { CommissionerModule } from './modules/commissioner/commissioner.module';
+import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { InteractionsModule } from './modules/interactions/interactions.module';
@@ -31,12 +32,14 @@ import { CountryConfigModule } from './common/config/country-config.module';
 import { PaymentModule } from './modules/payment/payment.module';
 import { PropertyPremiumModule } from './modules/property-premium/property-premium.module';
 import { AdminPaymentModule } from './modules/admin-payment/admin-payment.module';
+import { ExpireCronModule } from './modules/expire-cron/expire-cron.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
     }),
+    ScheduleModule.forRoot(),
     CountryConfigModule,
     ThrottlerModule.forRoot([
       {
@@ -82,6 +85,7 @@ import { AdminPaymentModule } from './modules/admin-payment/admin-payment.module
     PaymentModule,
     PropertyPremiumModule,
     AdminPaymentModule,
+    ExpireCronModule,
   ],
   providers: [
     {
