@@ -9,6 +9,7 @@ import {
   Transaction,
   TransactionSchema,
 } from './schemas/transaction.schema';
+import { NotificationModule } from '../notification/notification.module';
 
 /**
  * To'lov moduli.
@@ -28,6 +29,7 @@ import {
     MongooseModule.forFeature([
       { name: Transaction.name, schema: TransactionSchema },
     ]),
+    NotificationModule,
   ],
   controllers: [PaymeController, TransactionController],
   providers: [PaymeService, TransactionService, PaymentApprovalService],

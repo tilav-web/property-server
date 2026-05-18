@@ -1,6 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
+import { NotificationService } from 'src/modules/notification/notification.service';
+import { NotificationType } from 'src/modules/notification/enums/notification-type.enum';
 import { AdminApprovalStatusEnum } from 'src/enums/admin-approval-status.enum';
 import { PaymentProviderEnum } from 'src/enums/payment-provider.enum';
 import { PaymentStatusEnum } from 'src/enums/payment-status.enum';
@@ -44,6 +46,7 @@ export class PaymeService {
   constructor(
     @InjectModel(Transaction.name)
     private readonly transactionModel: Model<TransactionDocument>,
+    private readonly notificationService: NotificationService,
   ) {}
 
   async handleRequest(body: unknown): Promise<PaymeRpcResponse> {
@@ -300,7 +303,8 @@ export class PaymeService {
       `Payme PerformTransaction OK: tx=${tx._id.toString()}, orderType=${tx.orderType}, orderId=${tx.orderId.toString()}`,
     );
 
-    // TODO (Bosqich 3): Admin'ga notification yuborish
+    // Admin'larga notification (block qilmaymiz — webhook tezkor javob qaytarishi kerak)
+    void this.notifyAdminsAboutNewPayment(tx);
 
     return {
       result: {
@@ -310,6 +314,47 @@ export class PaymeService {
       },
       id,
     };
+  }
+
+  /**
+   * Payme PerformTransaction muvaffaqiyatli bo'lganda barcha admin'larga
+   * "yangi to'lov keldi" notification yuboradi. Xato bo'lsa log qiladi,
+   * lekin webhook javobiga ta'sir qilmaydi.
+   */
+  private async notifyAdminsAboutNewPayment(
+    tx: TransactionDocument,
+  ): Promise<void> {
+    try {
+      const orderTypeLabel = this.formatOrderType(tx.orderType);
+      await this.notificationService.notifyAllAdmins({
+        type: NotificationType.PAYMENT_AWAITING_APPROVAL,
+        title: 'Yangi to‘lov tasdiqlash uchun keldi',
+        body: `${orderTypeLabel}: ${tx.amount} ${tx.currency} — tasdiqlash kutilmoqda`,
+        link: `/admins/payments?status=AWAITING`,
+        payload: {
+          transactionId: String(tx._id),
+          orderType: tx.orderType,
+          orderId: String(tx.orderId),
+          amount: tx.amount,
+          currency: tx.currency,
+        },
+      });
+    } catch (err) {
+      this.logger.warn(
+        `Admin notification yuborilmadi (tx=${String(tx._id)}): ${(err as Error).message}`,
+      );
+    }
+  }
+
+  private formatOrderType(orderType: string): string {
+    switch (orderType) {
+      case 'PROPERTY_PREMIUM':
+        return 'E’lon premium upgrade';
+      case 'ADVERTISE':
+        return 'Reklama';
+      default:
+        return orderType;
+    }
   }
 
   private async cancelTransaction(
