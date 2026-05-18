@@ -5,6 +5,11 @@ import { CURRENCIES } from '../currencies/currencies.constant';
 
 export type CountryCode = 'UZ' | 'MY';
 export type LanguageCode = 'uz' | 'ru' | 'en' | 'ms';
+/**
+ * 'none' — mamlakatda SMS/OTP umuman ishlatilmaydi (masalan, Malaysia'da
+ * auth faqat Google OAuth + email/parol orqali).
+ */
+export type SmsProvider = 'eskiz' | 'twilio' | 'none';
 
 const SUPPORTED_COUNTRIES: ReadonlyArray<CountryCode> = ['UZ', 'MY'];
 const SUPPORTED_LANGUAGE_CODES: ReadonlyArray<LanguageCode> = [
@@ -26,7 +31,7 @@ const COUNTRY_DEFAULTS: Record<
     supportedLanguages: LanguageCode[];
     mapCenter: [number, number];
     mapZoom: number;
-    smsProvider: 'eskiz' | 'twilio';
+    smsProvider: SmsProvider;
   }
 > = {
   UZ: {
@@ -43,7 +48,8 @@ const COUNTRY_DEFAULTS: Record<
     supportedLanguages: ['en', 'ms'],
     mapCenter: [3.139, 101.6869], // Kuala Lumpur
     mapZoom: 12,
-    smsProvider: 'twilio',
+    // Malaysia uchun SMS yo'q — auth flow: Google OAuth + email/parol
+    smsProvider: 'none',
   },
 };
 
@@ -57,7 +63,9 @@ export class CountryConfigService {
   readonly supportedLanguages: LanguageCode[];
   readonly mapCenter: [number, number];
   readonly mapZoom: number;
-  readonly smsProvider: 'eskiz' | 'twilio';
+  readonly smsProvider: SmsProvider;
+  /** SMS yoqilganmi (provider !== 'none'). UI/flow shartlarini qisqartirish uchun. */
+  readonly smsEnabled: boolean;
   readonly advertiseDailyPrice: number;
   readonly advertiseCurrency: CurrencyCode;
 
@@ -89,6 +97,7 @@ export class CountryConfigService {
       config.get<string>('SMS_PROVIDER'),
       defaults.smsProvider,
     );
+    this.smsEnabled = this.smsProvider !== 'none';
     this.advertiseDailyPrice = this.resolveAdvertiseDailyPrice(
       config.get<string>('ADVERTISE_DAILY_PRICE'),
     );
@@ -188,11 +197,13 @@ export class CountryConfigService {
 
   private resolveSmsProvider(
     raw: string | undefined,
-    fallback: 'eskiz' | 'twilio',
-  ): 'eskiz' | 'twilio' {
+    fallback: SmsProvider,
+  ): SmsProvider {
     if (!raw) return fallback;
     const lower = raw.toLowerCase();
-    if (lower === 'eskiz' || lower === 'twilio') return lower;
+    if (lower === 'eskiz' || lower === 'twilio' || lower === 'none') {
+      return lower;
+    }
     this.logger.warn(`SMS_PROVIDER "${raw}" qo'llab-quvvatlanmaydi`);
     return fallback;
   }
