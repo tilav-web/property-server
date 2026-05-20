@@ -11,9 +11,19 @@ import {
 import { UserService } from '../user/user.service';
 import { AiPropertyService } from '../ai-property/ai-property.service';
 import { EnumLanguage } from 'src/enums/language.enum';
+import { CountryConfigService } from 'src/common/config/country.config';
 
-const AI_SYSTEM_PROMPT = `Sen Amaar Properties platformasining AI yordamchisisan.
-Platforma Malayziya ko'chmas mulk bozori uchun ishlaydi (sotib olish, ijara, ipoteka).
+// Country-aware AI prompt - mamlakat va valyuta CountryConfigService'dan
+function buildAiSystemPrompt(country: 'UZ' | 'MY', currency: string): string {
+  const market = country === 'UZ' ? "O'zbekiston" : 'Malaysia';
+  const exampleCity = country === 'UZ' ? 'Toshkentda' : 'KLda';
+  const exampleArea = country === 'UZ' ? 'Samarqandda' : 'Selangorda';
+  const examplePrice =
+    country === 'UZ' ? '500 mln so\'mgacha' : '5 lakhgacha';
+
+  return `Sen Amaar Properties platformasining AI yordamchisisan.
+Platforma ${market} ko'chmas mulk bozori uchun ishlaydi (sotib olish, ijara, ipoteka).
+Asosiy valyuta: ${currency}.
 
 Vazifang:
 - Foydalanuvchi yozgan xabarni tahlil qilish
@@ -25,8 +35,9 @@ MUHIM qoidalar:
 - Agar qidiruv bo'lsa: "Mana men siz uchun topgan variantlar:" kabi tez kirish gapi bilan reply ber
 - Agar savol bo'lsa (umumiy): to'g'ridan-to'g'ri javob ber, searchQuery bo'sh bo'lsin
 - Shaxsiy ma'lumot so'rama
-- isSearch=true bo'lishi uchun foydalanuvchi aniq mulk izlayotgan bo'lishi kerak ("KLda 2 xonali", "Selangorda ijara", "5 lakhgacha kvartira", "pool bilan")
+- isSearch=true bo'lishi uchun foydalanuvchi aniq mulk izlayotgan bo'lishi kerak ("${exampleCity} 2 xonali", "${exampleArea} ijara", "${examplePrice} kvartira", "pool bilan")
 - Salomlashish, umumiy savollar, ma'lumot so'rash uchun isSearch=false`;
+}
 
 const RESPONSE_SCHEMA_PROMPT = `Natija STRICTLY quyidagi JSON shaklida bo'lsin:
 {
@@ -74,7 +85,13 @@ export class AiChatService {
     private readonly aiPropertyService: AiPropertyService,
     @Inject(forwardRef(() => ChatService))
     private readonly chatService: ChatService,
+    private readonly countryConfig: CountryConfigService,
   ) {}
+
+  /** Mamlakat nomi - foydalanuvchiga ko'rsatadigan matn uchun. */
+  private get marketName(): string {
+    return this.countryConfig.country === 'UZ' ? "O'zbekiston" : 'Malaysia';
+  }
 
   async generateReply(conversationId: string): Promise<void> {
     try {
@@ -118,7 +135,7 @@ export class AiChatService {
       if (classified.isSearch && properties.length === 0) {
         // Hech narsa topilmadi — AI'ning "mana topildi" gapini almashtirib, aniq
         // xabar qaytaramiz (hozircha Malayziya bozori ekanligini eslatib).
-        finalBody = `Kechirasiz, "${classified.searchQuery}" bo'yicha mos e'lon topilmadi. Hozircha platformada asosan Malayziya ko'chmas mulki mavjud. Boshqa shahar, narx oralig'i yoki kengroq shartlar bilan urinib ko'ring.`;
+        finalBody = `Kechirasiz, "${classified.searchQuery}" bo'yicha mos e'lon topilmadi. Hozircha platformada asosan ${this.marketName} ko'chmas mulki mavjud. Boshqa shahar, narx oralig'i yoki kengroq shartlar bilan urinib ko'ring.`;
       }
 
       await this.chatService.createSystemMessage({
@@ -175,7 +192,7 @@ export class AiChatService {
     let body = classified.reply;
     let noResults = false;
     if (classified.isSearch && properties.length === 0) {
-      body = `Kechirasiz, "${classified.searchQuery}" bo'yicha mos e'lon topilmadi. Hozircha platformada asosan Malayziya ko'chmas mulki mavjud. Boshqa shahar, narx oralig'i yoki kengroq shartlar bilan urinib ko'ring.`;
+      body = `Kechirasiz, "${classified.searchQuery}" bo'yicha mos e'lon topilmadi. Hozircha platformada asosan ${this.marketName} ko'chmas mulki mavjud. Boshqa shahar, narx oralig'i yoki kengroq shartlar bilan urinib ko'ring.`;
       noResults = true;
     }
 
@@ -190,11 +207,15 @@ export class AiChatService {
   async sendWelcome(conversationId: string): Promise<void> {
     try {
       const aiUserId = await this.userService.getAiAgentId();
+      const examples =
+        this.countryConfig.country === 'UZ'
+          ? '• "Toshkentda 3 xonali kvartira"\n• "Samarqandda ijara 5 mln gacha"\n• "yangi binoda kvartira"'
+          : '• "KLda 3 xonali kvartira"\n• "Selangorda ijara 2000 dan arzon"\n• "pool bilan yangi kvartira"';
       await this.chatService.createSystemMessage({
         conversationId,
         senderId: aiUserId,
         type: MessageType.TEXT,
-        body: 'Salom! Men Amaar Properties AI yordamchisiman 🤖\n\nHozircha asosan Malayziya ko\'chmas mulki bo\'yicha yordam beraman.\n\nMulk qidirish uchun oddiy tilda yozing:\n• "KLda 3 xonali kvartira"\n• "Selangorda ijara 2000 dan arzon"\n• "pool bilan yangi kvartira"\n\nYoki platforma haqida savol bering.',
+        body: `Salom! Men Amaar Properties AI yordamchisiman 🤖\n\nHozircha asosan ${this.marketName} ko'chmas mulki bo'yicha yordam beraman.\n\nMulk qidirish uchun oddiy tilda yozing:\n${examples}\n\nYoki platforma haqida savol bering.`,
       });
     } catch (err) {
       this.logger.warn(`AI welcome failed: ${String(err)}`);
@@ -209,7 +230,11 @@ export class AiChatService {
       })
       .join('\n');
 
-    const system = `${AI_SYSTEM_PROMPT}\n\n${RESPONSE_SCHEMA_PROMPT}`;
+    const systemPrompt = buildAiSystemPrompt(
+      this.countryConfig.country,
+      this.countryConfig.defaultCurrency,
+    );
+    const system = `${systemPrompt}\n\n${RESPONSE_SCHEMA_PROMPT}`;
     const user = `Suhbat:\n${conversationText}\n\nOxirgi User xabariga javob bering.`;
 
     try {
