@@ -48,6 +48,11 @@ import {
 } from './dto/auth.dto';
 import { ApiMultipartBody } from 'src/common/swagger/file-upload.decorator';
 import { ApiStandardErrors } from 'src/common/swagger/api-errors.decorator';
+import { MobileOAuthService } from './services/mobile-oauth.service';
+import {
+  AppleMobileLoginDto,
+  GoogleMobileLoginDto,
+} from './dto/mobile-oauth.dto';
 
 type AuthTokens = {
   access_token: string;
@@ -119,7 +124,10 @@ function detectSmsLanguage(req: {
 )
 @Controller('users/auth')
 export class UserController {
-  constructor(private readonly service: UserService) {}
+  constructor(
+    private readonly service: UserService,
+    private readonly mobileOAuth: MobileOAuthService,
+  ) {}
 
   @Get('google')
   @UseGuards(AuthGuard('google'))
@@ -194,6 +202,61 @@ export class UserController {
       path: '/',
     });
     res.redirect(`${process.env.CLIENT_URL}/auth/social`);
+  }
+
+  // ==========================================================================
+  // MOBILE NATIVE OAUTH - body'da idToken bilan, cookie ishlatilmaydi
+  // ==========================================================================
+
+  @Throttle({ default: { limit: 5, ttl: 10000 } })
+  @Post('/google/mobile')
+  @ApiOperation({
+    summary: 'Google Sign-In (mobile native SDK)',
+    description:
+      "Mobile ilovadan native Google Sign-In SDK orqali olingan idToken'ni verify qilib, " +
+      "access_token va refresh_token qaytaradi. Cookie ishlatilmaydi - ikkala token body'da. " +
+      "Token Google'ning JWKS bilan verify qilinadi (aud GOOGLE_CLIENT_ID yoki GOOGLE_MOBILE_CLIENT_IDS bo'lishi kerak).",
+  })
+  @ApiBody({ type: GoogleMobileLoginDto })
+  @ApiOkResponse({ type: AuthResponseDto })
+  @ApiStandardErrors({
+    validation: true,
+    auth: true,
+    throttle: true,
+    messages: {
+      unauthorized: "Google token noto'g'ri yoki muddati o'tgan",
+    },
+  })
+  async googleMobile(@Body() dto: GoogleMobileLoginDto) {
+    const profile = await this.mobileOAuth.verifyGoogleIdToken(dto.idToken);
+    const { user, access_token, refresh_token } =
+      await this.service.socialLoginFromVerifiedProfile(profile);
+    return { user, access_token, refresh_token };
+  }
+
+  @Throttle({ default: { limit: 5, ttl: 10000 } })
+  @Post('/apple/mobile')
+  @ApiOperation({
+    summary: 'Apple Sign-In (mobile native SDK) - hozircha implement qilinmagan',
+    description:
+      "Mobile ilovadan native Apple Sign-In SDK orqali olingan identityToken'ni verify " +
+      "qiladi. Hozircha implement qilinmagan - jose paketi bilan kelajakda.",
+  })
+  @ApiBody({ type: AppleMobileLoginDto })
+  @ApiOkResponse({ type: AuthResponseDto })
+  @ApiStandardErrors({
+    validation: true,
+    auth: true,
+    throttle: true,
+  })
+  async appleMobile(@Body() dto: AppleMobileLoginDto) {
+    const profile = await this.mobileOAuth.verifyAppleIdentityToken(
+      dto.identityToken,
+      dto.fullName,
+    );
+    const { user, access_token, refresh_token } =
+      await this.service.socialLoginFromVerifiedProfile(profile);
+    return { user, access_token, refresh_token };
   }
 
   @Throttle({ default: { limit: 3, ttl: 10000 } })

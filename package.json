@@ -48,6 +48,7 @@
     "class-validator": "^0.14.3",
     "cookie-parser": "^1.4.7",
     "formik": "^2.4.6",
+    "google-auth-library": "^10.6.2",
     "handlebars": "^4.7.8",
     "mongoose": "^8.18.3",
     "multer": "^2.0.2",

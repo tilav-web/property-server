@@ -577,6 +577,22 @@ export class UserService {
     return this.signTokens(user);
   }
 
+  /**
+   * Mobile native OAuth (Google/Apple) uchun. Verify qilingan profile bilan
+   * user yaratish/topish va token qaytarish. Web socialLogin'dan farqi -
+   * passport req.user o'rniga to'g'ridan-to'g'ri verified profile keladi.
+   */
+  async socialLoginFromVerifiedProfile(profile: {
+    provider: string;
+    providerId: string;
+    email: string;
+    firstName?: string;
+    lastName?: string;
+    picture?: string;
+  }) {
+    return this.socialLogin({ user: profile });
+  }
+
   async socialLogin(req) {
     if (!req.user) {
       throw new BadRequestException('Foydalanuvchi topilmadi!');

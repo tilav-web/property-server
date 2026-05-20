@@ -6,6 +6,7 @@ import { UserController } from './user.controller';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { JwtStrategy } from './guards/jwt.strategy';
+import { MobileOAuthService } from './services/mobile-oauth.service';
 import { OtpModule } from '../otp/otp.module';
 import { GoogleStrategy } from './strategies/google.strategy';
 import { FacebookStrategy } from './strategies/facebook.strategy';
@@ -37,6 +38,7 @@ import { SmsModule } from '../sms/sms.module';
     GoogleStrategy,
     FacebookStrategy,
     AppleStrategy,
+    MobileOAuthService,
   ],
   exports: [UserService, JwtModule],
 })
