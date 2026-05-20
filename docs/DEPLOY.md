@@ -215,7 +215,9 @@ GOOGLE_CALLBACK_URL=https://api.amaar.uz/api/users/auth/google/callback
 
 ---
 
-## 6. Docker Compose bilan ishga tushirish
+## 6. Backend - Docker Compose
+
+Faqat **server + MongoDB** Docker'da. Nginx host'da (alohida).
 
 ```bash
 cd /opt/property/server
@@ -237,21 +239,31 @@ Nest application successfully started
 Tizim ishga tushdi
 ```
 
-**Healthcheck:**
+**Healthcheck (server `127.0.0.1:3000`'da):**
 ```bash
-curl http://localhost/health
+curl http://127.0.0.1:3000/health
 # {"status":"ok","uptime":12.3,"country":"UZ","currency":"UZS",...}
 ```
 
+Server faqat `127.0.0.1:3000` ga ochiladi - tashqaridan to'g'ridan-to'g'ri kira olmaydi, faqat nginx orqali.
+
 ---
 
-## 7. Frontend deploy
+## 7. Frontend - statik build
 
-Ikki variant:
+Client Docker'siz, oddiy statik fayl sifatida deploy qilinadi.
 
-### Variant A: Shu serverda (oddiyroq)
+### 7.1 Build qilish
 
-`client/.env.production` yarating:
+```bash
+cd /opt/property/client
+cp .env.example .env
+
+# .env ni to'ldiring (VITE_* o'zgaruvchilar)
+nano .env
+```
+
+`.env` mazmuni:
 ```bash
 VITE_API_URL=https://api.amaar.uz
 VITE_GOOGLE_MAPS=<key>
@@ -266,61 +278,83 @@ VITE_DEFAULT_MAP_ZOOM=12
 VITE_PHONE_COUNTRY_CODE=+998
 ```
 
-Build qiling va nginx static fayllarini xizmat qilsin:
+Node.js o'rnating va build qiling:
 ```bash
-cd /opt/property/client
-docker build \
-  --build-arg VITE_API_URL=https://api.amaar.uz \
-  --build-arg VITE_GOOGLE_MAPS=<key> \
-  --build-arg VITE_COUNTRY=UZ \
-  --build-arg VITE_DEFAULT_CURRENCY=UZS \
-  # ... boshqa build-arg'lar
-  -t amaar-client:latest .
+# Node 20+ kerak
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+sudo apt install -y nodejs
 
-docker run -d --name amaar-web --restart unless-stopped \
-  -p 8080:80 amaar-client:latest
+cd /opt/property/client
+npm ci
+npm run build
+# dist/ papkasida static fayllar paydo bo'ladi
 ```
 
-Keyin asosiy nginx (host'da) ikkalasiga reverse proxy qiladi:
-- `https://amaar.uz` -> `localhost:8080` (frontend)
-- `https://api.amaar.uz` -> `localhost:80` (backend nginx)
+### 7.2 Static fayllarni nginx katalogiga ko'chirish
 
-### Variant B: Vercel/Netlify (tavsiya)
+```bash
+sudo mkdir -p /var/www/amaar-client
+sudo cp -r dist/* /var/www/amaar-client/
+sudo chown -R www-data:www-data /var/www/amaar-client
+```
 
-Frontend statik bo'lgani uchun Vercel'da deploy qilish oson:
+### 7.3 Alternativa - Vercel/Netlify
+
+Agar host'da static serve qilish istamasangiz, frontend uchun:
 1. github.com/tilav-web/property-client ni Vercel'ga ulang
 2. Vercel'da ENV variables to'ldiring (yuqoridagi `VITE_*`)
 3. Domen biriktiring: amaar.uz
 4. Avtomatik HTTPS + CDN bepul
 
+Bu holatda nginx config'idagi frontend `server` blokini olib tashlang (faqat backend qoladi).
+
 ---
 
-## 8. Domen va HTTPS
+## 8. Nginx (host) + HTTPS
 
 DNS'da quyidagi A yozuvlarini qo'shing:
-- `amaar.uz` -> server IP (frontend uchun, agar Variant A bo'lsa)
-- `api.amaar.uz` -> server IP (backend uchun)
+- `amaar.uz` -> server IP
+- `www.amaar.uz` -> server IP
+- `api.amaar.uz` -> server IP
 
-### Let's Encrypt SSL
+### 8.1 Nginx config ko'chirish
 
 ```bash
-# Host'da certbot o'rnatish
+sudo apt install -y nginx
+
+# Loyihadan config faylni ko'chiring
+sudo cp /opt/property/server/docs/nginx-amaar.conf /etc/nginx/sites-available/amaar.conf
+sudo ln -sf /etc/nginx/sites-available/amaar.conf /etc/nginx/sites-enabled/
+
+# Default site'ni o'chirish (agar bor bo'lsa)
+sudo rm -f /etc/nginx/sites-enabled/default
+
+# Sintaksis tekshirish
+sudo nginx -t
+
+# Qayta yuklash
+sudo systemctl reload nginx
+```
+
+Tekshirish:
+- `http://amaar.uz` -> frontend ko'rinishi kerak
+- `http://api.amaar.uz/health` -> JSON javob
+- `http://api.amaar.uz/uploads/<biror-rasm>` -> nginx static beradi
+
+### 8.2 Let's Encrypt SSL
+
+```bash
 sudo apt install -y certbot python3-certbot-nginx
+sudo certbot --nginx -d amaar.uz -d www.amaar.uz -d api.amaar.uz
 
-# Docker nginx ichida emas, host nginx orqali certbot
-# (yoki Docker volume orqali sertifikatlarni nginx konteynerga bering)
-
-# Variant 1: host nginx + Docker port 80 -> 3000
-sudo certbot --nginx -d api.amaar.uz -d amaar.uz
-
-# Avtomatik yangilash
+# Avtomatik yangilash (90 kunda 1 marta)
 sudo systemctl enable certbot.timer
 ```
 
-`nginx.conf`'da HTTPS bloki yoqilgach, Docker nginx'ni qayta yuklang:
-```bash
-docker compose restart nginx
-```
+Certbot:
+- HTTPS server bloklarini avtomatik qo'shadi
+- HTTP -> HTTPS redirect qo'shadi
+- Sertifikat avtomatik yangilanadi
 
 ---
 
@@ -452,10 +486,18 @@ Frontend uchun:
 ```bash
 cd /opt/property/client
 git pull
-docker build -t amaar-client:latest .
-docker stop amaar-web && docker rm amaar-web
-docker run -d --name amaar-web --restart unless-stopped \
-  -p 8080:80 amaar-client:latest
+npm ci
+npm run build
+sudo rm -rf /var/www/amaar-client/*
+sudo cp -r dist/* /var/www/amaar-client/
+sudo chown -R www-data:www-data /var/www/amaar-client
+# Nginx restart shart emas - static fayllar (browser cache faqat index.html'da yo'q)
+```
+
+Nginx config o'zgartirilgan bo'lsa:
+```bash
+sudo cp /opt/property/server/docs/nginx-amaar.conf /etc/nginx/sites-available/amaar.conf
+sudo nginx -t && sudo systemctl reload nginx
 ```
 
 ---
