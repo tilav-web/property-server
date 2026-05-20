@@ -48,7 +48,9 @@ services:
       start_period: 30s
 
   mongo:
-    image: mongo:7
+    # Default mongo 7 - AVX CPU talab qiladi.
+    # Eski VPS (AVX yo'q) uchun .env ga: MONGO_VERSION=4.4
+    image: mongo:${MONGO_VERSION:-7}
     container_name: property-mongo
     restart: unless-stopped
     volumes:
@@ -56,7 +58,8 @@ services:
     networks:
       - app-net
     healthcheck:
-      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
+      # mongosh (mongo 5+) yoki mongo (4.4) - shellini moslashtiradi
+      test: ["CMD-SHELL", "mongosh --quiet --eval 'db.adminCommand({ping:1})' 2>/dev/null || mongo --quiet --eval 'db.adminCommand({ping:1})'"]
       interval: 30s
       timeout: 10s
       retries: 3
