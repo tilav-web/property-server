@@ -1,8 +1,33 @@
-import { Body, Controller, Post } from '@nestjs/common';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Post,
+  Req,
+  UploadedFile,
+  UseInterceptors,
+} from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
+import type { Request } from 'express';
 import { AiChatService } from './ai-chat.service';
 import { ApiStandardErrors } from 'src/common/swagger/api-errors.decorator';
+import { VoicePremiumService } from '../voice-premium/voice-premium.service';
+
+const MAX_AUDIO_BYTES = 15 * 1024 * 1024; // 15 MB
+const ACCEPTED_AUDIO_MIMES = new Set([
+  'audio/webm',
+  'audio/webm;codecs=opus',
+  'audio/ogg',
+  'audio/ogg;codecs=opus',
+  'audio/mpeg',
+  'audio/mp4',
+  'audio/x-m4a',
+  'audio/m4a',
+  'audio/wav',
+  'audio/x-wav',
+]);
 
 interface AnonymousMessage {
   role: 'user' | 'assistant';
@@ -16,7 +41,10 @@ interface AnonymousChatDto {
 @ApiTags('AI Chat')
 @Controller('chat/ai-anonymous')
 export class AiChatController {
-  constructor(private readonly aiChatService: AiChatService) {}
+  constructor(
+    private readonly aiChatService: AiChatService,
+    private readonly voicePremium: VoicePremiumService,
+  ) {}
 
   /**
    * Anonim AI suhbat — login bo'lmagan foydalanuvchi uchun.
@@ -35,5 +63,73 @@ export class AiChatController {
     const history = Array.isArray(dto.history) ? dto.history : [];
     const reply = await this.aiChatService.generateAnonymousReply(history);
     return reply;
+  }
+
+  /**
+   * Anonim voice AI suhbat. multipart/form-data:
+   *  - audio: voice file (webm/ogg/mp3/m4a/wav)
+   *  - history: optional JSON string [{role, content}, ...]
+   *  - language: optional ISO 639-1 (en/ru/uz/ms)
+   */
+  @Throttle({ default: { limit: 6, ttl: 60_000 } })
+  @Post('voice')
+  @UseInterceptors(
+    FileInterceptor('audio', { limits: { fileSize: MAX_AUDIO_BYTES } }),
+  )
+  @ApiConsumes('multipart/form-data')
+  @ApiOperation({
+    summary: 'Anonim ovozli AI suhbat (login talab qilinmaydi)',
+  })
+  @ApiStandardErrors({ validation: true, throttle: true, serverError: true })
+  async askVoice(
+    @Req() req: Request,
+    @UploadedFile() file: Express.Multer.File | undefined,
+    @Body() body: { history?: string; language?: string },
+  ) {
+    if (!file?.buffer) {
+      throw new BadRequestException('audio file is required');
+    }
+    if (file.mimetype && !ACCEPTED_AUDIO_MIMES.has(file.mimetype)) {
+      throw new BadRequestException(`Unsupported audio type: ${file.mimetype}`);
+    }
+    // Anonim — quota IP bo'yicha. Premium tekshirish anonim uchun yo'q.
+    const ip = req.ip || req.socket?.remoteAddress || 'unknown';
+    const quota = await this.voicePremium.assertCanSendAndConsume({
+      userId: null,
+      ip,
+    });
+
+    let history: AnonymousMessage[] = [];
+    if (typeof body.history === 'string' && body.history.trim()) {
+      try {
+        const parsed = JSON.parse(body.history) as unknown;
+        if (Array.isArray(parsed)) {
+          history = parsed.filter(
+            (m): m is AnonymousMessage =>
+              !!m &&
+              typeof m === 'object' &&
+              typeof (m as AnonymousMessage).content === 'string' &&
+              ((m as AnonymousMessage).role === 'user' ||
+                (m as AnonymousMessage).role === 'assistant'),
+          );
+        }
+      } catch {
+        throw new BadRequestException('history must be valid JSON array');
+      }
+    }
+    const result = await this.aiChatService.processVoice({
+      audio: file.buffer,
+      mimeType: file.mimetype,
+      filename: file.originalname,
+      language: body.language,
+      history,
+    });
+    return {
+      ...result,
+      quota: {
+        isPremium: quota.isPremium,
+        remainingToday: quota.remainingToday,
+      },
+    };
   }
 }

@@ -35,6 +35,23 @@ export class SiteSettings {
 
   @Prop({ type: String, default: null })
   hero_image_rent_srcset?: string | null;
+
+  // ============================================================================
+  // Voice AI premium
+  // ----------------------------------------------------------------------------
+  // Voice (Whisper + TTS) OpenAI'da ~$0.02 turadi. Bepul limit anonim user va
+  // login user uchun bir xil — voice_daily_free_limit kuniga. Premium upgrade
+  // qilingan login user uchun cheksiz (voice_premium_duration_days davomida).
+  // Narx mamlakatga qarab DEFAULT_CURRENCY'da olinadi.
+  // ============================================================================
+  @Prop({ type: Number, default: 3, min: 0 })
+  voice_daily_free_limit: number;
+
+  @Prop({ type: Number, default: 20000, min: 0 })
+  voice_premium_price: number;
+
+  @Prop({ type: Number, default: 30, min: 1, max: 365 })
+  voice_premium_duration_days: number;
 }
 
 export const SiteSettingsSchema = SchemaFactory.createForClass(SiteSettings);

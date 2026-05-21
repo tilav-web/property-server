@@ -38,8 +38,12 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.use('/uploads', express.static(join(__dirname, '..', 'uploads')));
 
+  const clientOrigins = (process.env.CLIENT_URL ?? '')
+    .split(',')
+    .map((o) => o.trim())
+    .filter(Boolean);
   app.enableCors({
-    origin: [process.env.CLIENT_URL],
+    origin: clientOrigins.length > 0 ? clientOrigins : true,
     credentials: true,
   });
 

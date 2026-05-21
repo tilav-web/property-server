@@ -11,13 +11,21 @@ interface UpdatePayload {
   hero_image_srcset?: string | null;
   hero_image_buy_srcset?: string | null;
   hero_image_rent_srcset?: string | null;
+  voice_daily_free_limit?: number;
+  voice_premium_price?: number;
+  voice_premium_duration_days?: number;
 }
 
 type HeroSlot = 'main' | 'buy' | 'rent';
+type HeroImageField = 'hero_image' | 'hero_image_buy' | 'hero_image_rent';
+type HeroSrcsetField =
+  | 'hero_image_srcset'
+  | 'hero_image_buy_srcset'
+  | 'hero_image_rent_srcset';
 
 const SLOT_FIELDS: Record<
   HeroSlot,
-  { image: keyof SiteSettings; srcset: keyof SiteSettings }
+  { image: HeroImageField; srcset: HeroSrcsetField }
 > = {
   main: { image: 'hero_image', srcset: 'hero_image_srcset' },
   buy: { image: 'hero_image_buy', srcset: 'hero_image_buy_srcset' },
@@ -66,6 +74,15 @@ export class SiteSettingsService {
     }
     if (dto.hero_image_rent_srcset !== undefined) {
       settings.hero_image_rent_srcset = dto.hero_image_rent_srcset || null;
+    }
+    if (dto.voice_daily_free_limit !== undefined) {
+      settings.voice_daily_free_limit = dto.voice_daily_free_limit;
+    }
+    if (dto.voice_premium_price !== undefined) {
+      settings.voice_premium_price = dto.voice_premium_price;
+    }
+    if (dto.voice_premium_duration_days !== undefined) {
+      settings.voice_premium_duration_days = dto.voice_premium_duration_days;
     }
 
     await this.replaceFile(settings, 'hero_image', files?.hero_image?.[0]);

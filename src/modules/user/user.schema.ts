@@ -75,6 +75,14 @@ export class User {
 
   @Prop({ type: Boolean, default: false, index: true })
   isAI: boolean;
+
+  /**
+   * Voice AI premium amal qilish muddati. null yoki o'tmishda bo'lsa — bepul
+   * kunlik limit qo'llanadi. Premium upgrade bilan +N kun belgilanadi (admin
+   * approval bilan VoicePremiumService.activate orqali).
+   */
+  @Prop({ type: Date, default: null })
+  voicePremiumUntil?: Date | null;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

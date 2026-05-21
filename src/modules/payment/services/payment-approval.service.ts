@@ -38,6 +38,7 @@ export interface ApprovalHandler {
 const APPROVAL_HANDLERS: Record<OrderTypeEnum, string> = {
   [OrderTypeEnum.PROPERTY_PREMIUM]: 'PropertyPremiumService',
   [OrderTypeEnum.ADVERTISE]: 'AdvertiseService',
+  [OrderTypeEnum.VOICE_PREMIUM]: 'VoicePremiumService',
 };
 
 @Injectable()

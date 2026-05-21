@@ -7,4 +7,6 @@ export enum OrderTypeEnum {
   ADVERTISE = 'ADVERTISE',
   /** E'lonni premium qilish (30 kun). orderId = Property._id */
   PROPERTY_PREMIUM = 'PROPERTY_PREMIUM',
+  /** Voice AI premium (cheksiz, N kun). orderId = User._id */
+  VOICE_PREMIUM = 'VOICE_PREMIUM',
 }

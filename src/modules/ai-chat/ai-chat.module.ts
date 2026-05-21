@@ -16,6 +16,7 @@ import { UserModule } from '../user/user.module';
 import { ChatModule } from '../chat/chat.module';
 import { UserService } from '../user/user.service';
 import { AiPropertyModule } from '../ai-property/ai-property.module';
+import { VoicePremiumModule } from '../voice-premium/voice-premium.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { AiPropertyModule } from '../ai-property/ai-property.module';
     GenaiModule,
     UserModule,
     AiPropertyModule,
+    VoicePremiumModule,
     forwardRef(() => ChatModule),
   ],
   controllers: [AiChatController],

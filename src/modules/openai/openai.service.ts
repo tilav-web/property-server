@@ -1,5 +1,27 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import OpenAI from 'openai';
+import { toFile } from 'openai/uploads';
+
+// Whisper API qabul qiladigan til kodlari. uz (o'zbek) ro'yxatda yo'q —
+// undefined yuborilganda Whisper auto-detect qiladi.
+const WHISPER_SUPPORTED_LANGUAGES = new Set([
+  'af', 'ar', 'hy', 'az', 'be', 'bs', 'bg', 'ca', 'zh', 'hr', 'cs', 'da',
+  'nl', 'en', 'et', 'fi', 'fr', 'gl', 'de', 'el', 'he', 'hi', 'hu', 'is',
+  'id', 'it', 'ja', 'kn', 'kk', 'ko', 'lv', 'lt', 'mk', 'ms', 'mr', 'mi',
+  'ne', 'no', 'fa', 'pl', 'pt', 'ro', 'ru', 'sr', 'sk', 'sl', 'es', 'sw',
+  'sv', 'tl', 'ta', 'th', 'tr', 'uk', 'ur', 'vi', 'cy',
+]);
+
+// Whisper auto-detect uz/ms/kk uchun zaif (Pashto/Urdu/Tatar bilan adashadi).
+// Prompt parametri orqali modelni shu tildagi nutq bo'lishi bo'yicha biasing
+// beramiz — Whisper transkripsiyasini o'sha tildagi so'zlar bilan boshlaydi.
+// Prompt aslida transcribe qilinmaydi, faqat dekoderning til-uslub priorini
+// belgilaydi.
+const WHISPER_LANGUAGE_PROMPTS: Record<string, string | undefined> = {
+  uz: "Salom. Bu o'zbek tilidagi nutq. Mulk, kvartira, ijara, sotib olish, narx, xonalar, shahar.",
+  ms: 'Hello. This is Malay language speech. Property, apartment, rent, buy, price, bedrooms, city.',
+  kk: 'Сәлем. Бұл қазақ тіліндегі сөйлеу. Мүлік, пәтер, жалға, сатып алу, баға.',
+};
 
 interface TranslationResponse {
   en?: string;
@@ -320,6 +342,72 @@ Examples of INCORRECT tags:
 
         return { data: parsed as T, usage: response.usage };
       }, 3),
+    );
+  }
+
+  async transcribeAudio(opts: {
+    buffer: Buffer;
+    filename: string;
+    mimeType?: string;
+    language?: string;
+  }): Promise<string> {
+    const { buffer, filename, mimeType, language } = opts;
+
+    return this.queueRequest(() =>
+      this.withRetry(async () => {
+        const file = await toFile(buffer, filename, { type: mimeType });
+        // Whisper API faqat ma'lum tillarni `language` param sifatida qabul qiladi
+        // (uz qabul qilinmaydi). Qo'llanmaydigan tillarda undefined yuboramiz —
+        // Whisper o'zi auto-detect qiladi. Lekin auto-detect uz nutqini ko'p
+        // hollarda Pashto/Urdu deb noto'g'ri tushunadi. Shu sababli `prompt`
+        // parametri orqali modelni o'sha tilga moyil qilamiz (so'zlar Whisper
+        // chiqaradigan matn tomon biasing beradi).
+        const safeLanguage = WHISPER_SUPPORTED_LANGUAGES.has(language ?? '')
+          ? language
+          : undefined;
+        const prompt = WHISPER_LANGUAGE_PROMPTS[language ?? ''];
+        const response = await this.ai.audio.transcriptions.create({
+          file,
+          model: 'whisper-1',
+          language: safeLanguage,
+          prompt,
+          response_format: 'json',
+        });
+        const text = (response.text ?? '').trim();
+        if (!text) {
+          throw new Error('Whisper returned empty transcription');
+        }
+        return text;
+      }, 2),
+    );
+  }
+
+  async generateSpeech(opts: {
+    text: string;
+    voice?: 'alloy' | 'echo' | 'fable' | 'onyx' | 'nova' | 'shimmer';
+    format?: 'mp3' | 'opus' | 'aac' | 'flac' | 'wav';
+    model?: 'tts-1' | 'tts-1-hd';
+  }): Promise<Buffer> {
+    const {
+      text,
+      voice = 'nova',
+      format = 'mp3',
+      model = 'tts-1',
+    } = opts;
+
+    const safe = text.slice(0, 4000);
+
+    return this.queueRequest(() =>
+      this.withRetry(async () => {
+        const response = await this.ai.audio.speech.create({
+          model,
+          voice,
+          input: safe,
+          response_format: format,
+        });
+        const arrayBuffer = await response.arrayBuffer();
+        return Buffer.from(arrayBuffer);
+      }, 2),
     );
   }
 }
