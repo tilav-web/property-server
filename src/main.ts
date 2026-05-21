@@ -36,6 +36,13 @@ function flattenValidationErrors(
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  // Nginx orqasida ishlaymiz -> Express'ga "trust proxy" bering, aks holda
+  // req.ip har doim 127.0.0.1 bo'lib qoladi (nginx IP) va anonim user'lar
+  // bir xil counter'ni baham ko'rishadi. Trust=1 bitta proxy hop'ga ishonadi.
+  const expressApp = app.getHttpAdapter().getInstance() as express.Express;
+  expressApp.set('trust proxy', 1);
+
   app.use('/uploads', express.static(join(__dirname, '..', 'uploads')));
 
   const clientOrigins = (process.env.CLIENT_URL ?? '')
