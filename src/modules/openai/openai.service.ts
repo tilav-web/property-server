@@ -350,32 +350,36 @@ Examples of INCORRECT tags:
     filename: string;
     mimeType?: string;
     language?: string;
+    /**
+     * Override model. Default: gpt-4o-mini-transcribe (whisper-1 dan 2x arzon
+     * va aniqroq, ayniqsa uz/kk/uy kabi tillarda).
+     */
+    model?: 'gpt-4o-transcribe' | 'gpt-4o-mini-transcribe' | 'whisper-1';
   }): Promise<string> {
     const { buffer, filename, mimeType, language } = opts;
+    const model = opts.model ?? 'gpt-4o-mini-transcribe';
 
     return this.queueRequest(() =>
       this.withRetry(async () => {
         const file = await toFile(buffer, filename, { type: mimeType });
-        // Whisper API faqat ma'lum tillarni `language` param sifatida qabul qiladi
-        // (uz qabul qilinmaydi). Qo'llanmaydigan tillarda undefined yuboramiz —
-        // Whisper o'zi auto-detect qiladi. Lekin auto-detect uz nutqini ko'p
-        // hollarda Pashto/Urdu deb noto'g'ri tushunadi. Shu sababli `prompt`
-        // parametri orqali modelni o'sha tilga moyil qilamiz (so'zlar Whisper
-        // chiqaradigan matn tomon biasing beradi).
+        // GPT-4o transcribe modellari ko'proq tilni qabul qiladi (uz ham), lekin
+        // hozircha xavfsizlik uchun whitelist'dan tashqari tillarni auto-detect
+        // qilamiz. Prompt biasing baribir foydali — model nutqning kutilgan
+        // mavzusi va tilini biladi.
         const safeLanguage = WHISPER_SUPPORTED_LANGUAGES.has(language ?? '')
           ? language
           : undefined;
         const prompt = WHISPER_LANGUAGE_PROMPTS[language ?? ''];
         const response = await this.ai.audio.transcriptions.create({
           file,
-          model: 'whisper-1',
+          model,
           language: safeLanguage,
           prompt,
           response_format: 'json',
         });
         const text = (response.text ?? '').trim();
         if (!text) {
-          throw new Error('Whisper returned empty transcription');
+          throw new Error('Transcription returned empty result');
         }
         return text;
       }, 2),
