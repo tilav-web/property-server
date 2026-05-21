@@ -334,13 +334,15 @@ export class AiChatService {
       history,
     });
 
-    // 1) Foydalanuvchi xabari (transcript bilan)
+    // 1) Foydalanuvchi xabari (transcript bilan). AI javobini biz qo'shamiz
+    //    quyida — appendMessage'dagi avto-reply tetiklanmasligi kerak.
     await this.chatService.createSystemMessage({
       conversationId: opts.conversationId,
       senderId: opts.senderId,
       type: MessageType.TEXT,
       body: result.transcript,
       metadata: { voice: true },
+      skipAutoReply: true,
     });
 
     // 2) AI javobi

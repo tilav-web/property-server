@@ -30,6 +30,11 @@ interface SystemMessageInput {
   type: MessageType;
   body: string;
   metadata?: Record<string, unknown>;
+  /**
+   * Voice flow uchun: user transcript saqlaganda AI avto-javobi qaytmasligi
+   * kerak (chunki processAuthenticatedVoice o'zi AI javobini qo'shadi).
+   */
+  skipAutoReply?: boolean;
 }
 
 const SNIPPET_MAX = 80;
@@ -209,6 +214,7 @@ export class ChatService {
       type: input.type,
       body: input.body,
       metadata: input.metadata,
+      skipAutoReply: input.skipAutoReply,
     });
   }
 
@@ -262,11 +268,13 @@ export class ChatService {
       type,
       body,
       metadata,
+      skipAutoReply,
     }: {
       senderId: string;
       type: MessageType;
       body: string;
       metadata?: Record<string, unknown>;
+      skipAutoReply?: boolean;
     },
   ): Promise<ChatMessageDocument> {
     const sender = new Types.ObjectId(senderId);
@@ -332,8 +340,10 @@ export class ChatService {
 
     // AI auto-reply: foydalanuvchi AI agentga xabar yubordi → AI javob bersin.
     // Fire-and-forget — user request'ni bloklamaymiz.
+    // skipAutoReply=true bo'lsa o'tkazib yuboramiz (voice flow uchun, AI javobi
+    // processAuthenticatedVoice tomonidan to'g'ridan-to'g'ri qo'shiladi).
     const senderIsAI = aiUserId && senderId === aiUserId;
-    if (peerIsAI && !senderIsAI && type === MessageType.TEXT) {
+    if (peerIsAI && !senderIsAI && type === MessageType.TEXT && !skipAutoReply) {
       // "AI yozmoqda..." indicator — client typingByConversation'da ko'rsatadi
       this.gateway.emitToUser(senderId, 'chat:typing', {
         conversationId: String(conv._id),
