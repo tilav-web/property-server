@@ -15,6 +15,7 @@ import { EnumAmenities } from 'src/enums/amenities.enum';
 import { EnumRepairType } from '../enums/repair-type.enum';
 import { EnumHeating } from '../enums/heating.enum';
 import { EnumRentalTarget } from '../enums/rental-target.enum';
+import { ToBoolean } from 'src/common/transforms/boolean.transform';
 
 /**
  * Umumiy Property create DTO — barcha kategoriya fieldlarini o'z ichiga oladi.
@@ -80,7 +81,7 @@ export class CreatePropertyDto {
   @IsOptional() @Type(() => Number) @IsNumber() total_floors?: number;
   @IsOptional() @Type(() => Number) @IsNumber() area?: number;
 
-  @IsOptional() @IsBoolean() furnished?: boolean;
+  @IsOptional() @ToBoolean() @IsBoolean() furnished?: boolean;
 
   @IsOptional()
   @ValidateIf((_, value) => value !== '')
@@ -100,7 +101,7 @@ export class CreatePropertyDto {
   amenities?: EnumAmenities[];
 
   // ---- Sale uchun ----
-  @IsOptional() @IsBoolean() mortgage_available?: boolean;
+  @IsOptional() @ToBoolean() @IsBoolean() mortgage_available?: boolean;
 
   // ---- Rent uchun ----
   @IsOptional()

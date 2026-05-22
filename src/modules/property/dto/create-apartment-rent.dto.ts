@@ -12,6 +12,7 @@ import { CreatePropertyBaseDto } from './create-property.dto';
 import { EnumRepairType } from '../enums/repair-type.enum';
 import { EnumHeating } from '../enums/heating.enum';
 import { Type } from 'class-transformer';
+import { ToBoolean } from 'src/common/transforms/boolean.transform';
 
 export class CreateApartmentRentDto extends CreatePropertyBaseDto {
   @IsOptional()
@@ -39,7 +40,7 @@ export class CreateApartmentRentDto extends CreatePropertyBaseDto {
   @Type(() => Number)
   area?: number;
 
-  @IsBoolean() @IsOptional() furnished?: boolean;
+  @IsOptional() @ToBoolean() @IsBoolean() furnished?: boolean;
 
   @IsOptional()
   @ValidateIf((_, value) => value !== '')
