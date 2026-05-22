@@ -51,4 +51,15 @@ export class UpdateSiteSettingsDto {
   @Max(365)
   @IsOptional()
   voice_premium_duration_days?: number;
+
+  // Bosh sahifa download CTA
+  @ApiPropertyOptional({ description: 'App Store havolasi' })
+  @IsString()
+  @IsOptional()
+  app_store_url?: string;
+
+  @ApiPropertyOptional({ description: 'Google Play havolasi' })
+  @IsString()
+  @IsOptional()
+  play_store_url?: string;
 }

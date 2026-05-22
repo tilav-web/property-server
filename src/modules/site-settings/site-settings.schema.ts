@@ -52,6 +52,23 @@ export class SiteSettings {
 
   @Prop({ type: Number, default: 30, min: 1, max: 365 })
   voice_premium_duration_days: number;
+
+  // ============================================================================
+  // Bosh sahifa "Download the app" sektsiyasi
+  // ----------------------------------------------------------------------------
+  // App Store / Google Play link'lari va telefon mockup rasmi admin paneldan
+  // boshqariladi. Agar URL bo'sh bo'lsa, badge ko'rinmaydi. Agar rasm yo'q
+  // bo'lsa, mos blok yashiriladi.
+  // ============================================================================
+  @Prop({ type: String, default: null })
+  app_store_url?: string | null;
+
+  @Prop({ type: String, default: null })
+  play_store_url?: string | null;
+
+  /** QR code rasm (admin yuklaydi) — App Store/Play sahifasiga olib boradi. */
+  @Prop({ type: String, default: null })
+  qr_code_image?: string | null;
 }
 
 export const SiteSettingsSchema = SchemaFactory.createForClass(SiteSettings);

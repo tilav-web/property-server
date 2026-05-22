@@ -43,6 +43,7 @@ export class SiteSettingsController {
       { name: 'hero_image', maxCount: 1 },
       { name: 'hero_image_buy', maxCount: 1 },
       { name: 'hero_image_rent', maxCount: 1 },
+      { name: 'qr_code_image', maxCount: 1 },
     ]),
   )
   @ApiOperation({ summary: 'Update site settings' })
@@ -52,6 +53,7 @@ export class SiteSettingsController {
     { name: 'hero_image' },
     { name: 'hero_image_buy' },
     { name: 'hero_image_rent' },
+    { name: 'qr_code_image' },
   ])
   async update(
     @Body() dto: UpdateSiteSettingsDto,
@@ -60,6 +62,7 @@ export class SiteSettingsController {
       hero_image?: Express.Multer.File[];
       hero_image_buy?: Express.Multer.File[];
       hero_image_rent?: Express.Multer.File[];
+      qr_code_image?: Express.Multer.File[];
     },
   ) {
     return this.service.update({ dto, files });

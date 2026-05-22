@@ -14,6 +14,8 @@ interface UpdatePayload {
   voice_daily_free_limit?: number;
   voice_premium_price?: number;
   voice_premium_duration_days?: number;
+  app_store_url?: string;
+  play_store_url?: string;
 }
 
 type HeroSlot = 'main' | 'buy' | 'rent';
@@ -56,6 +58,7 @@ export class SiteSettingsService {
       hero_image?: Express.Multer.File[];
       hero_image_buy?: Express.Multer.File[];
       hero_image_rent?: Express.Multer.File[];
+      qr_code_image?: Express.Multer.File[];
     };
   }) {
     const settings = await this.get();
@@ -84,6 +87,12 @@ export class SiteSettingsService {
     if (dto.voice_premium_duration_days !== undefined) {
       settings.voice_premium_duration_days = dto.voice_premium_duration_days;
     }
+    if (dto.app_store_url !== undefined) {
+      settings.app_store_url = dto.app_store_url || null;
+    }
+    if (dto.play_store_url !== undefined) {
+      settings.play_store_url = dto.play_store_url || null;
+    }
 
     await this.replaceFile(settings, 'hero_image', files?.hero_image?.[0]);
     await this.replaceFile(
@@ -95,6 +104,11 @@ export class SiteSettingsService {
       settings,
       'hero_image_rent',
       files?.hero_image_rent?.[0],
+    );
+    await this.replaceFile(
+      settings,
+      'qr_code_image',
+      files?.qr_code_image?.[0],
     );
 
     return settings.save();
@@ -117,7 +131,11 @@ export class SiteSettingsService {
 
   private async replaceFile(
     settings: SiteSettingsDocument,
-    field: 'hero_image' | 'hero_image_buy' | 'hero_image_rent',
+    field:
+      | 'hero_image'
+      | 'hero_image_buy'
+      | 'hero_image_rent'
+      | 'qr_code_image',
     file: Express.Multer.File | undefined,
   ) {
     if (!file) return;
