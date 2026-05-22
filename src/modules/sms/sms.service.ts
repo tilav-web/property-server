@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { CountryConfigService } from 'src/common/config/country.config';
 import { EskizClient } from './eskiz.client';
 
 // Eskiz O'zbekiston operator zonasidan tashqari tildagi shablonlarni qabul
@@ -7,18 +8,42 @@ import { EskizClient } from './eskiz.client';
 export type SmsLanguage = 'uz' | 'ru' | 'en' | 'ms';
 export type OtpPurpose = 'register' | 'reset_password';
 
-const OTP_TEMPLATES: Record<OtpPurpose, (code: string) => string> = {
+// Eskiz'da har bir template MODERATION'dan o'tishi kerak. Quyidagi matnlar
+// Eskiz panelida shu KO'RINISHDA (bo'sh joy va tinish belgilari bilan)
+// approved bo'lishi shart, aks holda SMS yetkazib berilmaydi.
+// Kod o'rniga 0000 yoki {code} platsholderlari Eskiz'da ko'rsatiladi, real
+// yuborilganda kod soni qo'yiladi.
+type BrandTemplates = Record<OtpPurpose, (code: string) => string>;
+
+const AMAAR_TEMPLATES: BrandTemplates = {
   register: (code) =>
     `Amaar Properties saytida ro'yxatdan o'tish uchun kod - ${code}`,
   reset_password: (code) =>
     `Amaar Properties saytida parolni tiklash uchun kod - ${code}`,
 };
 
+const UYBOS_TEMPLATES: BrandTemplates = {
+  register: (code) =>
+    `uybos.uz saytida ro'yxatdan o'tish uchun kod: ${code}`,
+  reset_password: (code) =>
+    `uybos.uz saytida parolni tiklash uchun kod: ${code}`,
+};
+
 @Injectable()
 export class SmsService {
   private readonly logger = new Logger(SmsService.name);
 
-  constructor(private readonly eskiz: EskizClient) {}
+  constructor(
+    private readonly eskiz: EskizClient,
+    private readonly countryConfig: CountryConfigService,
+  ) {}
+
+  /** Mamlakatga qarab brand template'ni tanlaydi. */
+  private get templates(): BrandTemplates {
+    return this.countryConfig.country === 'UZ'
+      ? UYBOS_TEMPLATES
+      : AMAAR_TEMPLATES;
+  }
 
   /**
    * OTP xabarini yuboradi. Eskiz O'zbekiston zonasidan tashqari tilni qabul
@@ -63,7 +88,8 @@ export class SmsService {
     if (process.env.ESKIZ_TEST_MODE === '1') {
       return 'Bu Eskiz dan test';
     }
-    const builder = OTP_TEMPLATES[purpose] ?? OTP_TEMPLATES.register;
+    const brand = this.templates;
+    const builder = brand[purpose] ?? brand.register;
     return builder(code);
   }
 
