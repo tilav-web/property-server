@@ -141,6 +141,63 @@ export class AdvertiseService implements ApprovalHandler {
   }
 
   /**
+   * Mavjud advertise uchun Payme checkout URL'ini qaytaradi.
+   * - Agar PENDING transaction bo'lsa, uni qayta ishlatamiz
+   * - Bo'lmasa yangi PENDING transaction yaratamiz
+   * - Faqat reklama egasi yoki to'lanmagan reklamalar uchun ishlaydi
+   */
+  async getCheckoutUrl({
+    advertiseId,
+    userId,
+  }: {
+    advertiseId: string;
+    userId: string;
+  }): Promise<{ checkoutUrl: string; transactionId: string }> {
+    const advertise = await this.advertiseModel.findById(advertiseId).exec();
+    if (!advertise) {
+      throw new NotFoundException('Reklama topilmadi');
+    }
+    if (String(advertise.author) !== userId) {
+      throw new BadRequestException('Bu reklama sizga tegishli emas');
+    }
+    if (advertise.payment_status === EnumPaymentStatus.PAID) {
+      throw new BadRequestException("Reklama allaqachon to'langan");
+    }
+
+    const provider = this.resolveProvider();
+    if (provider === 'NONE') {
+      throw new BadRequestException(
+        "Bu mamlakatda online to'lov mavjud emas. Admin qo'lda tasdiqlaydi.",
+      );
+    }
+
+    // Mavjud PENDING transaction'ni topish (yoki yangisini yaratish)
+    let transaction = await this.transactionService.findActivePendingForOrder(
+      String(advertise._id),
+      provider,
+    );
+
+    if (!transaction) {
+      transaction = await this.transactionService.createPending({
+        user: userId,
+        orderType: OrderTypeEnum.ADVERTISE,
+        orderId: String(advertise._id),
+        amount: advertise.price,
+        currency: advertise.currency,
+        provider,
+      });
+    }
+
+    const transactionId = String(transaction._id);
+    const checkoutUrl = generatePaymeUrl({
+      amount: advertise.price,
+      orderId: transactionId,
+    });
+
+    return { checkoutUrl, transactionId };
+  }
+
+  /**
    * ApprovalHandler implementatsiyasi — admin approve qilganda chaqiriladi.
    * orderId = Advertise._id (string).
    *

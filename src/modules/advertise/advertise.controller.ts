@@ -241,6 +241,24 @@ export class AdvertiseController {
     return this.service.priceCalculus(parseInt(dto.days, 10));
   }
 
+  @Get(':id/checkout-url')
+  @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth('bearer')
+  @ApiCookieAuth('access_token')
+  @ApiOperation({
+    summary: "Mavjud reklama uchun Payme checkout URL'ni qaytaradi",
+  })
+  @ApiStandardErrors({ auth: true, notFound: true, validation: true })
+  async getCheckoutUrl(
+    @Param('id') advertiseId: string,
+    @Req() req: IRequestCustom,
+  ) {
+    return this.service.getCheckoutUrl({
+      advertiseId,
+      userId: String(req.user!._id),
+    });
+  }
+
   @Get('type/:type')
   async findOneByType(@Param('type') type: EnumAdvertiseType) {
     return this.service.findOneByType(type);
