@@ -33,6 +33,7 @@ import { PaymentModule } from './modules/payment/payment.module';
 import { PropertyPremiumModule } from './modules/property-premium/property-premium.module';
 import { AdminPaymentModule } from './modules/admin-payment/admin-payment.module';
 import { VoicePremiumModule } from './modules/voice-premium/voice-premium.module';
+import { CommunityModule } from './modules/community/community.module';
 import { ExpireCronModule } from './modules/expire-cron/expire-cron.module';
 import { HealthModule } from './modules/health/health.module';
 
@@ -87,6 +88,7 @@ import { HealthModule } from './modules/health/health.module';
     PaymentModule,
     PropertyPremiumModule,
     VoicePremiumModule,
+    CommunityModule,
     AdminPaymentModule,
     ExpireCronModule,
     HealthModule,
