@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Controller,
   ForbiddenException,
   Get,
@@ -20,6 +21,9 @@ import { Model, Types } from 'mongoose';
 import { ApiStandardErrors } from 'src/common/swagger/api-errors.decorator';
 import { type IRequestCustom } from 'src/interfaces/custom-request.interface';
 import { OrderTypeEnum } from 'src/enums/order-type.enum';
+import { PaymentProviderEnum } from 'src/enums/payment-provider.enum';
+import { PaymentStatusEnum } from 'src/enums/payment-status.enum';
+import { generatePaymeUrl } from 'src/utils/generate-payme-url';
 import {
   Transaction,
   TransactionDocument,
@@ -89,5 +93,42 @@ export class TransactionController {
       throw new ForbiddenException("Ruxsat yo'q");
     }
     return tx;
+  }
+
+  @Get(':id/checkout-url')
+  @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth('bearer')
+  @ApiCookieAuth('access_token')
+  @ApiOperation({
+    summary: "PENDING transaction uchun checkout URL'ni qaytaradi",
+    description:
+      "Mavjud PENDING Payme transaction uchun yangi checkout URL " +
+      "qaytariladi. Faqat egasi va PENDING status'da bo'lgan tranzaksiya uchun.",
+  })
+  @ApiStandardErrors({ auth: true, forbidden: true, notFound: true, validation: true })
+  async getCheckoutUrl(@Param('id') id: string, @Req() req: IRequestCustom) {
+    const tx = await this.transactionService.findById(id);
+    if (!tx) throw new NotFoundException('Transaction topilmadi');
+
+    const userId = req.user?._id as string;
+    if (tx.user.toString() !== userId.toString()) {
+      throw new ForbiddenException("Ruxsat yo'q");
+    }
+    if (tx.status !== PaymentStatusEnum.PENDING) {
+      throw new BadRequestException(
+        "Faqat kutilayotgan (PENDING) tranzaksiya uchun checkout URL olish mumkin",
+      );
+    }
+    if (tx.provider !== PaymentProviderEnum.PAYME) {
+      throw new BadRequestException(
+        "Bu tranzaksiya Payme provider'i bilan emas",
+      );
+    }
+
+    const checkoutUrl = generatePaymeUrl({
+      amount: tx.amount,
+      orderId: tx._id.toString(),
+    });
+    return { checkoutUrl };
   }
 }
