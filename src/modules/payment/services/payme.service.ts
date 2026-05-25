@@ -123,6 +123,14 @@ export class PaymeService {
       return this.invalidAccountError(id);
     }
 
+    // Avval amount mosligi (Payme sandbox spec: input validation
+    // state validation'dan oldin bo'lishi kerak — "Неверная сумма"
+    // testi har qaysi state'da -31001 kutadi).
+    const amountTiyin = this.toTiyin(tx.amount);
+    if (amountTiyin !== parsed.amount) {
+      return this.error(PaymeErrorCodeEnum.INVALID_AMOUNT, 'Invalid amount', id);
+    }
+
     if (tx.status === PaymentStatusEnum.SUCCESS) {
       return this.error(
         PaymeErrorCodeEnum.CANNOT_PERFORM_OPERATION,
@@ -136,11 +144,6 @@ export class PaymeService {
         'Transaction cancelled',
         id,
       );
-    }
-
-    const amountTiyin = this.toTiyin(tx.amount);
-    if (amountTiyin !== parsed.amount) {
-      return this.error(PaymeErrorCodeEnum.INVALID_AMOUNT, 'Invalid amount', id);
     }
 
     return {
@@ -175,6 +178,12 @@ export class PaymeService {
       return this.invalidAccountError(id);
     }
 
+    // Amount mosligi state'dan oldin tekshiriladi (sandbox spec).
+    const amountTiyin = this.toTiyin(tx.amount);
+    if (amountTiyin !== parsed.amount) {
+      return this.error(PaymeErrorCodeEnum.INVALID_AMOUNT, 'Invalid amount', id);
+    }
+
     if (tx.status === PaymentStatusEnum.SUCCESS) {
       return this.error(
         PaymeErrorCodeEnum.CANNOT_PERFORM_OPERATION,
@@ -188,11 +197,6 @@ export class PaymeService {
         'Transaction cancelled',
         id,
       );
-    }
-
-    const amountTiyin = this.toTiyin(tx.amount);
-    if (amountTiyin !== parsed.amount) {
-      return this.error(PaymeErrorCodeEnum.INVALID_AMOUNT, 'Invalid amount', id);
     }
 
     // Agar shu Payme transaction'i avval kelgan bo'lsa — idempotency
