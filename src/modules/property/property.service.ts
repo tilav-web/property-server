@@ -199,6 +199,7 @@ export class PropertyService {
       category,
       currency,
       search,
+      tag,
       is_premium,
       is_new,
       rating,
@@ -250,6 +251,7 @@ export class PropertyService {
       is_new,
       rating,
       search,
+      tag,
       filterCategory,
       bathrooms,
       bedrooms,
@@ -380,6 +382,7 @@ export class PropertyService {
     is_new,
     rating,
     search,
+    tag,
     filterCategory,
     bathrooms,
     bedrooms,
@@ -403,6 +406,7 @@ export class PropertyService {
     is_new?: boolean;
     rating?: number;
     search?: string;
+    tag?: string;
     filterCategory?: EnumPropertyCategoryFilter;
     bathrooms?: number[];
     bedrooms?: number[];
@@ -470,7 +474,14 @@ export class PropertyService {
       match.createdAt = { $gte: new Date(Date.now() - 604_800_000) };
     }
     if (rating !== undefined) match.rating = { $gte: rating };
-    if (search) match.$text = { $search: search };
+
+    // Tag (location keyword) ham, free-text search ham bitta $text index'da
+    // qidiriladi — Mongo $text bitta query'da faqat bir marta ishlatiladi,
+    // shu sabab ularni bo'shliq orqali birlashtiramiz.
+    const textQuery = [search?.trim(), tag?.trim()]
+      .filter((part): part is string => Boolean(part && part.length > 0))
+      .join(' ');
+    if (textQuery) match.$text = { $search: textQuery };
 
     const bedroomFilter = this.buildRoomFilter(bedrooms, 'bedrooms');
     if (bedroomFilter) andClauses.push(bedroomFilter);

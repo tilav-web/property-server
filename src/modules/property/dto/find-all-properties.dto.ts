@@ -167,6 +167,18 @@ export class FindAllPropertiesDto {
   search?: string;
 
   @ApiPropertyOptional({
+    description:
+      'Location tag (e.g. "Selangor", "Yunusobod"). Tag matching joins ' +
+      'the free-text search across title/description/address.',
+    example: 'Selangor',
+    maxLength: 50,
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  tag?: string;
+
+  @ApiPropertyOptional({
     enum: CurrencyCode,
     enumName: 'CurrencyCode',
     description:

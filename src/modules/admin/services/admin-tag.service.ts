@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Tag, TagDocument } from '../../tag/schemas/tag.schema';
+import { TagService } from '../../tag/tag.service';
 
 // Define a clear interface for the paginated response
 export interface PaginatedTags {
@@ -16,6 +17,7 @@ export interface PaginatedTags {
 export class AdminTagService {
   constructor(
     @InjectModel(Tag.name) private readonly tagModel: Model<TagDocument>,
+    private readonly tagService: TagService,
   ) {}
 
   async findAll(page = 1, limit = 10, query?: string): Promise<PaginatedTags> {
@@ -30,7 +32,7 @@ export class AdminTagService {
         .sort({ value: 1 })
         .skip(skip)
         .limit(limit)
-        .lean()
+        .lean<Tag[]>()
         .exec(),
       this.tagModel.countDocuments(findQuery),
     ]);
@@ -38,7 +40,7 @@ export class AdminTagService {
     const totalPages = Math.ceil(total / limit);
 
     return {
-      data: tags as Tag[],
+      data: tags,
       total,
       page,
       limit,
@@ -48,6 +50,7 @@ export class AdminTagService {
 
   async create(value: string): Promise<TagDocument> {
     const newTag = await this.tagModel.create({ value });
+    this.tagService.invalidateCache();
     return newTag;
   }
 
@@ -57,6 +60,7 @@ export class AdminTagService {
       throw new NotFoundException('Tag not found!');
     }
     await tag.deleteOne();
+    this.tagService.invalidateCache();
     return { message: 'Tag successfully deleted' };
   }
 }

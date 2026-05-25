@@ -24,6 +24,7 @@ import { AdminStatisticController } from './controllers/admin-statistic.controll
 import { AdminTagController } from './controllers/admin-tag.controller';
 import { AdminTagService } from './services/admin-tag.service';
 import { Tag, TagSchema } from '../tag/schemas/tag.schema';
+import { TagModule } from '../tag/tag.module';
 
 @Module({
   imports: [
@@ -43,6 +44,7 @@ import { Tag, TagSchema } from '../tag/schemas/tag.schema';
       }),
     }),
     FileModule,
+    TagModule,
   ],
   providers: [
     AdminService,
