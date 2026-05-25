@@ -9,9 +9,14 @@ const CACHE_TTL_MS = 5 * 60_000;
 const REGEX_META = /[.*+?^${}()|[\]\\]/g;
 const escapeRegex = (s: string): string => s.replace(REGEX_META, String.raw`\$&`);
 
+export interface SuggestedTag {
+  _id: string;
+  value: string;
+}
+
 interface CacheEntry {
   expiresAt: number;
-  value: Pick<Tag, 'value'>[];
+  value: SuggestedTag[];
 }
 
 @Injectable()
@@ -55,7 +60,7 @@ export class TagService {
    * Bo'sh query → birinchi 10 tag (UI ochilganda ko'rinsin).
    * 5 daqiqali in-memory cache. Tag yangilanganda invalidate bo'ladi.
    */
-  async findTags(query: string): Promise<Pick<Tag, 'value'>[]> {
+  async findTags(query: string): Promise<SuggestedTag[]> {
     try {
       const trimmed = (query ?? '').trim().toLowerCase();
       const cacheKey = trimmed.length > 0 ? `q:${trimmed}` : 'q:__empty__';
@@ -69,12 +74,17 @@ export class TagService {
         ? { value: { $regex: `^${escapeRegex(trimmed)}`, $options: 'i' } }
         : {};
 
-      const result = await this.tagModel
-        .find(filter, { value: 1, _id: 0 })
+      const rows = await this.tagModel
+        .find(filter, { value: 1 })
         .sort({ value: 1 })
         .limit(SUGGEST_LIMIT)
-        .lean<Pick<Tag, 'value'>[]>()
+        .lean<Array<{ _id: unknown; value: string }>>()
         .exec();
+
+      const result: SuggestedTag[] = rows.map((row) => ({
+        _id: String(row._id),
+        value: row.value,
+      }));
 
       this.cache.set(cacheKey, {
         expiresAt: Date.now() + CACHE_TTL_MS,
