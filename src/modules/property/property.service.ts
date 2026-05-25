@@ -37,6 +37,18 @@ interface PriceConversionContext {
 
 @Injectable()
 export class PropertyService {
+  /**
+   * PremiumService — lazy setter orqali inject qilinadi (circular dep'dan
+   * himoya). PremiumModule onApplicationBootstrap'da PropertyService'ga set
+   * qiladi. Agar set qilinmagan bo'lsa, limit tekshiruvi o'tkazilmaydi.
+   */
+  premiumService?: {
+    assertCanCreateProperty: (
+      userId: string,
+      currentCount: number,
+    ) => Promise<void>;
+  };
+
   constructor(
     @InjectModel(Property.name)
     private readonly propertyModel: Model<PropertyDocument>,
@@ -84,6 +96,16 @@ export class PropertyService {
     }
     if (!author) {
       throw new BadRequestException('Log back in system!');
+    }
+
+    // Premium / property limit tekshiruvi: bepul user free_property_limit
+    // tagacha e'lon qo'sha oladi. Premium bo'lsa cheksiz.
+    // PremiumService circular bo'lmasligi uchun setter orqali inject qilingan.
+    if (this.premiumService) {
+      const currentCount = await this.propertyModel
+        .countDocuments({ author: new Types.ObjectId(author) })
+        .exec();
+      await this.premiumService.assertCanCreateProperty(author, currentCount);
     }
 
     let Model: Model<PropertyDocument>;

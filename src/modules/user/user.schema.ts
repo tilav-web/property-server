@@ -77,10 +77,20 @@ export class User {
   isAI: boolean;
 
   /**
-   * Voice AI premium amal qilish muddati. null yoki o'tmishda bo'lsa — bepul
-   * kunlik limit qo'llanadi. Premium upgrade bilan +N kun belgilanadi (admin
-   * approval bilan VoicePremiumService.activate orqali).
+   * Umumiy "Premium" obuna amal qilish muddati. Quyidagilarni ochadi:
+   *  - Voice AI cheksiz (bepul kunlik limit yo'q)
+   *  - Property yaratish cheksiz (bepul limit yo'q)
+   *  - Property "top"ga chiqarish (PROPERTY_PREMIUM) chegirma bilan
+   *
+   * Reklama (advertise) alohida — har bir reklama uchun to'lov.
+   *
+   * Backwards compat: oldingi voicePremiumUntil shu yerga ko'chiriladi
+   * bootstrap'da (bir martalik migration).
    */
+  @Prop({ type: Date, default: null })
+  premiumUntil?: Date | null;
+
+  /** @deprecated premiumUntil bilan birlashtirilgan. Migration uchun saqlangan. */
   @Prop({ type: Date, default: null })
   voicePremiumUntil?: Date | null;
 }

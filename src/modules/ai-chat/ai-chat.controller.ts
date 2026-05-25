@@ -13,7 +13,7 @@ import { Throttle } from '@nestjs/throttler';
 import type { Request } from 'express';
 import { AiChatService } from './ai-chat.service';
 import { ApiStandardErrors } from 'src/common/swagger/api-errors.decorator';
-import { VoicePremiumService } from '../voice-premium/voice-premium.service';
+import { PremiumService } from '../premium/premium.service';
 
 const MAX_AUDIO_BYTES = 15 * 1024 * 1024; // 15 MB
 const ACCEPTED_AUDIO_MIMES = new Set([
@@ -43,7 +43,7 @@ interface AnonymousChatDto {
 export class AiChatController {
   constructor(
     private readonly aiChatService: AiChatService,
-    private readonly voicePremium: VoicePremiumService,
+    private readonly premium: PremiumService,
   ) {}
 
   /**
@@ -94,7 +94,7 @@ export class AiChatController {
     }
     // Anonim — quota IP bo'yicha. Premium tekshirish anonim uchun yo'q.
     const ip = req.ip || req.socket?.remoteAddress || 'unknown';
-    const quota = await this.voicePremium.assertCanSendAndConsume({
+    const quota = await this.premium.assertCanSendVoiceAndConsume({
       userId: null,
       ip,
     });

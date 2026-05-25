@@ -12,8 +12,10 @@ interface UpdatePayload {
   hero_image_buy_srcset?: string | null;
   hero_image_rent_srcset?: string | null;
   voice_daily_free_limit?: number;
-  voice_premium_price?: number;
-  voice_premium_duration_days?: number;
+  free_property_limit?: number;
+  premium_price?: number;
+  premium_duration_days?: number;
+  premium_property_discount_percent?: number;
   app_store_url?: string;
   play_store_url?: string;
 }
@@ -81,11 +83,18 @@ export class SiteSettingsService {
     if (dto.voice_daily_free_limit !== undefined) {
       settings.voice_daily_free_limit = dto.voice_daily_free_limit;
     }
-    if (dto.voice_premium_price !== undefined) {
-      settings.voice_premium_price = dto.voice_premium_price;
+    if (dto.free_property_limit !== undefined) {
+      settings.free_property_limit = dto.free_property_limit;
     }
-    if (dto.voice_premium_duration_days !== undefined) {
-      settings.voice_premium_duration_days = dto.voice_premium_duration_days;
+    if (dto.premium_price !== undefined) {
+      settings.premium_price = dto.premium_price;
+    }
+    if (dto.premium_duration_days !== undefined) {
+      settings.premium_duration_days = dto.premium_duration_days;
+    }
+    if (dto.premium_property_discount_percent !== undefined) {
+      settings.premium_property_discount_percent =
+        dto.premium_property_discount_percent;
     }
     if (dto.app_store_url !== undefined) {
       settings.app_store_url = dto.app_store_url || null;

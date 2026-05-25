@@ -28,7 +28,7 @@ export class UpdateSiteSettingsDto {
   @IsOptional()
   hero_image_rent_srcset?: string;
 
-  // Voice AI premium
+  // Premium obuna (umumiy: voice + property + chegirma)
   @ApiPropertyOptional({ description: 'Voice bepul kunlik limit (anonim + auth)' })
   @Type(() => Number)
   @IsInt()
@@ -37,20 +37,38 @@ export class UpdateSiteSettingsDto {
   @IsOptional()
   voice_daily_free_limit?: number;
 
-  @ApiPropertyOptional({ description: 'Voice premium narxi (DEFAULT_CURRENCY)' })
+  @ApiPropertyOptional({ description: 'Bepul user nechta property yarata oladi' })
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  @Max(1000)
+  @IsOptional()
+  free_property_limit?: number;
+
+  @ApiPropertyOptional({ description: 'Premium narxi (DEFAULT_CURRENCY)' })
   @Type(() => Number)
   @IsInt()
   @Min(0)
   @IsOptional()
-  voice_premium_price?: number;
+  premium_price?: number;
 
-  @ApiPropertyOptional({ description: "Voice premium amal qilish kunlari" })
+  @ApiPropertyOptional({ description: 'Premium amal qilish kunlari' })
   @Type(() => Number)
   @IsInt()
   @Min(1)
   @Max(365)
   @IsOptional()
-  voice_premium_duration_days?: number;
+  premium_duration_days?: number;
+
+  @ApiPropertyOptional({
+    description: "Premium user uchun PROPERTY_PREMIUM chegirma foizi (0-90)",
+  })
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  @Max(90)
+  @IsOptional()
+  premium_property_discount_percent?: number;
 
   // Bosh sahifa download CTA
   @ApiPropertyOptional({ description: 'App Store havolasi' })

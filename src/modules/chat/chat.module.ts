@@ -11,7 +11,7 @@ import { ChatGateway } from './chat.gateway';
 import { UserModule } from '../user/user.module';
 import { NotificationModule } from '../notification/notification.module';
 import { AiChatModule } from '../ai-chat/ai-chat.module';
-import { VoicePremiumModule } from '../voice-premium/voice-premium.module';
+import { PremiumModule } from '../premium/premium.module';
 
 @Module({
   imports: [
@@ -21,7 +21,7 @@ import { VoicePremiumModule } from '../voice-premium/voice-premium.module';
     ]),
     UserModule, // JwtModule is re-exported from UserModule
     NotificationModule,
-    VoicePremiumModule,
+    PremiumModule,
     forwardRef(() => AiChatModule),
   ],
   providers: [ChatService, ChatGateway],

@@ -7,6 +7,14 @@ export enum OrderTypeEnum {
   ADVERTISE = 'ADVERTISE',
   /** E'lonni premium qilish (30 kun). orderId = Property._id */
   PROPERTY_PREMIUM = 'PROPERTY_PREMIUM',
-  /** Voice AI premium (cheksiz, N kun). orderId = User._id */
+  /**
+   * Umumiy "Premium" obuna (N kun). orderId = User._id.
+   * Quyidagilarni ochadi:
+   *  - Voice AI cheksiz
+   *  - Property yaratish cheksiz
+   *  - PROPERTY_PREMIUM ("top"ga chiqarish) chegirma bilan
+   */
+  PREMIUM = 'PREMIUM',
+  /** @deprecated PREMIUM bilan birlashtirilgan. Eski tranzaksiyalar uchun. */
   VOICE_PREMIUM = 'VOICE_PREMIUM',
 }

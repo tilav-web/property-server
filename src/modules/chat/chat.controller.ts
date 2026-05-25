@@ -32,7 +32,7 @@ import type { IRequestCustom } from 'src/interfaces/custom-request.interface';
 import { UserService } from '../user/user.service';
 import { ApiStandardErrors } from 'src/common/swagger/api-errors.decorator';
 import { AiChatService } from '../ai-chat/ai-chat.service';
-import { VoicePremiumService } from '../voice-premium/voice-premium.service';
+import { PremiumService } from '../premium/premium.service';
 
 const MAX_AUDIO_BYTES = 15 * 1024 * 1024;
 const ACCEPTED_AUDIO_MIMES = new Set([
@@ -60,7 +60,7 @@ export class ChatController {
     private readonly userService: UserService,
     @Inject(forwardRef(() => AiChatService))
     private readonly aiChatService: AiChatService,
-    private readonly voicePremium: VoicePremiumService,
+    private readonly premium: PremiumService,
   ) {}
 
   @Get('conversations')
@@ -214,7 +214,7 @@ export class ChatController {
 
     // Auth user uchun quota — premium bo'lsa cheksiz, aks holda kunlik limit
     const ip = req.ip || req.socket?.remoteAddress || 'unknown';
-    const quota = await this.voicePremium.assertCanSendAndConsume({
+    const quota = await this.premium.assertCanSendVoiceAndConsume({
       userId: me,
       ip,
     });

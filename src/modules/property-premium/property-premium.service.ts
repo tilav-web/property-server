@@ -36,6 +36,19 @@ export interface StartUpgradeResult {
  */
 @Injectable()
 export class PropertyPremiumService implements ApprovalHandler {
+  /**
+   * PremiumService — lazy setter (circular dep). Agar user umumiy premium
+   * bo'lsa, PROPERTY_PREMIUM narxiga chegirma qo'llaniladi.
+   */
+  premiumService?: {
+    isPremiumActive: (
+      userId: string,
+    ) => Promise<{ isPremium: boolean; until: Date | null }>;
+    getConfig: () => Promise<{
+      propertyPremiumDiscountPercent: number;
+    }>;
+  };
+
   constructor(
     private readonly propertyService: PropertyService,
     private readonly transactionService: TransactionService,
@@ -54,8 +67,24 @@ export class PropertyPremiumService implements ApprovalHandler {
       userId,
     });
 
-    const price = this.resolvePrice();
+    let price = this.resolvePrice();
     const durationDays = this.resolveDurationDays();
+
+    // Umumiy premium bo'lsa - chegirma qo'llaniladi
+    if (this.premiumService) {
+      const { isPremium } = await this.premiumService.isPremiumActive(userId);
+      if (isPremium) {
+        const { propertyPremiumDiscountPercent } =
+          await this.premiumService.getConfig();
+        const discount = Math.min(
+          Math.max(propertyPremiumDiscountPercent ?? 0, 0),
+          90,
+        );
+        if (discount > 0) {
+          price = Math.round((price * (100 - discount)) / 100);
+        }
+      }
+    }
 
     const transaction = await this.transactionService.createPending({
       user: userId,
