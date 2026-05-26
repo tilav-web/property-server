@@ -7,4 +7,10 @@ export enum NotificationType {
   PROJECT_INQUIRY = 'project_inquiry',
   /** Admin uchun: yangi to'lov keldi va tasdiqlash kutmoqda. */
   PAYMENT_AWAITING_APPROVAL = 'payment_awaiting_approval',
+  /** User: premium tugadi, X kun ichida ortiqcha property arxivlanadi. */
+  PREMIUM_EXPIRED_GRACE = 'premium_expired_grace',
+  /** User: grace tugadi, eng eski ortiqchalar avtomatik arxivlandi. */
+  PREMIUM_EXPIRED_ARCHIVED = 'premium_expired_archived',
+  /** User: admin tomonidan premium berildi/uzaytirildi. */
+  PREMIUM_GRANTED = 'premium_granted',
 }

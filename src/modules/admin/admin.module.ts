@@ -25,6 +25,7 @@ import { AdminTagController } from './controllers/admin-tag.controller';
 import { AdminTagService } from './services/admin-tag.service';
 import { Tag, TagSchema } from '../tag/schemas/tag.schema';
 import { TagModule } from '../tag/tag.module';
+import { PremiumModule } from '../premium/premium.module';
 
 @Module({
   imports: [
@@ -45,6 +46,7 @@ import { TagModule } from '../tag/tag.module';
     }),
     FileModule,
     TagModule,
+    PremiumModule,
   ],
   providers: [
     AdminService,

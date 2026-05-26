@@ -19,6 +19,15 @@ import { TransactionService } from '../payment/services/transaction.service';
 import { SiteSettingsService } from '../site-settings/site-settings.service';
 import { User, UserDocument } from '../user/user.schema';
 import { VoiceUsage, VoiceUsageDocument } from './schemas/voice-usage.schema';
+import {
+  Property,
+  PropertyDocument,
+} from '../property/schemas/property.schema';
+import { NotificationService } from '../notification/notification.service';
+import { NotificationType } from '../notification/enums/notification-type.enum';
+
+const GRACE_DAYS = 7;
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 export interface PremiumConfig {
   voiceDailyFreeLimit: number;
@@ -71,9 +80,12 @@ export class PremiumService implements ApprovalHandler {
     private readonly usageModel: Model<VoiceUsageDocument>,
     @InjectModel(User.name)
     private readonly userModel: Model<UserDocument>,
+    @InjectModel(Property.name)
+    private readonly propertyModel: Model<PropertyDocument>,
     private readonly siteSettings: SiteSettingsService,
     private readonly transactionService: TransactionService,
     private readonly countryConfig: CountryConfigService,
+    private readonly notificationService: NotificationService,
   ) {}
 
   // ============================================================================
@@ -330,6 +342,219 @@ export class PremiumService implements ApprovalHandler {
       `Premium activated user=${orderId} until=${newUntil.toISOString()}`,
     );
     return { until: newUntil };
+  }
+
+  // ============================================================================
+  // Admin: qo'lda premium berish / bekor qilish
+  // ============================================================================
+
+  /**
+   * Admin qo'lda premium beradi (yoki mavjudini uzaytiradi).
+   * Faol premium bo'lsa ustiga days qo'shadi; aks holda now + days.
+   */
+  async grantPremium(
+    userId: string,
+    days: number,
+  ): Promise<{ premiumUntil: Date }> {
+    if (!Types.ObjectId.isValid(userId)) {
+      throw new BadRequestException("userId noto'g'ri");
+    }
+    if (!Number.isInteger(days) || days < 1 || days > 3650) {
+      throw new BadRequestException('days 1..3650 oralig\'ida bo\'lishi kerak');
+    }
+    const user = await this.userModel.findById(userId).exec();
+    if (!user) throw new NotFoundException('Foydalanuvchi topilmadi');
+
+    const now = Date.now();
+    const candidates = [user.premiumUntil, user.voicePremiumUntil]
+      .filter((d): d is Date => Boolean(d))
+      .map((d) => new Date(d).getTime());
+    const currentUntil = candidates.length ? Math.max(...candidates) : 0;
+    const base = Math.max(now, currentUntil);
+    const newUntil = new Date(base + days * MS_PER_DAY);
+
+    user.premiumUntil = newUntil;
+    await user.save();
+
+    try {
+      await this.notificationService.create({
+        user: userId,
+        type: NotificationType.PREMIUM_GRANTED,
+        title: 'Premium faollashtirildi',
+        body: `Administrator sizga ${days} kunlik Premium berdi. ${newUntil.toLocaleDateString()} gacha amal qiladi.`,
+        link: '/seller',
+      });
+    } catch (err) {
+      this.logger.warn(
+        `Premium grant notification yuborilmadi: ${(err as Error).message}`,
+      );
+    }
+
+    this.logger.log(
+      `Premium granted by admin: user=${userId} +${days}d until=${newUntil.toISOString()}`,
+    );
+    return { premiumUntil: newUntil };
+  }
+
+  /** Admin tomonidan premium darhol bekor qilinadi. */
+  async revokePremium(userId: string): Promise<{ revoked: boolean }> {
+    if (!Types.ObjectId.isValid(userId)) {
+      throw new BadRequestException("userId noto'g'ri");
+    }
+    const user = await this.userModel.findById(userId).exec();
+    if (!user) throw new NotFoundException('Foydalanuvchi topilmadi');
+
+    user.premiumUntil = null;
+    user.voicePremiumUntil = null;
+    await user.save();
+    this.logger.log(`Premium revoked by admin: user=${userId}`);
+    return { revoked: true };
+  }
+
+  // ============================================================================
+  // Cron: grace period (premium tugagandan keyin ortiqcha property arxivi)
+  // ============================================================================
+
+  /**
+   * Premium endi-endi tugagan user'larga ogohlantirish jo'natadi
+   * (X kun ichida ortiqcha property arxivlanishi haqida).
+   * Bir martalik: faqat o'tgan 1 kun ichida tugaganlar.
+   */
+  async notifyRecentlyExpired(): Promise<number> {
+    const now = new Date();
+    const yesterday = new Date(now.getTime() - MS_PER_DAY);
+
+    const users = await this.userModel
+      .find({
+        premiumUntil: { $gte: yesterday, $lt: now },
+      })
+      .select('_id')
+      .lean<Array<{ _id: Types.ObjectId }>>()
+      .exec();
+
+    if (users.length === 0) return 0;
+
+    const config = await this.getConfig();
+    let sent = 0;
+
+    for (const u of users) {
+      const userId = u._id;
+      const count = await this.propertyModel
+        .countDocuments({ author: userId, is_archived: false })
+        .exec();
+      if (count <= config.freePropertyLimit) continue;
+
+      const extras = count - config.freePropertyLimit;
+      try {
+        await this.notificationService.create({
+          user: userId.toString(),
+          type: NotificationType.PREMIUM_EXPIRED_GRACE,
+          title: 'Premium muddati tugadi',
+          body: `Sizda ${count} ta property bor, bepul limit ${config.freePropertyLimit}. ${GRACE_DAYS} kun ichida Premium'ni qayta yoqmasangiz, ${extras} ta eng eski property avtomatik arxivlanadi.`,
+          link: '/seller',
+        });
+        sent++;
+      } catch (err) {
+        this.logger.warn(
+          `Grace notification user=${String(userId)}: ${(err as Error).message}`,
+        );
+      }
+    }
+    return sent;
+  }
+
+  /**
+   * Premium tugaganidan keyin GRACE_DAYS o'tgan user'larning ortiqcha
+   * (eng eski) property'larini avtomatik arxivlaydi va xabar yuboradi.
+   * Faqat premium hozir ham faol bo'lmagan va hech qachon yangilanmagan
+   * holatda ishlaydi.
+   */
+  async archiveExtrasForExpiredUsers(): Promise<{
+    affectedUsers: number;
+    archivedProperties: number;
+  }> {
+    const now = new Date();
+    const cutoff = new Date(now.getTime() - GRACE_DAYS * MS_PER_DAY);
+
+    const users = await this.userModel
+      .find({
+        $or: [
+          { premiumUntil: { $lte: cutoff } },
+          { premiumUntil: null, voicePremiumUntil: { $lte: cutoff } },
+        ],
+      })
+      .select('_id premiumUntil voicePremiumUntil')
+      .lean<
+        Array<{
+          _id: Types.ObjectId;
+          premiumUntil: Date | null;
+          voicePremiumUntil: Date | null;
+        }>
+      >()
+      .exec();
+
+    if (users.length === 0) {
+      return { affectedUsers: 0, archivedProperties: 0 };
+    }
+
+    const config = await this.getConfig();
+    let affected = 0;
+    let totalArchived = 0;
+
+    for (const u of users) {
+      // Eng yangi premiumUntil cutoff'dan keyin bo'lsa — hali grace tugamagan
+      const latest = Math.max(
+        u.premiumUntil ? new Date(u.premiumUntil).getTime() : 0,
+        u.voicePremiumUntil ? new Date(u.voicePremiumUntil).getTime() : 0,
+      );
+      if (latest > cutoff.getTime()) continue;
+
+      const active = await this.propertyModel
+        .countDocuments({ author: u._id, is_archived: false })
+        .exec();
+      const extras = active - config.freePropertyLimit;
+      if (extras <= 0) continue;
+
+      // Eng eski (createdAt asc) extras donasini arxivlash
+      const toArchive = await this.propertyModel
+        .find({ author: u._id, is_archived: false })
+        .sort({ createdAt: 1 })
+        .limit(extras)
+        .select('_id')
+        .lean<Array<{ _id: Types.ObjectId }>>()
+        .exec();
+
+      const ids = toArchive.map((p) => p._id);
+      if (ids.length === 0) continue;
+
+      await this.propertyModel
+        .updateMany({ _id: { $in: ids } }, { $set: { is_archived: true } })
+        .exec();
+
+      affected++;
+      totalArchived += ids.length;
+
+      try {
+        await this.notificationService.create({
+          user: u._id.toString(),
+          type: NotificationType.PREMIUM_EXPIRED_ARCHIVED,
+          title: 'Ortiqcha e\'lonlar arxivlandi',
+          body: `Premium qayta yoqilmadi. ${ids.length} ta eng eski property avtomatik arxivlandi. Premium oling va arxivdan qaytaring.`,
+          link: '/seller/properties',
+        });
+      } catch (err) {
+        this.logger.warn(
+          `Archive notification user=${String(u._id)}: ${(err as Error).message}`,
+        );
+      }
+    }
+
+    if (totalArchived > 0) {
+      this.logger.log(
+        `Grace expired: archived ${totalArchived} properties across ${affected} users`,
+      );
+    }
+    return { affectedUsers: affected, archivedProperties: totalArchived };
   }
 
   // ============================================================================

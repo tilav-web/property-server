@@ -11,6 +11,8 @@ import {
   MaxFileSizeValidator,
   FileTypeValidator,
   Put,
+  Post,
+  Delete,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AdminUserService } from '../services/admin-user.service';
@@ -20,6 +22,8 @@ import { UpdateUserDto } from '../dto/update-user.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiMultipartBody } from 'src/common/swagger/file-upload.decorator';
 import { ApiStandardErrors } from 'src/common/swagger/api-errors.decorator';
+import { PremiumService } from '../../premium/premium.service';
+import { GrantPremiumDto } from '../dto/grant-premium.dto';
 
 @UseGuards(AdminGuard)
 @ApiBearerAuth('bearer')
@@ -27,7 +31,10 @@ import { ApiStandardErrors } from 'src/common/swagger/api-errors.decorator';
 @ApiStandardErrors({ auth: true, forbidden: true })
 @Controller('admins/users')
 export class AdminUserController {
-  constructor(private readonly adminUserService: AdminUserService) {}
+  constructor(
+    private readonly adminUserService: AdminUserService,
+    private readonly premiumService: PremiumService,
+  ) {}
 
   @Get()
   @ApiOperation({ summary: 'Userlar ro‘yxati (admin)' })
@@ -55,5 +62,29 @@ export class AdminUserController {
     avatarFile?: Express.Multer.File,
   ) {
     return this.adminUserService.update(userId, dto, avatarFile);
+  }
+
+  @Post(':id/premium')
+  @ApiOperation({
+    summary: 'User ga Premium berish (yoki uzaytirish)',
+    description:
+      "Adminstrator qo'lda Premium beradi. Faol Premium bo'lsa ustiga " +
+      "qo'shiladi. To'lovsiz — promotion, partner, jurnalist va h.k. uchun.",
+  })
+  @ApiStandardErrors({ auth: true, validation: true, notFound: true })
+  async grantPremium(
+    @Param('id') userId: string,
+    @Body() dto: GrantPremiumDto,
+  ) {
+    return this.premiumService.grantPremium(userId, dto.days);
+  }
+
+  @Delete(':id/premium')
+  @ApiOperation({
+    summary: "User ning Premium'ini bekor qilish (darhol)",
+  })
+  @ApiStandardErrors({ auth: true, notFound: true })
+  async revokePremium(@Param('id') userId: string) {
+    return this.premiumService.revokePremium(userId);
   }
 }

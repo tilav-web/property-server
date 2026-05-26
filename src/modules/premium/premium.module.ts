@@ -15,6 +15,7 @@ import { PropertyModule } from '../property/property.module';
 import { PropertyService } from '../property/property.service';
 import { PropertyPremiumModule } from '../property-premium/property-premium.module';
 import { PropertyPremiumService } from '../property-premium/property-premium.service';
+import { NotificationModule } from '../notification/notification.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { PropertyPremiumService } from '../property-premium/property-premium.ser
     SiteSettingsModule,
     PaymentModule,
     UserModule, // JwtModule re-exported (AuthGuard uchun)
+    NotificationModule,
     forwardRef(() => PropertyModule),
     forwardRef(() => PropertyPremiumModule),
   ],
