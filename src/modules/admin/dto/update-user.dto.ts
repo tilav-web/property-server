@@ -53,9 +53,13 @@ export class UpdateUserDto {
   @IsBoolean()
   emailIsVerified?: boolean;
 
-  @ApiPropertyOptional({ example: '+998901234567' })
+  @ApiPropertyOptional({
+    example: '+60123456789',
+    description:
+      "Xalqaro E.164 format (+ prefiks bilan). UZ uchun +998, MY uchun +60.",
+  })
   @IsOptional()
-  @IsPhoneNumber('UZ')
+  @IsPhoneNumber()
   phoneValue?: string;
 
   @ApiPropertyOptional({ example: true })

@@ -81,8 +81,9 @@ export function resolveDefaultCurrency(): CurrencyCode {
     return raw as CurrencyCode;
   }
   const country = process.env.COUNTRY?.toUpperCase();
-  if (country === 'MY') return CurrencyCode.MYR;
-  return CurrencyCode.UZS;
+  if (country === 'UZ') return CurrencyCode.UZS;
+  // Default — MY (asosiy bozor)
+  return CurrencyCode.MYR;
 }
 
 export const DEFAULT_CURRENCY: CurrencyCode = resolveDefaultCurrency();

@@ -124,14 +124,15 @@ export class CountryConfigService {
   // ---- privates ----
 
   private resolveCountry(): CountryCode {
-    const raw = (this.config.get<string>('COUNTRY') ?? 'UZ').toUpperCase();
+    // Default — MY (asosiy bozor). UZ deploy uchun .env'da COUNTRY=UZ majburiy.
+    const raw = (this.config.get<string>('COUNTRY') ?? 'MY').toUpperCase();
     if (SUPPORTED_COUNTRIES.includes(raw as CountryCode)) {
       return raw as CountryCode;
     }
     this.logger.warn(
-      `COUNTRY="${raw}" qo'llab-quvvatlanmaydi, UZ ishlatiladi. Mavjudlar: ${SUPPORTED_COUNTRIES.join(', ')}`,
+      `COUNTRY="${raw}" qo'llab-quvvatlanmaydi, MY ishlatiladi. Mavjudlar: ${SUPPORTED_COUNTRIES.join(', ')}`,
     );
-    return 'UZ';
+    return 'MY';
   }
 
   private resolveCurrency(
