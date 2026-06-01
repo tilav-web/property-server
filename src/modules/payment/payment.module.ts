@@ -10,6 +10,7 @@ import {
   TransactionSchema,
 } from './schemas/transaction.schema';
 import { NotificationModule } from '../notification/notification.module';
+import { SiteSettingsModule } from '../site-settings/site-settings.module';
 
 /**
  * To'lov moduli.
@@ -30,6 +31,7 @@ import { NotificationModule } from '../notification/notification.module';
       { name: Transaction.name, schema: TransactionSchema },
     ]),
     NotificationModule,
+    SiteSettingsModule,
   ],
   controllers: [PaymeController, TransactionController],
   providers: [PaymeService, TransactionService, PaymentApprovalService],

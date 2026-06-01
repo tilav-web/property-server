@@ -18,6 +18,13 @@ interface UpdatePayload {
   premium_property_discount_percent?: number;
   app_store_url?: string;
   play_store_url?: string;
+  premium_mxik?: string;
+  premium_package_code?: string;
+  property_premium_mxik?: string;
+  property_premium_package_code?: string;
+  advertise_mxik?: string;
+  advertise_package_code?: string;
+  vat_percent?: number;
 }
 
 type HeroSlot = 'main' | 'buy' | 'rent';
@@ -101,6 +108,29 @@ export class SiteSettingsService {
     }
     if (dto.play_store_url !== undefined) {
       settings.play_store_url = dto.play_store_url || null;
+    }
+
+    // Payme fiskal
+    if (dto.premium_mxik !== undefined) {
+      settings.premium_mxik = dto.premium_mxik;
+    }
+    if (dto.premium_package_code !== undefined) {
+      settings.premium_package_code = dto.premium_package_code;
+    }
+    if (dto.property_premium_mxik !== undefined) {
+      settings.property_premium_mxik = dto.property_premium_mxik;
+    }
+    if (dto.property_premium_package_code !== undefined) {
+      settings.property_premium_package_code = dto.property_premium_package_code;
+    }
+    if (dto.advertise_mxik !== undefined) {
+      settings.advertise_mxik = dto.advertise_mxik;
+    }
+    if (dto.advertise_package_code !== undefined) {
+      settings.advertise_package_code = dto.advertise_package_code;
+    }
+    if (dto.vat_percent !== undefined) {
+      settings.vat_percent = dto.vat_percent;
     }
 
     await this.replaceFile(settings, 'hero_image', files?.hero_image?.[0]);

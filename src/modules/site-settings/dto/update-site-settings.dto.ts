@@ -80,4 +80,64 @@ export class UpdateSiteSettingsDto {
   @IsString()
   @IsOptional()
   play_store_url?: string;
+
+  // Payme fiskal (Cheklar oborotda ko'rinishi uchun)
+  @ApiPropertyOptional({
+    description: 'Premium obuna uchun MXIK kodi (tasnif.soliq.uz)',
+    example: '10399001001000000',
+  })
+  @IsString()
+  @IsOptional()
+  premium_mxik?: string;
+
+  @ApiPropertyOptional({
+    description: 'Premium obuna uchun package_code (MXIK ga bog\'liq)',
+    example: '1',
+  })
+  @IsString()
+  @IsOptional()
+  premium_package_code?: string;
+
+  @ApiPropertyOptional({
+    description: "Property TOP (PROPERTY_PREMIUM) uchun MXIK kodi",
+    example: '10399001001000000',
+  })
+  @IsString()
+  @IsOptional()
+  property_premium_mxik?: string;
+
+  @ApiPropertyOptional({
+    description: 'Property TOP uchun package_code',
+    example: '1',
+  })
+  @IsString()
+  @IsOptional()
+  property_premium_package_code?: string;
+
+  @ApiPropertyOptional({
+    description: 'Reklama (ADVERTISE) uchun MXIK kodi',
+    example: '10202001001000000',
+  })
+  @IsString()
+  @IsOptional()
+  advertise_mxik?: string;
+
+  @ApiPropertyOptional({
+    description: 'Reklama uchun package_code',
+    example: '1',
+  })
+  @IsString()
+  @IsOptional()
+  advertise_package_code?: string;
+
+  @ApiPropertyOptional({
+    description: 'QQS foizi (0, 12, 15)',
+    example: 0,
+  })
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  @Max(30)
+  @IsOptional()
+  vat_percent?: number;
 }

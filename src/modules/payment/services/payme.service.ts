@@ -3,6 +3,8 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { NotificationService } from 'src/modules/notification/notification.service';
 import { NotificationType } from 'src/modules/notification/enums/notification-type.enum';
+import { SiteSettingsService } from 'src/modules/site-settings/site-settings.service';
+import { OrderTypeEnum } from 'src/enums/order-type.enum';
 import { AdminApprovalStatusEnum } from 'src/enums/admin-approval-status.enum';
 import { PaymentProviderEnum } from 'src/enums/payment-provider.enum';
 import { PaymentStatusEnum } from 'src/enums/payment-status.enum';
@@ -39,6 +41,15 @@ import {
  *
  * Port manbai: /home/tilav_web/Projects/izgara-server/src/modules/payment/services/payme.service.ts
  */
+interface FiscalItem {
+  title: string;
+  price: number;
+  count: number;
+  code: string;
+  package_code: string;
+  vat_percent: number;
+}
+
 @Injectable()
 export class PaymeService {
   private readonly logger = new Logger(PaymeService.name);
@@ -47,6 +58,7 @@ export class PaymeService {
     @InjectModel(Transaction.name)
     private readonly transactionModel: Model<TransactionDocument>,
     private readonly notificationService: NotificationService,
+    private readonly siteSettings: SiteSettingsService,
   ) {}
 
   async handleRequest(body: unknown): Promise<PaymeRpcResponse> {
@@ -146,8 +158,9 @@ export class PaymeService {
       );
     }
 
+    const detail = await this.buildFiscalDetail(tx);
     return {
-      result: { allow: true },
+      result: { allow: true, detail },
       id,
     };
   }
@@ -717,6 +730,61 @@ export class PaymeService {
 
   private toTiyin(amountInSom: number): number {
     return Math.round(Number(amountInSom) * 100);
+  }
+
+  /**
+   * Payme `detail` ob'ektini quradi (CheckPerformTransaction javobida
+   * "Cheklar solliq oborotida ko'rinishi uchun" majburiy).
+   * MXIK / package_code / VAT site-settings'dan olinadi.
+   * Admin qiymatlarni tasnif.soliq.uz da tasdiqlashi shart.
+   */
+  private async buildFiscalDetail(tx: TransactionDocument): Promise<{
+    receipt_type: number;
+    items: FiscalItem[];
+  }> {
+    const s = await this.siteSettings.get();
+    const vat = Number(s.vat_percent ?? 0);
+
+    let title: string;
+    let code: string;
+    let packageCode: string;
+
+    switch (tx.orderType) {
+      case OrderTypeEnum.PREMIUM:
+      case OrderTypeEnum.VOICE_PREMIUM: // legacy
+        title = 'Amaar Properties — Premium obuna';
+        code = s.premium_mxik || '10399001001000000';
+        packageCode = s.premium_package_code || '1';
+        break;
+      case OrderTypeEnum.PROPERTY_PREMIUM:
+        title = "Amaar Properties — E'lonni TOP'ga chiqarish";
+        code = s.property_premium_mxik || '10399001001000000';
+        packageCode = s.property_premium_package_code || '1';
+        break;
+      case OrderTypeEnum.ADVERTISE:
+        title = 'Amaar Properties — Reklama xizmati';
+        code = s.advertise_mxik || '10202001001000000';
+        packageCode = s.advertise_package_code || '1';
+        break;
+      default:
+        title = `Amaar Properties — ${tx.orderType}`;
+        code = s.premium_mxik || '10399001001000000';
+        packageCode = s.premium_package_code || '1';
+    }
+
+    return {
+      receipt_type: 0, // 0 = oddiy chek
+      items: [
+        {
+          title,
+          price: this.toTiyin(tx.amount),
+          count: 1,
+          code,
+          package_code: packageCode,
+          vat_percent: vat,
+        },
+      ],
+    };
   }
 
   private isValidAmount(amount: number): boolean {

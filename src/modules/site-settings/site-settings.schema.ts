@@ -93,6 +93,44 @@ export class SiteSettings {
   /** QR code rasm (admin yuklaydi) — App Store/Play sahifasiga olib boradi. */
   @Prop({ type: String, default: null })
   qr_code_image?: string | null;
+
+  // ============================================================================
+  // Payme fiskal ma'lumotlari (CheckPerformTransaction detail uchun)
+  // ----------------------------------------------------------------------------
+  // Payme har bir to'lov uchun chek (oborotda ko'rinishi uchun) talab qiladi:
+  // MXIK kod (mahsulot/xizmat tasnif), package_code (o'lchov birligi —
+  // MXIK ga bog'liq), VAT % (QQS foizi).
+  // Admin tasnif.soliq.uz/attribute/<mxik> da haqiqiy qiymatlarni tasdiqlashi
+  // kerak. Default'lar — taxminiy umumiy xizmat MXIK'lari (admin tahrirlasin).
+  // ============================================================================
+
+  /** Premium obuna uchun MXIK kodi (17 xonali). Default: umumiy axborot xizmati. */
+  @Prop({ type: String, default: '10399001001000000' })
+  premium_mxik: string;
+
+  /** Premium obuna uchun package_code (MXIK ga bog'liq). */
+  @Prop({ type: String, default: '1' })
+  premium_package_code: string;
+
+  /** Property TOP (PROPERTY_PREMIUM) uchun MXIK kodi. */
+  @Prop({ type: String, default: '10399001001000000' })
+  property_premium_mxik: string;
+
+  /** Property TOP uchun package_code. */
+  @Prop({ type: String, default: '1' })
+  property_premium_package_code: string;
+
+  /** Reklama (ADVERTISE) uchun MXIK kodi. Default: reklama xizmati. */
+  @Prop({ type: String, default: '10202001001000000' })
+  advertise_mxik: string;
+
+  /** Reklama uchun package_code. */
+  @Prop({ type: String, default: '1' })
+  advertise_package_code: string;
+
+  /** QQS foizi (0, 12, 15). Default 0 (kichik biznes / QQS to'lovchi emas). */
+  @Prop({ type: Number, default: 0, min: 0, max: 30 })
+  vat_percent: number;
 }
 
 export const SiteSettingsSchema = SchemaFactory.createForClass(SiteSettings);
