@@ -55,7 +55,53 @@ export class SiteSettingsService {
   async get(): Promise<SiteSettingsDocument> {
     let doc = await this.model.findOne();
     if (!doc) doc = await this.model.create({});
+    await this.migrateFiscalDefaults(doc);
     return doc;
+  }
+
+  /**
+   * Bir martalik auto-migration: eski MXIK/package_code default'lari (taxminiy
+   * qiymatlar) yangi tasdiqlangan qiymatlarga almashtiriladi. Faqat aniq eski
+   * default'lar match qilsa yangilanadi — admin qo'lda kiritgan qiymatlarga
+   * tegmaydi.
+   */
+  private async migrateFiscalDefaults(doc: SiteSettingsDocument): Promise<void> {
+    let changed = false;
+    const OLD_GENERIC_MXIK = '10399001001000000';
+    const OLD_ADVERTISE_MXIK = '10202001001000000';
+    const OLD_PACKAGE_CODE = '1';
+
+    if (doc.premium_mxik === OLD_GENERIC_MXIK) {
+      doc.premium_mxik = '10305008003000000';
+      changed = true;
+    }
+    if (doc.premium_package_code === OLD_PACKAGE_CODE) {
+      doc.premium_package_code = '1546532';
+      changed = true;
+    }
+    if (doc.property_premium_mxik === OLD_GENERIC_MXIK) {
+      doc.property_premium_mxik = '10305008003000000';
+      changed = true;
+    }
+    if (doc.property_premium_package_code === OLD_PACKAGE_CODE) {
+      doc.property_premium_package_code = '1546532';
+      changed = true;
+    }
+    if (doc.advertise_mxik === OLD_ADVERTISE_MXIK) {
+      doc.advertise_mxik = '10305008004000000';
+      changed = true;
+    }
+    if (doc.advertise_package_code === OLD_PACKAGE_CODE) {
+      doc.advertise_package_code = '1546606';
+      changed = true;
+    }
+    // vat_percent: agar 0 bo'lsa (eski default) — 12 ga yangilash mumkin
+    // emas, chunki admin ataylab 0 qo'ygan bo'lishi mumkin. Faqat MXIK uchun
+    // migration qilamiz.
+
+    if (changed) {
+      await doc.save();
+    }
   }
 
   async update({

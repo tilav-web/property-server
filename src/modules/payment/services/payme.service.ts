@@ -749,27 +749,33 @@ export class PaymeService {
     let code: string;
     let packageCode: string;
 
+    // Default MXIK / package_code'lar (tasnif.soliq.uz dan tasdiqlangan):
+    //   10305008003000000 — Dasturiy ta'minot litsenziya/ruxsat (PREMIUM,
+    //                        PROPERTY_PREMIUM)
+    //   10305008004000000 — Dasturiy ta'minotda reklama joylashtirish
+    //                        (ADVERTISE)
+    //   1546532 / 1546606 — "xizmat (so'm)" o'lchov birligi
     switch (tx.orderType) {
       case OrderTypeEnum.PREMIUM:
       case OrderTypeEnum.VOICE_PREMIUM: // legacy
         title = 'Amaar Properties — Premium obuna';
-        code = s.premium_mxik || '10399001001000000';
-        packageCode = s.premium_package_code || '1';
+        code = s.premium_mxik || '10305008003000000';
+        packageCode = s.premium_package_code || '1546532';
         break;
       case OrderTypeEnum.PROPERTY_PREMIUM:
         title = "Amaar Properties — E'lonni TOP'ga chiqarish";
-        code = s.property_premium_mxik || '10399001001000000';
-        packageCode = s.property_premium_package_code || '1';
+        code = s.property_premium_mxik || '10305008003000000';
+        packageCode = s.property_premium_package_code || '1546532';
         break;
       case OrderTypeEnum.ADVERTISE:
         title = 'Amaar Properties — Reklama xizmati';
-        code = s.advertise_mxik || '10202001001000000';
-        packageCode = s.advertise_package_code || '1';
+        code = s.advertise_mxik || '10305008004000000';
+        packageCode = s.advertise_package_code || '1546606';
         break;
       default:
         title = `Amaar Properties — ${tx.orderType}`;
-        code = s.premium_mxik || '10399001001000000';
-        packageCode = s.premium_package_code || '1';
+        code = s.premium_mxik || '10305008003000000';
+        packageCode = s.premium_package_code || '1546532';
     }
 
     return {

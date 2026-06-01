@@ -104,32 +104,47 @@ export class SiteSettings {
   // kerak. Default'lar — taxminiy umumiy xizmat MXIK'lari (admin tahrirlasin).
   // ============================================================================
 
-  /** Premium obuna uchun MXIK kodi (17 xonali). Default: umumiy axborot xizmati. */
-  @Prop({ type: String, default: '10399001001000000' })
+  /**
+   * Premium obuna uchun MXIK kodi (17 xonali).
+   * 10305008003000000 — Dasturiy ta'minotdan foydalanish huquqini
+   * (litsenziya, sublitsenziya) taqdim etish/ruxsat berish xizmatlari.
+   */
+  @Prop({ type: String, default: '10305008003000000' })
   premium_mxik: string;
 
-  /** Premium obuna uchun package_code (MXIK ga bog'liq). */
-  @Prop({ type: String, default: '1' })
+  /**
+   * Premium obuna uchun package_code.
+   * 1546532 — "xizmat (so'm)" o'lchov birligi (MXIK 10305008003000000 uchun).
+   * Boshqa variantlar: 1545646 (xizmat marta), 1546450 (dona).
+   */
+  @Prop({ type: String, default: '1546532' })
   premium_package_code: string;
 
-  /** Property TOP (PROPERTY_PREMIUM) uchun MXIK kodi. */
-  @Prop({ type: String, default: '10399001001000000' })
+  /** Property TOP (PROPERTY_PREMIUM) uchun MXIK kodi (Premium bilan bir xil). */
+  @Prop({ type: String, default: '10305008003000000' })
   property_premium_mxik: string;
 
-  /** Property TOP uchun package_code. */
-  @Prop({ type: String, default: '1' })
+  /** Property TOP uchun package_code (xizmat — so'm). */
+  @Prop({ type: String, default: '1546532' })
   property_premium_package_code: string;
 
-  /** Reklama (ADVERTISE) uchun MXIK kodi. Default: reklama xizmati. */
-  @Prop({ type: String, default: '10202001001000000' })
+  /**
+   * Reklama (ADVERTISE) uchun MXIK kodi.
+   * 10305008004000000 — Dasturiy ta'minotda mijoz tomonidan taqdim etilgan
+   * reklama va e'lonlarni joylashtirish xizmatlari.
+   */
+  @Prop({ type: String, default: '10305008004000000' })
   advertise_mxik: string;
 
-  /** Reklama uchun package_code. */
-  @Prop({ type: String, default: '1' })
+  /** Reklama uchun package_code. 1546606 — xizmat (so'm). */
+  @Prop({ type: String, default: '1546606' })
   advertise_package_code: string;
 
-  /** QQS foizi (0, 12, 15). Default 0 (kichik biznes / QQS to'lovchi emas). */
-  @Prop({ type: Number, default: 0, min: 0, max: 30 })
+  /**
+   * QQS foizi. Default 12% — Soliq kodeksi bo'yicha shu MXIK'lar uchun
+   * imtiyoz yo'q, standart stavka qo'llaniladi.
+   */
+  @Prop({ type: Number, default: 12, min: 0, max: 30 })
   vat_percent: number;
 }
 

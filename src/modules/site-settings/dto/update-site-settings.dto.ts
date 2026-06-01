@@ -84,15 +84,15 @@ export class UpdateSiteSettingsDto {
   // Payme fiskal (Cheklar oborotda ko'rinishi uchun)
   @ApiPropertyOptional({
     description: 'Premium obuna uchun MXIK kodi (tasnif.soliq.uz)',
-    example: '10399001001000000',
+    example: '10305008003000000',
   })
   @IsString()
   @IsOptional()
   premium_mxik?: string;
 
   @ApiPropertyOptional({
-    description: 'Premium obuna uchun package_code (MXIK ga bog\'liq)',
-    example: '1',
+    description: 'Premium obuna uchun package_code (MXIK ga bog\'liq). 1546532 = xizmat (so\'m).',
+    example: '1546532',
   })
   @IsString()
   @IsOptional()
@@ -100,15 +100,15 @@ export class UpdateSiteSettingsDto {
 
   @ApiPropertyOptional({
     description: "Property TOP (PROPERTY_PREMIUM) uchun MXIK kodi",
-    example: '10399001001000000',
+    example: '10305008003000000',
   })
   @IsString()
   @IsOptional()
   property_premium_mxik?: string;
 
   @ApiPropertyOptional({
-    description: 'Property TOP uchun package_code',
-    example: '1',
+    description: "Property TOP uchun package_code. 1546532 = xizmat (so'm).",
+    example: '1546532',
   })
   @IsString()
   @IsOptional()
@@ -116,23 +116,23 @@ export class UpdateSiteSettingsDto {
 
   @ApiPropertyOptional({
     description: 'Reklama (ADVERTISE) uchun MXIK kodi',
-    example: '10202001001000000',
+    example: '10305008004000000',
   })
   @IsString()
   @IsOptional()
   advertise_mxik?: string;
 
   @ApiPropertyOptional({
-    description: 'Reklama uchun package_code',
-    example: '1',
+    description: "Reklama uchun package_code. 1546606 = xizmat (so'm).",
+    example: '1546606',
   })
   @IsString()
   @IsOptional()
   advertise_package_code?: string;
 
   @ApiPropertyOptional({
-    description: 'QQS foizi (0, 12, 15)',
-    example: 0,
+    description: 'QQS foizi (0, 12, 15). Standart: 12%',
+    example: 12,
   })
   @Type(() => Number)
   @IsInt()
