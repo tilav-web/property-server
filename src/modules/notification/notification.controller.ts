@@ -43,6 +43,21 @@ export class NotificationController {
     });
   }
 
+  @Get('broadcasts')
+  @ApiOperation({ summary: 'Admin broadcast notification tarixi (user uchun)' })
+  async broadcasts(
+    @Req() req: IRequestCustom,
+    @Query('before') before?: string,
+    @Query('limit') limit?: string,
+  ) {
+    const userId = String(req.user!._id);
+    const parsedLimit = limit ? Number(limit) : 20;
+    return this.service.findBroadcasts(userId, {
+      before,
+      limit: Number.isFinite(parsedLimit) ? parsedLimit : 20,
+    });
+  }
+
   @Get('unread-count')
   @ApiOperation({ summary: 'O‘qilmagan notification’lar soni' })
   async unreadCount(@Req() req: IRequestCustom) {

@@ -10,6 +10,12 @@ import { NotificationType } from './enums/notification-type.enum';
 import { Admin, AdminDocument } from '../admin/admin.schema';
 import { AdminNotificationGateway } from './admin-notification.gateway';
 import { FcmService } from '../push/fcm.service';
+import {
+  BroadcastNotification,
+  BroadcastNotificationDocument,
+  BroadcastTargetGroup,
+} from '../push/schemas/broadcast-notification.schema';
+import { User, UserDocument } from '../user/user.schema';
 
 export interface CreateNotificationInput {
   user: string | Types.ObjectId;
@@ -31,6 +37,10 @@ export class NotificationService {
     private readonly model: Model<NotificationDocument>,
     @InjectModel(Admin.name)
     private readonly adminModel: Model<AdminDocument>,
+    @InjectModel(BroadcastNotification.name)
+    private readonly broadcastModel: Model<BroadcastNotificationDocument>,
+    @InjectModel(User.name)
+    private readonly userModel: Model<UserDocument>,
     @Optional()
     private readonly adminGateway?: AdminNotificationGateway,
     @Optional()
@@ -141,6 +151,48 @@ export class NotificationService {
 
   async markReadForAdmin(adminId: string, id: string): Promise<void> {
     return this.markReadFor('ADMIN', adminId, id);
+  }
+
+  /** User uchun broadcast notificationlarni qaytaradi (all + premium bo'lsa premium ham). */
+  async findBroadcasts(
+    userId: string,
+    { before, limit = 20 }: { before?: string; limit?: number },
+  ): Promise<{
+    items: BroadcastNotificationDocument[];
+    nextCursor: string | null;
+  }> {
+    const safeLimit = Math.min(Math.max(limit, 1), 50);
+
+    const user = await this.userModel
+      .findById(userId, { premiumUntil: 1 })
+      .lean();
+    const isPremium =
+      user?.premiumUntil != null && user.premiumUntil > new Date();
+
+    const targetGroups: BroadcastTargetGroup[] = [BroadcastTargetGroup.ALL];
+    if (isPremium) targetGroups.push(BroadcastTargetGroup.PREMIUM);
+
+    const filter: Record<string, unknown> = {
+      targetGroup: { $in: targetGroups },
+    };
+    if (before && Types.ObjectId.isValid(before)) {
+      filter._id = { $lt: new Types.ObjectId(before) };
+    }
+
+    const items = await this.broadcastModel
+      .find(filter)
+      .sort({ _id: -1 })
+      .limit(safeLimit + 1)
+      .lean();
+
+    const hasMore = items.length > safeLimit;
+    const result = hasMore ? items.slice(0, safeLimit) : items;
+    const nextCursor = hasMore ? String(result[result.length - 1]._id) : null;
+
+    return {
+      items: result as unknown as BroadcastNotificationDocument[],
+      nextCursor,
+    };
   }
 
   async markAllRead(userId: string): Promise<void> {

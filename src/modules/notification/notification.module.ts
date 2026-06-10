@@ -11,12 +11,19 @@ import { Admin, AdminSchema } from '../admin/admin.schema';
 import { AdminNotificationController } from './admin-notification.controller';
 import { AdminNotificationGateway } from './admin-notification.gateway';
 import { PushModule } from '../push/push.module';
+import {
+  BroadcastNotification,
+  BroadcastNotificationSchema,
+} from '../push/schemas/broadcast-notification.schema';
+import { User, UserSchema } from '../user/user.schema';
 
 @Module({
   imports: [
     MongooseModule.forFeature([
       { name: Notification.name, schema: NotificationSchema },
       { name: Admin.name, schema: AdminSchema },
+      { name: BroadcastNotification.name, schema: BroadcastNotificationSchema },
+      { name: User.name, schema: UserSchema },
     ]),
     // JwtModule — AdminNotificationGateway admin token verify qiladi
     // (secret runtime'da process.env.ADMIN_JWT_SECRET orqali olinadi)
