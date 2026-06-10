@@ -36,6 +36,7 @@ import { PremiumModule } from './modules/premium/premium.module';
 import { CommunityModule } from './modules/community/community.module';
 import { ExpireCronModule } from './modules/expire-cron/expire-cron.module';
 import { HealthModule } from './modules/health/health.module';
+import { PushModule } from './modules/push/push.module';
 
 @Module({
   imports: [
@@ -92,6 +93,7 @@ import { HealthModule } from './modules/health/health.module';
     AdminPaymentModule,
     ExpireCronModule,
     HealthModule,
+    PushModule,
   ],
   providers: [
     {

@@ -10,6 +10,7 @@ import { NotificationController } from './notification.controller';
 import { Admin, AdminSchema } from '../admin/admin.schema';
 import { AdminNotificationController } from './admin-notification.controller';
 import { AdminNotificationGateway } from './admin-notification.gateway';
+import { PushModule } from '../push/push.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { AdminNotificationGateway } from './admin-notification.gateway';
     // JwtModule — AdminNotificationGateway admin token verify qiladi
     // (secret runtime'da process.env.ADMIN_JWT_SECRET orqali olinadi)
     JwtModule.register({}),
+    PushModule,
   ],
   providers: [NotificationService, AdminNotificationGateway],
   controllers: [NotificationController, AdminNotificationController],

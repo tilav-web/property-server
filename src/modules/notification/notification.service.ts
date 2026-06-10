@@ -9,6 +9,7 @@ import {
 import { NotificationType } from './enums/notification-type.enum';
 import { Admin, AdminDocument } from '../admin/admin.schema';
 import { AdminNotificationGateway } from './admin-notification.gateway';
+import { FcmService } from '../push/fcm.service';
 
 export interface CreateNotificationInput {
   user: string | Types.ObjectId;
@@ -32,10 +33,12 @@ export class NotificationService {
     private readonly adminModel: Model<AdminDocument>,
     @Optional()
     private readonly adminGateway?: AdminNotificationGateway,
+    @Optional()
+    private readonly fcmService?: FcmService,
   ) {}
 
   async create(input: CreateNotificationInput): Promise<NotificationDocument> {
-    return this.model.create({
+    const doc = await this.model.create({
       user: input.user,
       type: input.type,
       title: input.title,
@@ -44,6 +47,28 @@ export class NotificationService {
       payload: input.payload,
       recipientType: input.recipientType ?? 'USER',
     });
+
+    // User notification'larida FCM push yuborish (fire-and-forget)
+    if (
+      (input.recipientType ?? 'USER') === 'USER' &&
+      this.fcmService?.isReady
+    ) {
+      this.fcmService
+        .sendToUser(String(input.user), {
+          title: input.title,
+          body: input.body,
+          data: {
+            type: input.type,
+            link: input.link ?? '',
+            notificationId: String(doc._id),
+          },
+        })
+        .catch((err: Error) =>
+          this.logger.error(`FCM push xato: ${err.message}`),
+        );
+    }
+
+    return doc;
   }
 
   /**
