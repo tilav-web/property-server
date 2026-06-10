@@ -13,6 +13,7 @@ import { User, UserSchema } from '../user/user.schema';
 import { Admin, AdminSchema } from '../admin/admin.schema';
 import { PushTokenService } from './push-token.service';
 import { FcmService } from './fcm.service';
+import { FileService } from '../file/file.service';
 import { PushTokenController } from './push-token.controller';
 import { AdminPushController } from './admin-push.controller';
 
@@ -26,7 +27,7 @@ import { AdminPushController } from './admin-push.controller';
     ]),
     JwtModule.register({}),
   ],
-  providers: [PushTokenService, FcmService],
+  providers: [PushTokenService, FcmService, FileService],
   controllers: [PushTokenController, AdminPushController],
   exports: [PushTokenService, FcmService],
 })

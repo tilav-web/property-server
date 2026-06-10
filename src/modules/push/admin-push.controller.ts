@@ -6,13 +6,17 @@ import {
   HttpStatus,
   Post,
   Req,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { AdminGuard } from '../admin/guards/admin.guard';
 import { FcmService } from './fcm.service';
 import { PushTokenService } from './push-token.service';
+import { FileService } from '../file/file.service';
 import { SendBroadcastDto } from './dto/send-broadcast.dto';
 import {
   BroadcastNotification,
@@ -38,9 +42,19 @@ export class AdminPushController {
   constructor(
     private readonly fcmService: FcmService,
     private readonly pushTokenService: PushTokenService,
+    private readonly fileService: FileService,
     @InjectModel(BroadcastNotification.name)
     private readonly broadcastModel: Model<BroadcastNotificationDocument>,
   ) {}
+
+  /** Push notification uchun rasm yuklash. */
+  @Post('image')
+  @HttpCode(HttpStatus.OK)
+  @UseInterceptors(FileInterceptor('image', { limits: { fileSize: 5 * 1024 * 1024 } }))
+  async uploadImage(@UploadedFile() image: Express.Multer.File) {
+    const url = await this.fileService.saveFile({ file: image, folder: 'photos' });
+    return { url };
+  }
 
   /** Broadcast push notification yuboradi. */
   @Post()
