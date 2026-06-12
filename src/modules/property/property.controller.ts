@@ -37,6 +37,7 @@ import { UpdatePropertyDto } from './dto/update-property.dto';
 import { AdminGuard } from '../admin/guards/admin.guard';
 import { ApiMultipartBody } from 'src/common/swagger/file-upload.decorator';
 import { ApiStandardErrors } from 'src/common/swagger/api-errors.decorator';
+import { OptionalJwtGuard } from '../push/guards/optional-jwt.guard';
 
 @ApiTags('Properties')
 @Controller('properties')
@@ -287,6 +288,7 @@ export class PropertyController {
   }
 
   @Get(':id')
+  @UseGuards(OptionalJwtGuard)
   @ApiOperation({ summary: 'E’lon tafsiloti (id bo‘yicha)' })
   @ApiStandardErrors({ notFound: true })
   findById(@Param('id') id: string, @Req() req: IRequestCustom) {
