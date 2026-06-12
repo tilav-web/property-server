@@ -18,6 +18,9 @@ interface UpdatePayload {
   premium_property_discount_percent?: number;
   app_store_url?: string;
   play_store_url?: string;
+  contact_phones?: string[];
+  default_map_lat?: number;
+  default_map_lng?: number;
   premium_mxik?: string;
   premium_package_code?: string;
   property_premium_mxik?: string;
@@ -154,6 +157,15 @@ export class SiteSettingsService {
     }
     if (dto.play_store_url !== undefined) {
       settings.play_store_url = dto.play_store_url || null;
+    }
+    if (dto.contact_phones !== undefined) {
+      settings.contact_phones = dto.contact_phones.filter(Boolean);
+    }
+    if (dto.default_map_lat !== undefined) {
+      settings.default_map_lat = dto.default_map_lat;
+    }
+    if (dto.default_map_lng !== undefined) {
+      settings.default_map_lng = dto.default_map_lng;
     }
 
     // Payme fiskal

@@ -1,6 +1,6 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
-import { IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
+import { Transform, Type } from 'class-transformer';
+import { IsArray, IsInt, IsNumber, IsOptional, IsString, Max, Min } from 'class-validator';
 
 export class UpdateSiteSettingsDto {
   @ApiPropertyOptional()
@@ -140,4 +140,28 @@ export class UpdateSiteSettingsDto {
   @Max(30)
   @IsOptional()
   vat_percent?: number;
+
+  @ApiPropertyOptional({ description: 'Aloqa telefon raqamlari (JSON array string yoki array)', example: '["+998 90 123 45 67"]' })
+  @Transform(({ value }) => {
+    if (typeof value === 'string') {
+      try { return JSON.parse(value); } catch { return []; }
+    }
+    return Array.isArray(value) ? value : [];
+  })
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  contact_phones?: string[];
+
+  @ApiPropertyOptional({ description: 'Default xarita markazi — kenglik (latitude)', example: 38.8447459 })
+  @Type(() => Number)
+  @IsNumber()
+  @IsOptional()
+  default_map_lat?: number;
+
+  @ApiPropertyOptional({ description: 'Default xarita markazi — uzunlik (longitude)', example: 65.780332 })
+  @Type(() => Number)
+  @IsNumber()
+  @IsOptional()
+  default_map_lng?: number;
 }

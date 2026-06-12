@@ -78,6 +78,21 @@ export class SiteSettings {
   voice_premium_duration_days?: number;
 
   // ============================================================================
+  // Aloqa telefon raqamlari (header + footer'da ko'rinadi)
+  // ============================================================================
+  @Prop({ type: [String], default: [] })
+  contact_phones: string[];
+
+  // ============================================================================
+  // Default xarita markazi (barcha map sahifalari uchun)
+  // ============================================================================
+  @Prop({ type: Number, default: 38.8447459 })
+  default_map_lat: number;
+
+  @Prop({ type: Number, default: 65.780332 })
+  default_map_lng: number;
+
+  // ============================================================================
   // Bosh sahifa "Download the app" sektsiyasi
   // ----------------------------------------------------------------------------
   // App Store / Google Play link'lari va telefon mockup rasmi admin paneldan
