@@ -835,6 +835,9 @@ export class PropertyService {
       saved: 1,
       videos: 1,
       createdAt: 1,
+      bedrooms: 1,
+      bathrooms: 1,
+      area: 1,
     };
 
     if (isMapView) {
