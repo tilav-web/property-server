@@ -62,6 +62,28 @@ export class AiPropertyService {
     rental_target: 'EnumRentalTarget[]',
   };
 
+  private readonly COMMERCIAL_SALE_SCHEMA_DEFINITION = {
+    floor_level: 'number',
+    total_floors: 'number',
+    area: 'number (square meters)',
+    furnished: 'boolean',
+    repair_type: `EnumRepairType (e.g., "${EnumRepairType.NEW}")`,
+    heating: `EnumHeating (e.g., "${EnumHeating.CENTRAL}")`,
+    amenities: `EnumAmenities[]`,
+    mortgage_available: 'boolean',
+  };
+
+  private readonly COMMERCIAL_RENT_SCHEMA_DEFINITION = {
+    floor_level: 'number',
+    total_floors: 'number',
+    area: 'number (square meters)',
+    furnished: 'boolean',
+    repair_type: `EnumRepairType (e.g., "${EnumRepairType.NEW}")`,
+    heating: `EnumHeating (e.g., "${EnumHeating.CENTRAL}")`,
+    amenities: `EnumAmenities[]`,
+    contract_duration_months: 'number',
+  };
+
   private readonly ENUM_DEFINITIONS = {
     EnumPropertyCategory: Object.values(EnumPropertyCategory),
     EnumRepairType: Object.values(EnumRepairType),
@@ -92,6 +114,12 @@ ${JSON.stringify(this.APARTMENT_SALE_SCHEMA_DEFINITION, null, 2)}
 
 Extension for "APARTMENT_RENT":
 ${JSON.stringify(this.APARTMENT_RENT_SCHEMA_DEFINITION, null, 2)}
+
+Extension for "COMMERCIAL_SALE":
+${JSON.stringify(this.COMMERCIAL_SALE_SCHEMA_DEFINITION, null, 2)}
+
+Extension for "COMMERCIAL_RENT":
+${JSON.stringify(this.COMMERCIAL_RENT_SCHEMA_DEFINITION, null, 2)}
 
 Allowed enums:
 ${JSON.stringify(this.ENUM_DEFINITIONS, null, 2)}

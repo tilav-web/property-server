@@ -8,6 +8,8 @@ import { Save, SaveSchema } from '../interactions/schemas/save.schema';
 import { MessageModule } from '../message/message.module';
 import { ApartmentSaleSchema } from './schemas/categories/apartment-sale.schema';
 import { ApartmentRentSchema } from './schemas/categories/apartment-rent.schema';
+import { CommercialRentSchema } from './schemas/categories/commercial-rent.schema';
+import { CommercialSaleSchema } from './schemas/categories/commercial-sale.schema';
 import { Property, PropertySchema } from './schemas/property.schema';
 import { EnumPropertyCategory } from './enums/property-category.enum';
 import { Seller, SellerSchema } from '../seller/schemas/seller.schema'; // Import Seller and SellerSchema
@@ -30,6 +32,14 @@ import { ExchangeRateModule } from '../exchange-rate/exchange-rate.module';
           {
             name: EnumPropertyCategory.APARTMENT_RENT,
             schema: ApartmentRentSchema,
+          },
+          {
+            name: EnumPropertyCategory.COMMERCIAL_RENT,
+            schema: CommercialRentSchema,
+          },
+          {
+            name: EnumPropertyCategory.COMMERCIAL_SALE,
+            schema: CommercialSaleSchema,
           },
         ],
       },

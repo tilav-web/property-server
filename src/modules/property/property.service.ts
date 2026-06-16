@@ -25,6 +25,8 @@ import { TagService } from '../tag/tag.service';
 import { EnumFilesFolder } from '../file/enums/files-folder.enum';
 import { ApartmentRentDocument } from './schemas/categories/apartment-rent.schema';
 import { ApartmentSaleDocument } from './schemas/categories/apartment-sale.schema';
+import { CommercialRentDocument } from './schemas/categories/commercial-rent.schema';
+import { CommercialSaleDocument } from './schemas/categories/commercial-sale.schema';
 import { PropertySearchCache } from './property-search.cache';
 import { ExchangeRateService } from '../exchange-rate/exchange-rate.service';
 
@@ -56,6 +58,10 @@ export class PropertyService {
     private readonly apartmentRentModel: Model<PropertyDocument>,
     @InjectModel(EnumPropertyCategory.APARTMENT_SALE)
     private readonly apartmentSaleModel: Model<PropertyDocument>,
+    @InjectModel(EnumPropertyCategory.COMMERCIAL_RENT)
+    private readonly commercialRentModel: Model<PropertyDocument>,
+    @InjectModel(EnumPropertyCategory.COMMERCIAL_SALE)
+    private readonly commercialSaleModel: Model<PropertyDocument>,
     @InjectModel(Seller.name)
     private readonly sellerModel: Model<SellerDocument>,
     private readonly fileService: FileService,
@@ -116,6 +122,12 @@ export class PropertyService {
         break;
       case EnumPropertyCategory.APARTMENT_SALE:
         Model = this.apartmentSaleModel;
+        break;
+      case EnumPropertyCategory.COMMERCIAL_RENT:
+        Model = this.commercialRentModel;
+        break;
+      case EnumPropertyCategory.COMMERCIAL_SALE:
+        Model = this.commercialSaleModel;
         break;
       default:
         throw new BadRequestException("Qo'llab-quvvatlanmaydigan kategoriya");
@@ -465,6 +477,13 @@ export class PropertyService {
         $in: [
           EnumPropertyCategory.APARTMENT_SALE,
           EnumPropertyCategory.APARTMENT_RENT,
+        ],
+      };
+    } else if (filterCategory === EnumPropertyCategoryFilter.COMMERCIAL) {
+      match.category = {
+        $in: [
+          EnumPropertyCategory.COMMERCIAL_SALE,
+          EnumPropertyCategory.COMMERCIAL_RENT,
         ],
       };
     }
@@ -864,6 +883,26 @@ export class PropertyService {
       APARTMENT_SALE: {
         bedrooms: 1,
         bathrooms: 1,
+        floor_level: 1,
+        total_floors: 1,
+        area: 1,
+        furnished: 1,
+        repair_type: 1,
+        heating: 1,
+        amenities: 1,
+        mortgage_available: 1,
+      },
+      COMMERCIAL_RENT: {
+        floor_level: 1,
+        total_floors: 1,
+        area: 1,
+        furnished: 1,
+        repair_type: 1,
+        heating: 1,
+        amenities: 1,
+        contract_duration_months: 1,
+      },
+      COMMERCIAL_SALE: {
         floor_level: 1,
         total_floors: 1,
         area: 1,
@@ -1309,7 +1348,11 @@ export class PropertyService {
 
     // Kategoriyaga qarab to'g'ri modelni tanlaymiz va TO'G'RI TURLANGAN document olamiz
     const category = property.category;
-    let typedProperty: ApartmentRentDocument | ApartmentSaleDocument;
+    let typedProperty:
+      | ApartmentRentDocument
+      | ApartmentSaleDocument
+      | CommercialRentDocument
+      | CommercialSaleDocument;
 
     switch (category) {
       case EnumPropertyCategory.APARTMENT_RENT:
@@ -1321,6 +1364,16 @@ export class PropertyService {
         typedProperty = (await this.apartmentSaleModel
           .findById(id)
           .exec()) as unknown as ApartmentSaleDocument;
+        break;
+      case EnumPropertyCategory.COMMERCIAL_RENT:
+        typedProperty = (await this.commercialRentModel
+          .findById(id)
+          .exec()) as unknown as CommercialRentDocument;
+        break;
+      case EnumPropertyCategory.COMMERCIAL_SALE:
+        typedProperty = (await this.commercialSaleModel
+          .findById(id)
+          .exec()) as unknown as CommercialSaleDocument;
         break;
       default:
         throw new BadRequestException("Qo'llab-quvvatlanmaydigan kategoriya");
@@ -1412,8 +1465,14 @@ export class PropertyService {
       typedProperty.is_archived = dto.is_archived;
 
     // 6. Update category-specific fields
-    if (dto.bedrooms !== undefined) typedProperty.bedrooms = dto.bedrooms;
-    if (dto.bathrooms !== undefined) typedProperty.bathrooms = dto.bathrooms;
+    const isApartment =
+      category === EnumPropertyCategory.APARTMENT_RENT ||
+      category === EnumPropertyCategory.APARTMENT_SALE;
+    if (isApartment) {
+      const apt = typedProperty as ApartmentRentDocument | ApartmentSaleDocument;
+      if (dto.bedrooms !== undefined) apt.bedrooms = dto.bedrooms;
+      if (dto.bathrooms !== undefined) apt.bathrooms = dto.bathrooms;
+    }
     if (dto.floor_level !== undefined)
       typedProperty.floor_level = dto.floor_level;
     if (dto.total_floors !== undefined)
@@ -1435,6 +1494,16 @@ export class PropertyService {
     } else if (typedProperty.category === EnumPropertyCategory.APARTMENT_SALE) {
       if (dto.mortgage_available !== undefined) {
         (typedProperty as ApartmentSaleDocument).mortgage_available =
+          dto.mortgage_available;
+      }
+    } else if (typedProperty.category === EnumPropertyCategory.COMMERCIAL_RENT) {
+      if (dto.contract_duration_months !== undefined) {
+        (typedProperty as CommercialRentDocument).contract_duration_months =
+          dto.contract_duration_months;
+      }
+    } else if (typedProperty.category === EnumPropertyCategory.COMMERCIAL_SALE) {
+      if (dto.mortgage_available !== undefined) {
+        (typedProperty as CommercialSaleDocument).mortgage_available =
           dto.mortgage_available;
       }
     }
