@@ -13,6 +13,7 @@ import { CreatePropertyDto } from './dto/create-property.dto';
 import { UpdatePropertyDto } from './dto/update-property.dto';
 import { EnumPropertyCategory } from './enums/property-category.enum';
 import { EnumPropertyCategoryFilter } from './enums/property-category-filter.enum';
+import { EnumDealType } from './enums/deal-type.enum';
 import { SortOption } from './enums/sort-option.enum';
 import { EnumLanguage } from 'src/enums/language.enum';
 import { CurrencyCode, DEFAULT_CURRENCY } from 'src/common/currencies';
@@ -216,6 +217,7 @@ export class PropertyService {
       is_new,
       rating,
       filterCategory,
+      dealType,
       language = EnumLanguage.EN,
       bathrooms,
       bedrooms,
@@ -265,6 +267,7 @@ export class PropertyService {
       search,
       tag,
       filterCategory,
+      dealType,
       bathrooms,
       bedrooms,
       sw_lng,
@@ -396,6 +399,7 @@ export class PropertyService {
     search,
     tag,
     filterCategory,
+    dealType,
     bathrooms,
     bedrooms,
     sw_lng,
@@ -420,6 +424,7 @@ export class PropertyService {
     search?: string;
     tag?: string;
     filterCategory?: EnumPropertyCategoryFilter;
+    dealType?: EnumDealType;
     bathrooms?: number[];
     bedrooms?: number[];
     sw_lng?: number;
@@ -472,6 +477,20 @@ export class PropertyService {
 
     if (category) {
       match.category = category;
+    } else if (dealType === EnumDealType.RENT) {
+      match.category = {
+        $in: [
+          EnumPropertyCategory.APARTMENT_RENT,
+          EnumPropertyCategory.COMMERCIAL_RENT,
+        ],
+      };
+    } else if (dealType === EnumDealType.SALE) {
+      match.category = {
+        $in: [
+          EnumPropertyCategory.APARTMENT_SALE,
+          EnumPropertyCategory.COMMERCIAL_SALE,
+        ],
+      };
     } else if (filterCategory === EnumPropertyCategoryFilter.APARTMENT) {
       match.category = {
         $in: [

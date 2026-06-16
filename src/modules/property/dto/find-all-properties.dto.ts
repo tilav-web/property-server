@@ -16,6 +16,7 @@ import { Type, Transform } from 'class-transformer';
 import { EnumPropertyCategory } from '../enums/property-category.enum';
 import { EnumPropertyCategoryFilter } from '../enums/property-category-filter.enum';
 import { EnumPropertyStatus } from '../enums/property-status.enum';
+import { EnumDealType } from '../enums/deal-type.enum';
 import { SortOption } from '../enums/sort-option.enum';
 import { CurrencyCode } from 'src/common/currencies';
 
@@ -156,6 +157,18 @@ export class FindAllPropertiesDto {
   @ClassTransformerTransform(({ value }) => (value === '' ? undefined : value))
   @IsEnum(EnumPropertyCategoryFilter)
   filterCategory?: EnumPropertyCategoryFilter;
+
+  @ApiPropertyOptional({
+    enum: EnumDealType,
+    enumName: 'EnumDealType',
+    description: 'Deal type: RENT shows all _RENT categories, SALE shows all _SALE categories',
+    example: EnumDealType.RENT,
+  })
+  @IsOptional()
+  @ValidateIf((_, value) => value !== '')
+  @ClassTransformerTransform(({ value }) => (value === '' ? undefined : value))
+  @IsEnum(EnumDealType)
+  dealType?: EnumDealType;
 
   @ApiPropertyOptional({
     example: 'Mont Kiara condo',
