@@ -37,6 +37,7 @@ import { CommunityModule } from './modules/community/community.module';
 import { ExpireCronModule } from './modules/expire-cron/expire-cron.module';
 import { HealthModule } from './modules/health/health.module';
 import { PushModule } from './modules/push/push.module';
+import { AppVersionModule } from './modules/app-version/app-version.module';
 
 @Module({
   imports: [
@@ -94,6 +95,7 @@ import { PushModule } from './modules/push/push.module';
     ExpireCronModule,
     HealthModule,
     PushModule,
+    AppVersionModule,
   ],
   providers: [
     {
