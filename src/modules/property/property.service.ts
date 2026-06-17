@@ -28,6 +28,12 @@ import { ApartmentRentDocument } from './schemas/categories/apartment-rent.schem
 import { ApartmentSaleDocument } from './schemas/categories/apartment-sale.schema';
 import { CommercialRentDocument } from './schemas/categories/commercial-rent.schema';
 import { CommercialSaleDocument } from './schemas/categories/commercial-sale.schema';
+import { LandSaleDocument } from './schemas/categories/land-sale.schema';
+import { LandRentDocument } from './schemas/categories/land-rent.schema';
+import { GarageSaleDocument } from './schemas/categories/garage-sale.schema';
+import { GarageRentDocument } from './schemas/categories/garage-rent.schema';
+import { HovliSaleDocument } from './schemas/categories/hovli-sale.schema';
+import { HovliRentDocument } from './schemas/categories/hovli-rent.schema';
 import { PropertySearchCache } from './property-search.cache';
 import { ExchangeRateService } from '../exchange-rate/exchange-rate.service';
 
@@ -63,6 +69,18 @@ export class PropertyService {
     private readonly commercialRentModel: Model<PropertyDocument>,
     @InjectModel(EnumPropertyCategory.COMMERCIAL_SALE)
     private readonly commercialSaleModel: Model<PropertyDocument>,
+    @InjectModel(EnumPropertyCategory.LAND_SALE)
+    private readonly landSaleModel: Model<PropertyDocument>,
+    @InjectModel(EnumPropertyCategory.LAND_RENT)
+    private readonly landRentModel: Model<PropertyDocument>,
+    @InjectModel(EnumPropertyCategory.GARAGE_SALE)
+    private readonly garageSaleModel: Model<PropertyDocument>,
+    @InjectModel(EnumPropertyCategory.GARAGE_RENT)
+    private readonly garageRentModel: Model<PropertyDocument>,
+    @InjectModel(EnumPropertyCategory.HOVLI_SALE)
+    private readonly hovliSaleModel: Model<PropertyDocument>,
+    @InjectModel(EnumPropertyCategory.HOVLI_RENT)
+    private readonly hovliRentModel: Model<PropertyDocument>,
     @InjectModel(Seller.name)
     private readonly sellerModel: Model<SellerDocument>,
     private readonly fileService: FileService,
@@ -129,6 +147,24 @@ export class PropertyService {
         break;
       case EnumPropertyCategory.COMMERCIAL_SALE:
         Model = this.commercialSaleModel;
+        break;
+      case EnumPropertyCategory.LAND_SALE:
+        Model = this.landSaleModel;
+        break;
+      case EnumPropertyCategory.LAND_RENT:
+        Model = this.landRentModel;
+        break;
+      case EnumPropertyCategory.GARAGE_SALE:
+        Model = this.garageSaleModel;
+        break;
+      case EnumPropertyCategory.GARAGE_RENT:
+        Model = this.garageRentModel;
+        break;
+      case EnumPropertyCategory.HOVLI_SALE:
+        Model = this.hovliSaleModel;
+        break;
+      case EnumPropertyCategory.HOVLI_RENT:
+        Model = this.hovliRentModel;
         break;
       default:
         throw new BadRequestException("Qo'llab-quvvatlanmaydigan kategoriya");
@@ -482,6 +518,9 @@ export class PropertyService {
         $in: [
           EnumPropertyCategory.APARTMENT_RENT,
           EnumPropertyCategory.COMMERCIAL_RENT,
+          EnumPropertyCategory.LAND_RENT,
+          EnumPropertyCategory.GARAGE_RENT,
+          EnumPropertyCategory.HOVLI_RENT,
         ],
       };
     } else if (dealType === EnumDealType.SALE) {
@@ -489,6 +528,9 @@ export class PropertyService {
         $in: [
           EnumPropertyCategory.APARTMENT_SALE,
           EnumPropertyCategory.COMMERCIAL_SALE,
+          EnumPropertyCategory.LAND_SALE,
+          EnumPropertyCategory.GARAGE_SALE,
+          EnumPropertyCategory.HOVLI_SALE,
         ],
       };
     } else if (filterCategory === EnumPropertyCategoryFilter.APARTMENT) {
@@ -503,6 +545,27 @@ export class PropertyService {
         $in: [
           EnumPropertyCategory.COMMERCIAL_SALE,
           EnumPropertyCategory.COMMERCIAL_RENT,
+        ],
+      };
+    } else if (filterCategory === EnumPropertyCategoryFilter.LAND) {
+      match.category = {
+        $in: [
+          EnumPropertyCategory.LAND_SALE,
+          EnumPropertyCategory.LAND_RENT,
+        ],
+      };
+    } else if (filterCategory === EnumPropertyCategoryFilter.GARAGE) {
+      match.category = {
+        $in: [
+          EnumPropertyCategory.GARAGE_SALE,
+          EnumPropertyCategory.GARAGE_RENT,
+        ],
+      };
+    } else if (filterCategory === EnumPropertyCategoryFilter.HOVLI) {
+      match.category = {
+        $in: [
+          EnumPropertyCategory.HOVLI_SALE,
+          EnumPropertyCategory.HOVLI_RENT,
         ],
       };
     }
@@ -1371,7 +1434,13 @@ export class PropertyService {
       | ApartmentRentDocument
       | ApartmentSaleDocument
       | CommercialRentDocument
-      | CommercialSaleDocument;
+      | CommercialSaleDocument
+      | LandSaleDocument
+      | LandRentDocument
+      | GarageSaleDocument
+      | GarageRentDocument
+      | HovliSaleDocument
+      | HovliRentDocument;
 
     switch (category) {
       case EnumPropertyCategory.APARTMENT_RENT:
@@ -1393,6 +1462,36 @@ export class PropertyService {
         typedProperty = (await this.commercialSaleModel
           .findById(id)
           .exec()) as unknown as CommercialSaleDocument;
+        break;
+      case EnumPropertyCategory.LAND_SALE:
+        typedProperty = (await this.landSaleModel
+          .findById(id)
+          .exec()) as unknown as LandSaleDocument;
+        break;
+      case EnumPropertyCategory.LAND_RENT:
+        typedProperty = (await this.landRentModel
+          .findById(id)
+          .exec()) as unknown as LandRentDocument; // eslint-disable-line
+        break;
+      case EnumPropertyCategory.GARAGE_SALE:
+        typedProperty = (await this.garageSaleModel
+          .findById(id)
+          .exec()) as unknown as GarageSaleDocument; // eslint-disable-line
+        break;
+      case EnumPropertyCategory.GARAGE_RENT:
+        typedProperty = (await this.garageRentModel
+          .findById(id)
+          .exec()) as unknown as GarageRentDocument; // eslint-disable-line
+        break;
+      case EnumPropertyCategory.HOVLI_SALE:
+        typedProperty = (await this.hovliSaleModel
+          .findById(id)
+          .exec()) as unknown as HovliSaleDocument; // eslint-disable-line
+        break;
+      case EnumPropertyCategory.HOVLI_RENT:
+        typedProperty = (await this.hovliRentModel
+          .findById(id)
+          .exec()) as unknown as HovliRentDocument; // eslint-disable-line
         break;
       default:
         throw new BadRequestException("Qo'llab-quvvatlanmaydigan kategoriya");
@@ -1492,17 +1591,14 @@ export class PropertyService {
       if (dto.bedrooms !== undefined) apt.bedrooms = dto.bedrooms;
       if (dto.bathrooms !== undefined) apt.bathrooms = dto.bathrooms;
     }
-    if (dto.floor_level !== undefined)
-      typedProperty.floor_level = dto.floor_level;
-    if (dto.total_floors !== undefined)
-      typedProperty.total_floors = dto.total_floors;
-    if (dto.area !== undefined) typedProperty.area = dto.area;
-    if (dto.furnished !== undefined) typedProperty.furnished = dto.furnished;
-    if (dto.repair_type !== undefined)
-      typedProperty.repair_type = dto.repair_type;
-    if (dto.heating !== undefined) typedProperty.heating = dto.heating;
-    if (dto.amenities !== undefined)
-      typedProperty.amenities = dto.amenities as any;
+    const tp = typedProperty as any;
+    if (dto.floor_level !== undefined) tp.floor_level = dto.floor_level;
+    if (dto.total_floors !== undefined) tp.total_floors = dto.total_floors;
+    if (dto.area !== undefined) tp.area = dto.area;
+    if (dto.furnished !== undefined) tp.furnished = dto.furnished;
+    if (dto.repair_type !== undefined) tp.repair_type = dto.repair_type;
+    if (dto.heating !== undefined) tp.heating = dto.heating;
+    if (dto.amenities !== undefined) tp.amenities = dto.amenities;
 
     // A type guard is needed for fields that are not common
     if (typedProperty.category === EnumPropertyCategory.APARTMENT_RENT) {
@@ -1525,6 +1621,40 @@ export class PropertyService {
         (typedProperty as CommercialSaleDocument).mortgage_available =
           dto.mortgage_available;
       }
+    } else if (
+      typedProperty.category === EnumPropertyCategory.LAND_SALE ||
+      typedProperty.category === EnumPropertyCategory.GARAGE_SALE ||
+      typedProperty.category === EnumPropertyCategory.HOVLI_SALE
+    ) {
+      if (dto.mortgage_available !== undefined) tp.mortgage_available = dto.mortgage_available;
+      if ((dto as any).land_type !== undefined) tp.land_type = (dto as any).land_type;
+      if ((dto as any).is_electricity !== undefined) tp.is_electricity = (dto as any).is_electricity;
+      if ((dto as any).is_water !== undefined) tp.is_water = (dto as any).is_water;
+      if ((dto as any).is_gas !== undefined) tp.is_gas = (dto as any).is_gas;
+      if ((dto as any).road_access !== undefined) tp.road_access = (dto as any).road_access;
+      if ((dto as any).has_pit !== undefined) tp.has_pit = (dto as any).has_pit;
+      if ((dto as any).has_electricity !== undefined) tp.has_electricity = (dto as any).has_electricity;
+      if ((dto as any).is_heated !== undefined) tp.is_heated = (dto as any).is_heated;
+      if ((dto as any).rooms !== undefined) tp.rooms = (dto as any).rooms;
+      if ((dto as any).land_area !== undefined) tp.land_area = (dto as any).land_area;
+      if ((dto as any).floors !== undefined) tp.floors = (dto as any).floors;
+    } else if (
+      typedProperty.category === EnumPropertyCategory.LAND_RENT ||
+      typedProperty.category === EnumPropertyCategory.GARAGE_RENT ||
+      typedProperty.category === EnumPropertyCategory.HOVLI_RENT
+    ) {
+      if ((dto as any).land_type !== undefined) tp.land_type = (dto as any).land_type;
+      if ((dto as any).is_electricity !== undefined) tp.is_electricity = (dto as any).is_electricity;
+      if ((dto as any).is_water !== undefined) tp.is_water = (dto as any).is_water;
+      if ((dto as any).is_gas !== undefined) tp.is_gas = (dto as any).is_gas;
+      if ((dto as any).road_access !== undefined) tp.road_access = (dto as any).road_access;
+      if ((dto as any).has_pit !== undefined) tp.has_pit = (dto as any).has_pit;
+      if ((dto as any).has_electricity !== undefined) tp.has_electricity = (dto as any).has_electricity;
+      if ((dto as any).is_heated !== undefined) tp.is_heated = (dto as any).is_heated;
+      if ((dto as any).rooms !== undefined) tp.rooms = (dto as any).rooms;
+      if ((dto as any).land_area !== undefined) tp.land_area = (dto as any).land_area;
+      if ((dto as any).floors !== undefined) tp.floors = (dto as any).floors;
+      if (dto.contract_duration_months !== undefined) tp.contract_duration_months = dto.contract_duration_months;
     }
 
     // Agar faqat is_archived o'zgargan bo'lsa, statusni o'zgartirmaymiz
