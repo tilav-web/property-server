@@ -14,6 +14,7 @@ import { EnumPropertyCategory } from '../enums/property-category.enum';
 import { CurrencyCode } from 'src/common/currencies';
 import { EnumRepairType } from '../enums/repair-type.enum';
 import { EnumHeating } from '../enums/heating.enum';
+import { EnumLandType } from '../enums/land-type.enum';
 
 const valueToBoolean = (value: any) => {
   if (value === null || value === undefined) {
@@ -180,4 +181,63 @@ export class UpdatePropertyDto {
   @IsBoolean()
   @Transform(({ value }) => valueToBoolean(value))
   mortgage_available?: boolean;
+
+  // Hovli specific
+  @IsOptional()
+  @IsNumber()
+  @Transform(({ value }) => Number(value))
+  rooms?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Transform(({ value }) => Number(value))
+  land_area?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Transform(({ value }) => Number(value))
+  floors?: number;
+
+  // Land specific
+  @IsOptional()
+  @ValidateIf((_, value) => value !== '')
+  @Transform(({ value }) => (value === '' ? undefined : value))
+  @IsEnum(EnumLandType)
+  land_type?: EnumLandType;
+
+  @IsOptional()
+  @IsBoolean()
+  @Transform(({ value }) => valueToBoolean(value))
+  is_electricity?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  @Transform(({ value }) => valueToBoolean(value))
+  is_water?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  @Transform(({ value }) => valueToBoolean(value))
+  is_gas?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  @Transform(({ value }) => valueToBoolean(value))
+  road_access?: boolean;
+
+  // Garage specific
+  @IsOptional()
+  @IsBoolean()
+  @Transform(({ value }) => valueToBoolean(value))
+  has_pit?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  @Transform(({ value }) => valueToBoolean(value))
+  has_electricity?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  @Transform(({ value }) => valueToBoolean(value))
+  is_heated?: boolean;
 }

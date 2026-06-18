@@ -16,6 +16,7 @@ import { EnumRepairType } from '../enums/repair-type.enum';
 import { EnumHeating } from '../enums/heating.enum';
 import { EnumRentalTarget } from '../enums/rental-target.enum';
 import { ToBoolean } from 'src/common/transforms/boolean.transform';
+import { EnumLandType } from '../enums/land-type.enum';
 
 /**
  * Umumiy Property create DTO — barcha kategoriya fieldlarini o'z ichiga oladi.
@@ -99,6 +100,27 @@ export class CreatePropertyDto {
   @IsArray()
   @IsEnum(EnumAmenities, { each: true })
   amenities?: EnumAmenities[];
+
+  // ---- Hovli uchun ----
+  @IsOptional() @Type(() => Number) @IsNumber() rooms?: number;
+  @IsOptional() @Type(() => Number) @IsNumber() land_area?: number;
+  @IsOptional() @Type(() => Number) @IsNumber() floors?: number;
+
+  // ---- Yer (Land) uchun ----
+  @IsOptional()
+  @ValidateIf((_, value) => value !== '')
+  @Transform(({ value }) => (value === '' ? undefined : value))
+  @IsEnum(EnumLandType)
+  land_type?: EnumLandType;
+  @IsOptional() @ToBoolean() @IsBoolean() is_electricity?: boolean;
+  @IsOptional() @ToBoolean() @IsBoolean() is_water?: boolean;
+  @IsOptional() @ToBoolean() @IsBoolean() is_gas?: boolean;
+  @IsOptional() @ToBoolean() @IsBoolean() road_access?: boolean;
+
+  // ---- Garaj uchun ----
+  @IsOptional() @ToBoolean() @IsBoolean() has_pit?: boolean;
+  @IsOptional() @ToBoolean() @IsBoolean() has_electricity?: boolean;
+  @IsOptional() @ToBoolean() @IsBoolean() is_heated?: boolean;
 
   // ---- Sale uchun ----
   @IsOptional() @ToBoolean() @IsBoolean() mortgage_available?: boolean;
