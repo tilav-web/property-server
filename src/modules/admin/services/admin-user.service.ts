@@ -15,7 +15,7 @@ export class AdminUserService {
   ) {}
 
   async findUsers(dto: FindUsersDto) {
-    const { page = 1, limit = 10, role, search } = dto;
+    const { page = 1, limit = 10, role, search, isPremium } = dto;
     const skip = (page - 1) * limit;
 
     const filter: FilterQuery<UserDocument> = {};
@@ -24,14 +24,33 @@ export class AdminUserService {
       filter.role = role;
     }
 
+    if (isPremium === true) {
+      filter.premiumUntil = { $gt: new Date() };
+    } else if (isPremium === false) {
+      filter.$and = [
+        {
+          $or: [
+            { premiumUntil: { $exists: false } },
+            { premiumUntil: null },
+            { premiumUntil: { $lte: new Date() } },
+          ],
+        },
+      ];
+    }
+
     if (search) {
       const searchRegex = new RegExp(search, 'i');
-      filter.$or = [
+      const searchOr = [
         { first_name: searchRegex },
         { last_name: searchRegex },
         { 'email.value': searchRegex },
         { 'phone.value': searchRegex },
       ];
+      if (filter.$and) {
+        filter.$and.push({ $or: searchOr });
+      } else {
+        filter.$or = searchOr;
+      }
     }
 
     const users = await this.userModel
