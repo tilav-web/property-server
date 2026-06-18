@@ -1,6 +1,5 @@
 import { IsOptional, IsString, IsNumber, IsEnum, IsBoolean } from 'class-validator';
-import { Type } from 'class-transformer';
-import { ToBoolean } from 'src/common/transforms/boolean.transform';
+import { Transform, Type } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { EnumRole } from 'src/enums/role.enum';
 
@@ -35,7 +34,11 @@ export class FindUsersDto {
 
   @ApiPropertyOptional({ example: true, description: 'true = faqat premium, false = faqat oddiy' })
   @IsOptional()
-  @ToBoolean()
   @IsBoolean()
+  @Transform(({ value }) => {
+    if (value === 'true' || value === true) return true;
+    if (value === 'false' || value === false) return false;
+    return undefined;
+  })
   isPremium?: boolean;
 }
