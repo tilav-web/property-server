@@ -87,4 +87,14 @@ export class AdminUserController {
   async revokePremium(@Param('id') userId: string) {
     return this.premiumService.revokePremium(userId);
   }
+
+  @Delete(':id')
+  @ApiOperation({
+    summary: "Foydalanuvchini o'chirish (cascade: properties, likes, saves, notifications)",
+  })
+  @ApiStandardErrors({ auth: true, notFound: true })
+  async deleteUser(@Param('id') userId: string) {
+    await this.adminUserService.deleteUser(userId);
+    return { deleted: true };
+  }
 }

@@ -19,6 +19,11 @@ import { MailService } from '../mailer/mail.service';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { FileService } from '../file/file.service';
 import { SmsService, type SmsLanguage } from '../sms/sms.service';
+import { Property } from '../property/schemas/property.schema';
+import { Like } from '../interactions/schemas/like.schema';
+import { Save } from '../interactions/schemas/save.schema';
+import { Notification } from '../notification/schemas/notification.schema';
+import { DeviceToken } from '../push/schemas/device-token.schema';
 
 const PHONE_REGEX = /^\+?\d{9,15}$/;
 
@@ -34,6 +39,11 @@ function normalizePhone(input: string): string {
 export class UserService {
   constructor(
     @InjectModel(User.name) private model: Model<UserDocument>,
+    @InjectModel(Property.name) private propertyModel: Model<Property>,
+    @InjectModel(Like.name) private likeModel: Model<Like>,
+    @InjectModel(Save.name) private saveModel: Model<Save>,
+    @InjectModel(Notification.name) private notificationModel: Model<Notification>,
+    @InjectModel(DeviceToken.name) private deviceTokenModel: Model<DeviceToken>,
     private readonly jwtService: JwtService,
     private readonly otpService: OtpService,
     private readonly mailService: MailService,
@@ -681,5 +691,35 @@ export class UserService {
     const saveUser = await userData.save();
 
     return saveUser;
+  }
+
+  async deleteAccount(userId: string): Promise<void> {
+    const user = await this.model.findById(userId);
+    if (!user) throw new NotFoundException('Foydalanuvchi topilmadi');
+
+    // User's properties + their photos
+    const properties = await this.propertyModel.find({ author: userId }).lean();
+    for (const prop of properties) {
+      const photos: string[] = (prop as any).photos ?? [];
+      for (const photo of photos) {
+        await this.fileService.deleteFile(photo).catch(() => null);
+      }
+    }
+    await this.propertyModel.deleteMany({ author: userId });
+
+    // User's interactions + notifications + device tokens
+    await Promise.all([
+      this.likeModel.deleteMany({ user: userId }),
+      this.saveModel.deleteMany({ user: userId }),
+      this.notificationModel.deleteMany({ user: userId }),
+      this.deviceTokenModel.deleteMany({ user: userId }),
+    ]);
+
+    // Avatar file
+    if (user.avatar) {
+      await this.fileService.deleteFile(user.avatar).catch(() => null);
+    }
+
+    await this.model.findByIdAndDelete(userId);
   }
 }

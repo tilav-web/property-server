@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpException,
   InternalServerErrorException,
@@ -648,6 +649,37 @@ export class UserController {
       throw new InternalServerErrorException(
         "Xatolik ketdi. Birozdan so'ng qayta urinib ko'ring!",
       );
+    }
+  }
+
+  @Throttle({ default: { limit: 3, ttl: 60000 } })
+  @Delete('/me')
+  @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth('bearer')
+  @ApiCookieAuth('access_token')
+  @ApiOperation({ summary: 'Delete own account (cascade: properties, likes, saves, notifications)' })
+  @ApiStandardErrors({ auth: true, throttle: true })
+  async deleteAccount(@Req() req: IRequestCustom, @Res() res: Response) {
+    try {
+      const userId = req.user?._id as string;
+      await this.service.deleteAccount(userId);
+      res.clearCookie('refresh_token', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        path: '/',
+      });
+      res.clearCookie('access_token', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        path: '/',
+      });
+      return res.status(200).json({ deleted: true });
+    } catch (error) {
+      if (error instanceof HttpException) throw error;
+      if (error instanceof Error) throw new InternalServerErrorException(error.message);
+      throw new InternalServerErrorException("Xatolik ketdi.");
     }
   }
 

@@ -6,12 +6,14 @@ import { FindUsersDto } from '../dto/find-users.dto';
 import { UpdateUserDto } from '../dto/update-user.dto';
 import { FileService } from '../../file/file.service';
 import { EnumFilesFolder } from 'src/modules/file/enums/files-folder.enum';
+import { UserService } from '../../user/user.service';
 
 @Injectable()
 export class AdminUserService {
   constructor(
     @InjectModel(User.name) private userModel: Model<User>,
     private readonly fileService: FileService,
+    private readonly userService: UserService,
   ) {}
 
   async findUsers(dto: FindUsersDto) {
@@ -124,5 +126,9 @@ export class AdminUserService {
     }
 
     return user.save();
+  }
+
+  async deleteUser(userId: string): Promise<void> {
+    return this.userService.deleteAccount(userId);
   }
 }

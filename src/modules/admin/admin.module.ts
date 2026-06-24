@@ -10,6 +10,7 @@ import { User, UserSchema } from '../user/user.schema';
 import { AdminUserService } from './services/admin-user.service';
 import { AdminUserController } from './controllers/admin-user.controller';
 import { FileModule } from '../file/file.module';
+import { UserModule } from '../user/user.module';
 import { Property, PropertySchema } from '../property/schemas/property.schema';
 import { AdminPropertyController } from './controllers/admin-property.controller';
 import { AdminPropertyService } from './services/admin-property.service';
@@ -47,6 +48,7 @@ import { PremiumModule } from '../premium/premium.module';
     FileModule,
     TagModule,
     PremiumModule,
+    UserModule,
   ],
   providers: [
     AdminService,
