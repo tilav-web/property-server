@@ -15,7 +15,8 @@ FROM node:20-alpine
 WORKDIR /usr/src/app
 
 COPY package*.json ./
-RUN npm ci --omit=dev
+RUN npm ci --omit=dev && \
+    npm install --os=linux --libc=musl --cpu=x64 sharp
 
 # Quruvchi bosqichidan faqat tayyor "dist" papkasini nusxalaymiz
 COPY --from=builder /usr/src/app/dist ./dist
