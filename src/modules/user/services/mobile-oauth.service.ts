@@ -1,11 +1,11 @@
 import {
-  BadRequestException,
   Injectable,
   InternalServerErrorException,
   Logger,
   UnauthorizedException,
 } from '@nestjs/common';
 import { OAuth2Client } from 'google-auth-library';
+import { createRemoteJWKSet, jwtVerify } from 'jose';
 
 export interface VerifiedGoogleProfile {
   provider: 'google';
@@ -36,6 +36,9 @@ export interface VerifiedAppleProfile {
 export class MobileOAuthService {
   private readonly logger = new Logger(MobileOAuthService.name);
   private readonly googleClient: OAuth2Client;
+  private readonly appleJWKS = createRemoteJWKSet(
+    new URL('https://appleid.apple.com/auth/keys'),
+  );
 
   constructor() {
     this.googleClient = new OAuth2Client();
@@ -100,19 +103,58 @@ export class MobileOAuthService {
   /**
    * Apple identityToken verify (Sign in with Apple).
    *
-   * Apple JWT'ni JWKS (https://appleid.apple.com/auth/keys) orqali verify
-   * qiladi. Hozircha placeholder — kerak bo'lganda `jose` paketi bilan
-   * to'liq implement qilinadi.
+   * Apple JWT'ni https://appleid.apple.com/auth/keys JWKS orqali verify
+   * qiladi. Private key kerak emas — faqat APPLE_CLIENT_ID (Bundle ID) va
+   * Apple'ning ochiq kalitlari yetarli.
+   *
+   * firstName/lastName faqat birinchi loginда Apple tomonidan qaytariladi —
+   * keyingi loginlarda yo'q. Shuning uchun fullName ixtiyoriy.
    */
   async verifyAppleIdentityToken(
-    _identityToken: string,
-    _fullName?: string,
+    identityToken: string,
+    fullName?: string,
   ): Promise<VerifiedAppleProfile> {
-    void _identityToken;
-    void _fullName;
-    throw new BadRequestException(
-      "Apple Sign-In hali implement qilinmagan. Kelajakda jose paketi bilan qo'shiladi.",
-    );
+    const clientId = process.env.APPLE_CLIENT_ID?.trim();
+    if (!clientId) {
+      throw new InternalServerErrorException(
+        "Apple OAuth sozlanmagan: APPLE_CLIENT_ID env yo'q",
+      );
+    }
+
+    try {
+      const { payload } = await jwtVerify(identityToken, this.appleJWKS, {
+        issuer: 'https://appleid.apple.com',
+        audience: clientId,
+      });
+
+      const sub = payload.sub as string | undefined;
+      const email = payload.email as string | undefined;
+      const emailVerified = payload.email_verified === true || payload.email_verified === 'true';
+
+      if (!sub) {
+        throw new UnauthorizedException('Apple token yaroqsiz: sub yo\'q');
+      }
+
+      // fullName faqat birinchi loginда keladi — bo'sh string bo'lishi mumkin
+      const [firstName, ...rest] = (fullName ?? '').trim().split(' ');
+
+      return {
+        provider: 'apple',
+        providerId: sub,
+        email: email ?? `${sub}@privaterelay.appleid.com`,
+        emailVerified,
+        firstName: firstName || undefined,
+        lastName: rest.join(' ') || undefined,
+      };
+    } catch (err) {
+      this.logger.warn(
+        `Apple identityToken verify xato: ${(err as Error).message}`,
+      );
+      if (err instanceof UnauthorizedException) throw err;
+      throw new UnauthorizedException(
+        "Apple token noto'g'ri yoki muddati o'tgan",
+      );
+    }
   }
 
   private getGoogleAllowedAudiences(): string[] {
