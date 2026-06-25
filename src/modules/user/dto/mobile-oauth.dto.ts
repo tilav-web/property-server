@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsString } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 export class GoogleMobileLoginDto {
   @ApiProperty({
@@ -27,6 +27,7 @@ export class AppleMobileLoginDto {
       "Apple ba'zan birinchi login'da firstName/lastName qaytaradi (keyin emas). Saqlab qo'yish uchun ixtiyoriy.",
     required: false,
   })
+  @IsOptional()
   @IsString()
   fullName?: string;
 }
