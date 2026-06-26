@@ -196,6 +196,80 @@ export class InquiryService {
     return inquiry.save();
   }
 
+  async findMySentInquiries(userId: string, language: EnumLanguage) {
+    return this.inquiryModel
+      .aggregate([
+        { $match: { user: new Types.ObjectId(userId) } },
+        {
+          $lookup: {
+            from: 'properties',
+            localField: 'property',
+            foreignField: '_id',
+            as: 'property',
+          },
+        },
+        {
+          $lookup: {
+            from: 'users',
+            localField: 'seller',
+            foreignField: '_id',
+            as: 'seller',
+          },
+        },
+        {
+          $lookup: {
+            from: 'inquiryresponses',
+            localField: '_id',
+            foreignField: 'inquiry',
+            as: 'response',
+          },
+        },
+        { $unwind: { path: '$property', preserveNullAndEmptyArrays: true } },
+        { $unwind: { path: '$seller', preserveNullAndEmptyArrays: true } },
+        { $unwind: { path: '$response', preserveNullAndEmptyArrays: true } },
+        {
+          $addFields: {
+            'property.title': {
+              $ifNull: [`$property.title.${language}`, '$property.title.en'],
+            },
+          },
+        },
+        {
+          $project: {
+            _id: 1,
+            type: 1,
+            status: 1,
+            offered_price: 1,
+            rental_period: 1,
+            comment: 1,
+            createdAt: 1,
+            updatedAt: 1,
+            property: {
+              _id: '$property._id',
+              title: '$property.title',
+              photos: '$property.photos',
+              price: '$property.price',
+              currency: '$property.currency',
+            },
+            seller: {
+              _id: '$seller._id',
+              first_name: '$seller.first_name',
+              last_name: '$seller.last_name',
+              avatar: '$seller.avatar',
+            },
+            response: {
+              _id: '$response._id',
+              status: '$response.status',
+              description: '$response.description',
+              createdAt: '$response.createdAt',
+            },
+          },
+        },
+        { $sort: { createdAt: -1 } },
+      ])
+      .exec();
+  }
+
   async findMyInquiryResponses(userId: string, language: EnumLanguage) {
     const inquiryResponses = await this.inquiryResponseModel
       .aggregate([

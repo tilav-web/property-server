@@ -53,6 +53,26 @@ export class InquiryController {
     }
   }
 
+  @Get('my-sent')
+  @ApiOperation({ summary: 'Men yuborgan barcha inquirylar' })
+  findMySent(@Req() req: IRequestCustom) {
+    try {
+      const language = (req.headers['accept-language'] || 'en')
+        .toLowerCase()
+        .split(',')[0] as EnumLanguage;
+      return this.inquiryService.findMySentInquiries(
+        req.user?._id as string,
+        language,
+      );
+    } catch (error) {
+      console.error(error);
+      if (error instanceof HttpException) throw error;
+      throw new InternalServerErrorException(
+        "So'rovlarni yuklashda xatolik yuz berdi",
+      );
+    }
+  }
+
   @Get('my-responses')
   @ApiOperation({ summary: 'Mening inquiry javoblarim' })
   findMyResponses(@Req() req: IRequestCustom) {
