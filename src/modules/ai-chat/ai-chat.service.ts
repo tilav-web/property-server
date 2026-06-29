@@ -48,10 +48,28 @@ MUHIM qoidalar:
 
 const RESPONSE_SCHEMA_PROMPT = `Natija STRICTLY quyidagi JSON shaklida bo'lsin:
 {
-  "reply": "foydalanuvchiga qisqa javob",
+  "reply": "foydalanuvchiga qisqa javob (faqat qidiruv BO'LMAGAN holda: savol javobi yoki salomlashish)",
   "isSearch": true yoki false,
-  "searchQuery": "agar isSearch=true bo'lsa, mulk qidiruv so'rovi (foydalanuvchi tilida)" yoki ""
+  "searchQuery": "agar isSearch=true bo'lsa, mulk qidiruv so'rovi (qisqa, aniq: 'Toshkent 2 xonali ijara')" yoki "",
+  "correctedQuery": "agar isSearch=true bo'lsa, user so'rovini to'liq tushunilgan ko'rinishi (masalan: 'Qarshi shahridan uch xonali kvartira kerak')" yoki ""
 }`;
+
+// Voice transkripsiya xatolarini tuzatish uchun system prompt qo'shimchasi
+const VOICE_CORRECTION_SYSTEM = `
+VOICE TRANSKRIPSIYA TUZATISH:
+Oxirgi user xabari ovozdan transkript qilingan — nutq tanish xatolari bo'lishi mumkin.
+Siz asl matnni emas, USER NIMA DEMOQCHI EKANLIGINI tushunishingiz kerak.
+
+Keng tarqalgan xatolar:
+- Shahar nomlari: "xarshi"→"Qarshi", "tashkent"→"Toshkent", "samarkan"→"Samarqand", "namagan"→"Namangan", "buxara"→"Buxoro", "andijon"→"Andijon"
+- Raqamlar: "ich"/"ish"→"uch(3)", "to'r"→"to'rt(4)", "besh"→"besh(5)", "ikki"→"ikki(2)"
+- Mulk turlari: "kvartera"/"kvartira"→"kvartira", "xona"→"xona", "uy"→"uy"
+- Boshqa: "shaxr"→"shahar", "narxi"→"narxi", "ming"→"ming", "mln"→"million"
+
+correctedQuery: xatolarni tuzatib, user nima demoqchi bo'lganini TO'LIQ va ANIQ yozing.
+Misol kiritish: "xarshi shaxridan ich xonali kvartera kerak"
+Misol correctedQuery: "Qarshi shahridan uch xonali kvartira kerak"`;
+
 
 const HISTORY_LIMIT = 12;
 const SEARCH_RESULT_LIMIT = 5;
@@ -71,6 +89,7 @@ interface ClassifiedReply {
   reply: string;
   isSearch: boolean;
   searchQuery: string;
+  correctedQuery: string;
 }
 
 export interface CompactProperty {
@@ -277,7 +296,7 @@ export class AiChatService {
     const classified = await this.classify(history, { isVoice: true });
 
     this.logger.log(
-      `[voice] classify → isSearch=${classified.isSearch} searchQuery="${classified.searchQuery}"`,
+      `[voice] classify → isSearch=${classified.isSearch} searchQuery="${classified.searchQuery}" correctedQuery="${classified.correctedQuery}"`,
     );
 
     const searchLang = VOICE_LANG_MAP[opts.language ?? ''] ?? EnumLanguage.EN;
@@ -288,10 +307,18 @@ export class AiChatService {
       this.logger.log(`[voice] search → found=${properties.length}`);
     }
 
+    // Ko'rsatilgan so'rov: AI tuzatgan variant → searchQuery → fallback: transcript
+    const displayQuery =
+      classified.correctedQuery.trim() ||
+      classified.searchQuery.trim() ||
+      transcript;
+
     let body = classified.reply;
     let noResults = false;
-    if (classified.isSearch && properties.length === 0) {
-      body = `Kechirasiz, "${classified.searchQuery}" bo'yicha mos e'lon topilmadi. Hozircha platformada asosan ${this.marketName} ko'chmas mulki mavjud. Boshqa shahar, narx oralig'i yoki kengroq shartlar bilan urinib ko'ring.`;
+    if (classified.isSearch && properties.length > 0) {
+      body = `Topdim! "${displayQuery}" bo'yicha ${properties.length} ta mulk topildi.`;
+    } else if (classified.isSearch && properties.length === 0) {
+      body = `"${displayQuery}" bo'yicha mos e'lon topilmadi. Hozircha platformada asosan ${this.marketName} ko'chmas mulki mavjud. Boshqa shahar, narx oralig'i yoki kengroq shartlar bilan urinib ko'ring.`;
       noResults = true;
     }
 
@@ -463,15 +490,10 @@ export class AiChatService {
       this.countryConfig.country,
       this.countryConfig.defaultCurrency,
     );
-    const system = `${systemPrompt}\n\n${RESPONSE_SCHEMA_PROMPT}`;
+    const voiceSystem = opts?.isVoice ? VOICE_CORRECTION_SYSTEM : '';
+    const system = `${systemPrompt}${voiceSystem}\n\n${RESPONSE_SCHEMA_PROMPT}`;
 
-    // Voice transcript bo'lsa AI'ga ogohlantiramiz: noto'liq jumlalar,
-    // filler so'zlar yoki til aralashuvi bo'lishi mumkin.
-    const voiceHint = opts?.isVoice
-      ? '\n[ESLATMA: Oxirgi user xabari ovozdan transkript qilingan. Noto\'liq jumlalar, "eee/uh" kabi to\'ldiruvchilar yoki til aralashuvi bo\'lishi mumkin — shunga qaramay eng yaqin ma\'noni aniqlang.]'
-      : '';
-
-    const user = `Suhbat:\n${conversationText}${voiceHint}\n\nOxirgi User xabariga javob bering.`;
+    const user = `Suhbat:\n${conversationText}\n\nOxirgi User xabariga javob bering.`;
 
     try {
       const { data } = await this.openai.generateJson<Partial<ClassifiedReply>>(
@@ -489,10 +511,12 @@ export class AiChatService {
         reply:
           typeof data?.reply === 'string' && data.reply.trim()
             ? data.reply.trim()
-            : 'Uzr, sizni to‘liq tushunmadim. Qayta yozib ko‘ring.',
+            : 'Uzr, sizni to’liq tushunmadim. Qayta yozib ko’ring.',
         isSearch: Boolean(data?.isSearch),
         searchQuery:
           typeof data?.searchQuery === 'string' ? data.searchQuery : '',
+        correctedQuery:
+          typeof data?.correctedQuery === 'string' ? data.correctedQuery : '',
       };
     } catch (err) {
       this.logger.warn(`AI classify failed: ${String(err)}`);
@@ -500,6 +524,7 @@ export class AiChatService {
         reply: 'Kechirasiz, savolingizni qayta yuboring.',
         isSearch: false,
         searchQuery: '',
+        correctedQuery: '',
       };
     }
   }
