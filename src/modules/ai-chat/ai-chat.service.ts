@@ -1,4 +1,11 @@
-import { Inject, Injectable, Logger, forwardRef } from '@nestjs/common';
+import {
+  BadRequestException,
+  Inject,
+  Injectable,
+  Logger,
+  ServiceUnavailableException,
+  forwardRef,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { OpenaiService } from '../openai/openai.service';
@@ -237,13 +244,27 @@ export class AiChatService {
     audioBase64?: string;
     audioMimeType?: string;
   }> {
-    const transcript = await this.openai.transcribeAudio({
-      buffer: opts.audio,
-      filename: opts.filename ?? 'voice.webm',
-      mimeType: opts.mimeType,
-      language: opts.language,
-      priority: true,
-    });
+    let transcript: string;
+    try {
+      transcript = await this.openai.transcribeAudio({
+        buffer: opts.audio,
+        filename: opts.filename ?? 'voice.webm',
+        mimeType: opts.mimeType,
+        language: opts.language,
+        priority: true,
+      });
+    } catch (err) {
+      const status = (err as { status?: number }).status;
+      if (status === 400) {
+        throw new BadRequestException(
+          'Audio faylni qayta ishlashda xato. Format yoki fayl sifatini tekshiring.',
+        );
+      }
+      this.logger.warn(`Transcription failed: ${String(err)}`);
+      throw new ServiceUnavailableException(
+        'Ovozni transkripsiya qilishda xato yuz berdi. Qayta urinib ko\'ring.',
+      );
+    }
 
     const history: MessageRecord[] = [
       ...(opts.history ?? []),

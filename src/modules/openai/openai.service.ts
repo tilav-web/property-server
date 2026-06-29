@@ -110,6 +110,17 @@ export class OpenaiService implements OnModuleInit {
 
       const error = err as { status?: number; message?: string };
 
+      // 4xx xatoliklar (429 dan tashqari) qayta urinishda o'zgarmaydi —
+      // darhol tashlaymiz, keraksiz kutishni oldini olamiz.
+      if (
+        error?.status !== undefined &&
+        error.status >= 400 &&
+        error.status < 500 &&
+        error.status !== 429
+      ) {
+        throw err;
+      }
+
       if (error?.status === 429) {
         this.logger.warn(`Rate limit hit, retrying in ${delayMs * 1.5}ms...`);
         await this.delay(delayMs * 1.5);
