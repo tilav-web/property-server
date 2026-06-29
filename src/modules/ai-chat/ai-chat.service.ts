@@ -71,6 +71,14 @@ Misol kiritish: "xarshi shaxridan ich xonali kvartera kerak"
 Misol correctedQuery: "Qarshi shahridan uch xonali kvartira kerak"`;
 
 
+const VOICE_UNIFIED_RESPONSE_FORMAT = `JAVOB FORMAT - STRICTLY JSON:
+{
+  "correctedQuery": "user so'rovining to'g'rilangan varianti (masalan: Qarshi 3 xonali kvartira)",
+  "isSearch": true yoki false,
+  "reply": "faqat isSearch=false holda qisqa matn, aks holda bo'sh string",
+  "filter": { MongoDB FilterQuery } yoki null
+}`;
+
 const HISTORY_LIMIT = 12;
 const SEARCH_RESULT_LIMIT = 5;
 const VOICE_TTS_VOICE = 'nova';
@@ -90,6 +98,13 @@ interface ClassifiedReply {
   isSearch: boolean;
   searchQuery: string;
   correctedQuery: string;
+}
+
+interface VoiceAnalysis {
+  correctedQuery: string;
+  isSearch: boolean;
+  reply: string;
+  filter: unknown;
 }
 
 export interface CompactProperty {
@@ -288,42 +303,44 @@ export class AiChatService {
 
     this.logger.log(`[voice] transcript: "${transcript}" (lang=${opts.language ?? 'auto'})`);
 
-    const history: MessageRecord[] = [
-      ...(opts.history ?? []),
-      { role: 'user' as const, content: transcript },
-    ].slice(-HISTORY_LIMIT);
-
-    const classified = await this.classify(history, { isVoice: true });
-
-    this.logger.log(
-      `[voice] classify → isSearch=${classified.isSearch} searchQuery="${classified.searchQuery}" correctedQuery="${classified.correctedQuery}"`,
+    // 2-AI call: transcript + history → correctedQuery + isSearch + filter (bitta qo'ng'iroq)
+    const analyzed = await this.analyzeVoice(
+      transcript,
+      opts.history ?? [],
+      opts.language,
     );
 
-    const searchLang = VOICE_LANG_MAP[opts.language ?? ''] ?? EnumLanguage.EN;
+    this.logger.log(
+      `[voice] analyze → isSearch=${analyzed.isSearch} correctedQuery="${analyzed.correctedQuery}"`,
+    );
 
+    // DB query — AI call yo'q, tayyor filter bilan to'g'ridan-to'g'ri qidiruv
+    const searchLang = VOICE_LANG_MAP[opts.language ?? ''] ?? EnumLanguage.EN;
     let properties: CompactProperty[] = [];
-    if (classified.isSearch && classified.searchQuery.trim()) {
-      properties = await this.searchProperties(classified.searchQuery, searchLang);
+    if (analyzed.isSearch && analyzed.filter) {
+      const result = await this.aiPropertyService.findByRawFilter({
+        rawFilter: analyzed.filter,
+        page: 1,
+        limit: SEARCH_RESULT_LIMIT,
+        language: searchLang,
+      });
+      properties = result.properties.map((p) =>
+        this.toCompact(p as unknown as Record<string, unknown>),
+      );
       this.logger.log(`[voice] search → found=${properties.length}`);
     }
 
-    // Ko'rsatilgan so'rov: AI tuzatgan variant → searchQuery → fallback: transcript
-    const displayQuery =
-      classified.correctedQuery.trim() ||
-      classified.searchQuery.trim() ||
-      transcript;
+    const displayQuery = analyzed.correctedQuery.trim() || transcript;
 
-    let body = classified.reply;
+    let body = analyzed.reply;
     let noResults = false;
-    if (classified.isSearch && properties.length > 0) {
+    if (analyzed.isSearch && properties.length > 0) {
       body = `Topdim! "${displayQuery}" bo'yicha ${properties.length} ta mulk topildi.`;
-    } else if (classified.isSearch && properties.length === 0) {
+    } else if (analyzed.isSearch && properties.length === 0) {
       body = `"${displayQuery}" bo'yicha mos e'lon topilmadi. Hozircha platformada asosan ${this.marketName} ko'chmas mulki mavjud. Boshqa shahar, narx oralig'i yoki kengroq shartlar bilan urinib ko'ring.`;
       noResults = true;
     }
 
-    // Voice qaytarish: agar property topilgan bo'lsa - faqat intro matn
-    // (birinchi gap yoki qisqartirilgan body), aks holda - to'liq body.
     const intro =
       properties.length > 0
         ? this.extractIntroSentence(body)
@@ -349,7 +366,7 @@ export class AiChatService {
       body,
       intro,
       properties: properties.length > 0 ? properties : undefined,
-      searchQuery: classified.isSearch ? classified.searchQuery : undefined,
+      searchQuery: analyzed.isSearch ? displayQuery : undefined,
       noResults: noResults || undefined,
       audioBase64,
       audioMimeType,
@@ -446,6 +463,66 @@ export class AiChatService {
     };
   }
 
+  /**
+   * Voice unified analysis: bitta AI call bilan transcript → correctedQuery + isSearch + filter.
+   * classify() + findByPrompt() AI call'larini birlashtiradi (3 call → 2 call).
+   */
+  private async analyzeVoice(
+    transcript: string,
+    history: MessageRecord[],
+    language?: string,
+  ): Promise<VoiceAnalysis> {
+    const contextPrompt = buildAiSystemPrompt(
+      this.countryConfig.country,
+      this.countryConfig.defaultCurrency,
+    );
+    const filterSchemaPrompt = this.aiPropertyService.getFilterSystemPrompt();
+
+    const system = `${contextPrompt}
+
+${VOICE_CORRECTION_SYSTEM}
+
+AGAR isSearch=true BO'LSA FILTER GENERATSIYA QOIDALARI:
+${filterSchemaPrompt}
+
+${VOICE_UNIFIED_RESPONSE_FORMAT}`;
+
+    const historyText = history
+      .slice(-HISTORY_LIMIT)
+      .map((m) => `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content}`)
+      .join('\n');
+
+    const user = historyText
+      ? `Oldingi suhbat:\n${historyText}\n\nOxirgi voice transcript: "${transcript}"\nTilni aniqlash: ${language ?? 'auto'}`
+      : `Voice transcript: "${transcript}"\nTilni aniqlash: ${language ?? 'auto'}`;
+
+    try {
+      const { data } = await this.openai.generateJson<Partial<VoiceAnalysis>>({
+        system,
+        user,
+        model: 'gpt-4o-mini',
+        temperature: 0.2,
+        maxTokens: 900,
+        priority: true,
+      });
+
+      return {
+        correctedQuery: typeof data?.correctedQuery === "string" ? data.correctedQuery : transcript,
+        isSearch: Boolean(data?.isSearch),
+        reply: typeof data?.reply === "string" ? data.reply : "",
+        filter: data?.filter ?? null,
+      };
+    } catch (err) {
+      this.logger.warn(`[voice] analyzeVoice failed: ${String(err)}`);
+      return {
+        correctedQuery: transcript,
+        isSearch: false,
+        reply: "Kechirasiz, so'rovingizni qayta yuboring.",
+        filter: null,
+      };
+    }
+  }
+
   /** Body matnidan TTS uchun intro qism (birinchi gap yoki ~200 belgi) */
   private extractIntroSentence(body: string): string {
     const trimmed = body.trim();
@@ -477,7 +554,6 @@ export class AiChatService {
 
   private async classify(
     history: MessageRecord[],
-    opts?: { isVoice?: boolean },
   ): Promise<ClassifiedReply> {
     const conversationText = history
       .map((m) => {
@@ -486,12 +562,10 @@ export class AiChatService {
       })
       .join('\n');
 
-    const systemPrompt = buildAiSystemPrompt(
+    const system = `${buildAiSystemPrompt(
       this.countryConfig.country,
       this.countryConfig.defaultCurrency,
-    );
-    const voiceSystem = opts?.isVoice ? VOICE_CORRECTION_SYSTEM : '';
-    const system = `${systemPrompt}${voiceSystem}\n\n${RESPONSE_SCHEMA_PROMPT}`;
+    )}\n\n${RESPONSE_SCHEMA_PROMPT}`;
 
     const user = `Suhbat:\n${conversationText}\n\nOxirgi User xabariga javob bering.`;
 
@@ -503,7 +577,6 @@ export class AiChatService {
           model: 'gpt-4o-mini',
           temperature: 0.4,
           maxTokens: 600,
-          priority: opts?.isVoice ?? false,
         },
       );
 

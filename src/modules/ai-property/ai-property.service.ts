@@ -296,4 +296,59 @@ Rules:
       ...(categoryFields[category] || {}),
     };
   }
+
+  /** Voice unified flow uchun filter generation system prompt (schema + qoidalar). */
+  getFilterSystemPrompt(): string {
+    return this.systemPrompt;
+  }
+
+  /**
+   * AI raw filter bilan to'g'ridan-to'g'ri DB query (AI call yo'q).
+   * Voice unified flow: analyzeVoice() filter beradi, bu method execute qiladi.
+   */
+  async findByRawFilter({
+    rawFilter,
+    page = 1,
+    limit = 5,
+    language = EnumLanguage.EN,
+  }: {
+    rawFilter: unknown;
+    page?: number;
+    limit?: number;
+    language?: EnumLanguage;
+  }): Promise<{ properties: Property[]; totalItems: number }> {
+    const safeLimit = Math.min(Math.max(limit, 1), 50);
+    const safePage = Math.max(page, 1);
+    const sanitized = sanitizeAiQuery(rawFilter);
+    const query: FilterQuery<PropertyDocument> = {
+      ...sanitized,
+      status: EnumPropertyStatus.APPROVED,
+      is_archived: false,
+    };
+    const skip = (safePage - 1) * safeLimit;
+    try {
+      const pipeline: PipelineStage[] = [
+        { $match: query },
+        { $sort: { createdAt: -1 } },
+        { $skip: skip },
+        { $limit: safeLimit },
+        {
+          $project: this.getProjectionByCategory(
+            language,
+            sanitized.category as string | undefined,
+          ),
+        },
+      ];
+      const [properties, totalItems] = await Promise.all([
+        this.propertyModel.aggregate<Property>(pipeline).exec(),
+        this.propertyModel.countDocuments(query),
+      ]);
+      return { properties, totalItems };
+    } catch (error) {
+      this.logger.error(`findByRawFilter error: ${String(error)}`);
+      throw new InternalServerErrorException(
+        'Failed to execute property search query.',
+      );
+    }
+  }
 }
