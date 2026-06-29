@@ -52,6 +52,14 @@ const VOICE_TTS_VOICE = 'nova';
 const VOICE_TTS_FORMAT = 'mp3';
 const VOICE_INTRO_MAX_CHARS = 200;
 
+// User voice tilidan ai-property search tiliga mapping
+const VOICE_LANG_MAP: Record<string, EnumLanguage> = {
+  uz: EnumLanguage.UZ,
+  ru: EnumLanguage.RU,
+  ms: EnumLanguage.MS,
+  en: EnumLanguage.EN,
+};
+
 interface ClassifiedReply {
   reply: string;
   isSearch: boolean;
@@ -234,6 +242,7 @@ export class AiChatService {
       filename: opts.filename ?? 'voice.webm',
       mimeType: opts.mimeType,
       language: opts.language,
+      priority: true,
     });
 
     const history: MessageRecord[] = [
@@ -241,11 +250,13 @@ export class AiChatService {
       { role: 'user' as const, content: transcript },
     ].slice(-HISTORY_LIMIT);
 
-    const classified = await this.classify(history);
+    const classified = await this.classify(history, { isVoice: true });
+
+    const searchLang = VOICE_LANG_MAP[opts.language ?? ''] ?? EnumLanguage.EN;
 
     let properties: CompactProperty[] = [];
     if (classified.isSearch && classified.searchQuery.trim()) {
-      properties = await this.searchProperties(classified.searchQuery);
+      properties = await this.searchProperties(classified.searchQuery, searchLang);
     }
 
     let body = classified.reply;
@@ -269,6 +280,7 @@ export class AiChatService {
         text: intro,
         voice: VOICE_TTS_VOICE,
         format: VOICE_TTS_FORMAT,
+        priority: true,
       });
       audioBase64 = audio.toString('base64');
       audioMimeType = 'audio/mpeg';
@@ -407,7 +419,10 @@ export class AiChatService {
     }
   }
 
-  private async classify(history: MessageRecord[]): Promise<ClassifiedReply> {
+  private async classify(
+    history: MessageRecord[],
+    opts?: { isVoice?: boolean },
+  ): Promise<ClassifiedReply> {
     const conversationText = history
       .map((m) => {
         const prefix = m.role === 'user' ? 'User' : 'Assistant';
@@ -420,7 +435,14 @@ export class AiChatService {
       this.countryConfig.defaultCurrency,
     );
     const system = `${systemPrompt}\n\n${RESPONSE_SCHEMA_PROMPT}`;
-    const user = `Suhbat:\n${conversationText}\n\nOxirgi User xabariga javob bering.`;
+
+    // Voice transcript bo'lsa AI'ga ogohlantiramiz: noto'liq jumlalar,
+    // filler so'zlar yoki til aralashuvi bo'lishi mumkin.
+    const voiceHint = opts?.isVoice
+      ? '\n[ESLATMA: Oxirgi user xabari ovozdan transkript qilingan. Noto\'liq jumlalar, "eee/uh" kabi to\'ldiruvchilar yoki til aralashuvi bo\'lishi mumkin — shunga qaramay eng yaqin ma\'noni aniqlang.]'
+      : '';
+
+    const user = `Suhbat:\n${conversationText}${voiceHint}\n\nOxirgi User xabariga javob bering.`;
 
     try {
       const { data } = await this.openai.generateJson<Partial<ClassifiedReply>>(
@@ -430,6 +452,7 @@ export class AiChatService {
           model: 'gpt-4o-mini',
           temperature: 0.4,
           maxTokens: 600,
+          priority: opts?.isVoice ?? false,
         },
       );
 
@@ -452,13 +475,16 @@ export class AiChatService {
     }
   }
 
-  private async searchProperties(query: string): Promise<CompactProperty[]> {
+  private async searchProperties(
+    query: string,
+    language: EnumLanguage = EnumLanguage.EN,
+  ): Promise<CompactProperty[]> {
     try {
       const res = await this.aiPropertyService.findByPrompt({
         userPrompt: query,
         page: 1,
         limit: SEARCH_RESULT_LIMIT,
-        language: EnumLanguage.EN,
+        language,
       });
       return res.properties.map((p) =>
         this.toCompact(p as unknown as Record<string, unknown>),

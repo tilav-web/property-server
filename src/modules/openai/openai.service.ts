@@ -2,14 +2,15 @@ import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import OpenAI from 'openai';
 import { toFile } from 'openai/uploads';
 
-// Whisper API qabul qiladigan til kodlari. uz (o'zbek) ro'yxatda yo'q —
-// undefined yuborilganda Whisper auto-detect qiladi.
+// gpt-4o-mini-transcribe (va gpt-4o-transcribe) qabul qiladigan til kodlari.
+// uz (o'zbek) qo'shildi — yangi GPT-4o transcribe modellari uni qo'llab-quvvatlaydi.
+// whisper-1 uchun uz yo'q edi, lekin u endi default model emas.
 const WHISPER_SUPPORTED_LANGUAGES = new Set([
   'af', 'ar', 'hy', 'az', 'be', 'bs', 'bg', 'ca', 'zh', 'hr', 'cs', 'da',
   'nl', 'en', 'et', 'fi', 'fr', 'gl', 'de', 'el', 'he', 'hi', 'hu', 'is',
   'id', 'it', 'ja', 'kn', 'kk', 'ko', 'lv', 'lt', 'mk', 'ms', 'mr', 'mi',
   'ne', 'no', 'fa', 'pl', 'pt', 'ro', 'ru', 'sr', 'sk', 'sl', 'es', 'sw',
-  'sv', 'tl', 'ta', 'th', 'tr', 'uk', 'ur', 'vi', 'cy',
+  'sv', 'tl', 'ta', 'th', 'tr', 'uk', 'ur', 'uz', 'vi', 'cy',
 ]);
 
 // Whisper auto-detect uz/ms/kk uchun zaif (Pashto/Urdu/Tatar bilan adashadi).
@@ -82,7 +83,11 @@ export class OpenaiService implements OnModuleInit {
     return true;
   }
 
-  private async queueRequest<T>(fn: () => Promise<T>): Promise<T> {
+  // priority=true — real-time voice calllar uchun: queue kutishini o'tkazib yuboradi.
+  // Batch calllar (translateTexts va h.k.) priority=false (default) ishlatadi.
+  private async queueRequest<T>(fn: () => Promise<T>, priority = false): Promise<T> {
+    if (priority) return fn();
+
     const previousRequest = this.requestQueue;
 
     this.requestQueue = previousRequest
@@ -302,6 +307,8 @@ Examples of INCORRECT tags:
     model?: string;
     temperature?: number;
     maxTokens?: number;
+    /** Real-time calllar uchun: queue 450ms kutishini o'tkazib yuboradi */
+    priority?: boolean;
   }): Promise<{ data: T; usage?: OpenAI.CompletionUsage }> {
     const {
       system,
@@ -309,6 +316,7 @@ Examples of INCORRECT tags:
       model = 'gpt-4o-mini',
       temperature = 0.1,
       maxTokens = 800,
+      priority = false,
     } = opts;
 
     return this.queueRequest(() =>
@@ -342,6 +350,7 @@ Examples of INCORRECT tags:
 
         return { data: parsed as T, usage: response.usage };
       }, 3),
+      priority,
     );
   }
 
@@ -352,20 +361,18 @@ Examples of INCORRECT tags:
     language?: string;
     /**
      * Override model. Default: gpt-4o-mini-transcribe (whisper-1 dan 2x arzon
-     * va aniqroq, ayniqsa uz/kk/uy kabi tillarda).
+     * va aniqroq, uz/kk kabi tillarni ham qo'llab-quvvatlaydi).
      */
     model?: 'gpt-4o-transcribe' | 'gpt-4o-mini-transcribe' | 'whisper-1';
+    /** Real-time calllar uchun: queue 450ms kutishini o'tkazib yuboradi */
+    priority?: boolean;
   }): Promise<string> {
-    const { buffer, filename, mimeType, language } = opts;
+    const { buffer, filename, mimeType, language, priority = false } = opts;
     const model = opts.model ?? 'gpt-4o-mini-transcribe';
 
     return this.queueRequest(() =>
       this.withRetry(async () => {
         const file = await toFile(buffer, filename, { type: mimeType });
-        // GPT-4o transcribe modellari ko'proq tilni qabul qiladi (uz ham), lekin
-        // hozircha xavfsizlik uchun whitelist'dan tashqari tillarni auto-detect
-        // qilamiz. Prompt biasing baribir foydali — model nutqning kutilgan
-        // mavzusi va tilini biladi.
         const safeLanguage = WHISPER_SUPPORTED_LANGUAGES.has(language ?? '')
           ? language
           : undefined;
@@ -383,6 +390,7 @@ Examples of INCORRECT tags:
         }
         return text;
       }, 2),
+      priority,
     );
   }
 
@@ -391,12 +399,15 @@ Examples of INCORRECT tags:
     voice?: 'alloy' | 'echo' | 'fable' | 'onyx' | 'nova' | 'shimmer';
     format?: 'mp3' | 'opus' | 'aac' | 'flac' | 'wav';
     model?: 'tts-1' | 'tts-1-hd';
+    /** Real-time calllar uchun: queue 450ms kutishini o'tkazib yuboradi */
+    priority?: boolean;
   }): Promise<Buffer> {
     const {
       text,
       voice = 'nova',
       format = 'mp3',
       model = 'tts-1',
+      priority = false,
     } = opts;
 
     const safe = text.slice(0, 4000);
@@ -412,6 +423,7 @@ Examples of INCORRECT tags:
         const arrayBuffer = await response.arrayBuffer();
         return Buffer.from(arrayBuffer);
       }, 2),
+      priority,
     );
   }
 }
