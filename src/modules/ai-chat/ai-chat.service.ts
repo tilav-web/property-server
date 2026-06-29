@@ -76,26 +76,40 @@ isSearch=false faqat: salomlashish, umumiy savol, platforma haqida so'rash.
 correctedQuery: xatolarni tuzatib, user nima so'raganini TO'LIQ yozing.
 Misol: "xarshi shaxridan ich xonali kvartera" → correctedQuery: "Qarshi shahridan uch xonali kvartira"`;
 
-const VOICE_FILTER_RULES = `
-FILTER GENERATSIYA QOIDALARI (isSearch=true bo'lsa):
-- Filter KENG bo'lsin — faqat user ANIQ aytgan narsalar kiritilsin
-- Shahar/joy uchun: address.uz, address.ru, address.en hammasiga $or + $regex/$options:"i" ishlatilsin
-- APARTMENT_SALE va APARTMENT_RENT ikkalasini ham qamrab olish kerak bo'lsa — category ni kiritma
-- Faqat user xona soni aytsa (masalan "3 xonali") → bedrooms:3 qo'sh, category emas
-- Narx: user aytsa + currency field mos bo'lsa qo'sh
-- Agar so'rov juda umumiy bo'lsa ("uylar ko'rsat", "boshqa ko'rsat") → filter: {} (bo'sh — hammasi qaytsin)
-- "Boshqa shahardan", "Qarshidan boshqa" kabi negatsiyada → filter: {} (address filtrsiz)
-HECH QACHON: $where, $expr, $function ishlatilmaydi`;
-
+// Shahar nomlari va ularning rus/ingliz variantlari — cross-language qidiruv uchun
+const CITY_ALIASES: Record<string, string[]> = {
+  'Qarshi':    ['Qarshi', 'Карши'],
+  'Toshkent':  ['Toshkent', 'Ташкент', 'Tashkent'],
+  'Samarqand': ['Samarqand', 'Самарканд', 'Samarkand'],
+  'Namangan':  ['Namangan', 'Наманган'],
+  'Buxoro':    ['Buxoro', 'Бухара', 'Bukhara'],
+  'Andijon':   ['Andijon', 'Андижан', 'Andijan'],
+  'Fargona':   ["Farg'ona", 'Фергана', 'Fergana'],
+  'Jizzax':    ['Jizzax', 'Джизак'],
+  'Navoiy':    ['Navoiy', 'Навои'],
+  'Nukus':     ['Nukus', 'Нукус'],
+  'Termiz':    ['Termiz', 'Термез'],
+  'Guliston':  ['Guliston', 'Гулистан'],
+  'Sirdaryo':  ['Sirdaryo', 'Сырдарья'],
+};
 
 const VOICE_UNIFIED_RESPONSE_FORMAT = `JAVOB FORMAT - STRICTLY JSON:
 {
-  "correctedQuery": "user so'rovining to'g'rilangan varianti (masalan: Qarshi 3 xonali kvartira)",
+  "correctedQuery": "user so'rovining to'g'rilangan varianti (masalan: Qarshi 3 xonali kvartira ijaraga)",
   "isSearch": true yoki false,
   "reply": "faqat isSearch=false holda qisqa matn, aks holda bo'sh string",
-  "filter": { MongoDB FilterQuery yoki {} (bo'sh) }
+  "extracted": {
+    "city": "shahar nomi (to'g'rilangan) yoki null",
+    "bedrooms": xona_soni_raqam_yoki_null,
+    "propertyType": "kvartira" yoki "hovli" yoki "yer" yoki "ofis" yoki "garaj" yoki null,
+    "dealType": "ijara" yoki "sotish" yoki null,
+    "minPrice": null,
+    "maxPrice": null,
+    "currency": null
+  }
 }
-MUHIM: filter hech qachon null bo'lmasin. isSearch=true bo'lsa filter {} bo'lsa ham yaxshi.`;
+MUHIM: extracted da faqat user ANIQ AYTGAN narsalar bo'lsin. Taxmin qilma — aytmagan bo'lsa null.
+Misol: "Qarshi 3 xonali" → city:"Qarshi", bedrooms:3, dealType:null, propertyType:null`;
 
 const HISTORY_LIMIT = 12;
 const SEARCH_RESULT_LIMIT = 5;
@@ -118,11 +132,21 @@ interface ClassifiedReply {
   correctedQuery: string;
 }
 
+interface ExtractedCriteria {
+  city?: string | null;
+  bedrooms?: number | null;
+  propertyType?: string | null;
+  dealType?: string | null;
+  minPrice?: number | null;
+  maxPrice?: number | null;
+  currency?: string | null;
+}
+
 interface VoiceAnalysis {
   correctedQuery: string;
   isSearch: boolean;
   reply: string;
-  filter: unknown;
+  extracted: ExtractedCriteria;
 }
 
 export interface CompactProperty {
@@ -329,15 +353,17 @@ export class AiChatService {
     );
 
     this.logger.log(
-      `[voice] analyze → isSearch=${analyzed.isSearch} correctedQuery="${analyzed.correctedQuery}" filter=${JSON.stringify(analyzed.filter)}`,
+      `[voice] analyze → isSearch=${analyzed.isSearch} correctedQuery="${analyzed.correctedQuery}" extracted=${JSON.stringify(analyzed.extracted)}`,
     );
 
     // DB query — AI call yo'q, tayyor filter bilan to'g'ridan-to'g'ri qidiruv
     const searchLang = VOICE_LANG_MAP[opts.language ?? ''] ?? EnumLanguage.EN;
     let properties: CompactProperty[] = [];
     if (analyzed.isSearch) {
+      const builtFilter = this.buildFilterFromExtracted(analyzed.extracted);
+      this.logger.log(`[voice] built filter=${JSON.stringify(builtFilter)}`);
       const result = await this.aiPropertyService.findByRawFilter({
-        rawFilter: analyzed.filter,
+        rawFilter: builtFilter,
         page: 1,
         limit: SEARCH_RESULT_LIMIT,
         language: searchLang,
@@ -490,20 +516,20 @@ export class AiChatService {
     history: MessageRecord[],
     language?: string,
   ): Promise<VoiceAnalysis> {
-    const contextPrompt = buildAiSystemPrompt(
+    const system = `${buildAiSystemPrompt(
       this.countryConfig.country,
       this.countryConfig.defaultCurrency,
-    );
-    const filterSchemaPrompt = this.aiPropertyService.getFilterSystemPrompt();
-
-    const system = `${contextPrompt}
+    )}
 
 ${VOICE_CORRECTION_SYSTEM}
 
-${VOICE_FILTER_RULES}
-
-FILTER SCHEMA (isSearch=true bo'lsa foydalaning):
-${filterSchemaPrompt}
+KALIT SO'ZLARNI AJRATISH QOIDALARI:
+- city: shahar nomini aniqlash (xatolarni to'g'irla: "xarshi"→"Qarshi", "tashkent"→"Toshkent", "namagan"→"Namangan")
+- bedrooms: xona soni raqam sifatida (ich/ish→3, to'rt→4, besh→5, ikki→2, bir→1)
+- propertyType: "kvartira"/"kvartera"/"kvertira"→"kvartira", "hovli"/"xovli"→"hovli", "yer"→"yer", "ofis"→"ofis", "garaj"→"garaj"
+- dealType: "ijara"/"ijaraga"/"rent"→"ijara", "sotish"/"sotib olish"/"sale"→"sotish"
+- minPrice/maxPrice: narx raqam (million=1000000, mln=1000000, ming=1000)
+- currency: so'm/UZS→"UZS", dollar/USD→"USD"
 
 ${VOICE_UNIFIED_RESPONSE_FORMAT}`;
 
@@ -513,24 +539,33 @@ ${VOICE_UNIFIED_RESPONSE_FORMAT}`;
       .join('\n');
 
     const user = historyText
-      ? `Oldingi suhbat:\n${historyText}\n\nOxirgi voice transcript: "${transcript}"\nTilni aniqlash: ${language ?? 'auto'}`
-      : `Voice transcript: "${transcript}"\nTilni aniqlash: ${language ?? 'auto'}`;
+      ? `Oldingi suhbat:\n${historyText}\n\nOxirgi voice transcript (til: ${language ?? 'auto'}): "${transcript}"`
+      : `Voice transcript (til: ${language ?? 'auto'}): "${transcript}"`;
 
     try {
-      const { data } = await this.openai.generateJson<Partial<VoiceAnalysis>>({
+      const { data } = await this.openai.generateJson<{
+        correctedQuery?: unknown;
+        isSearch?: unknown;
+        reply?: unknown;
+        extracted?: unknown;
+      }>({
         system,
         user,
         model: 'gpt-4o-mini',
         temperature: 0.2,
-        maxTokens: 900,
+        maxTokens: 600,
         priority: true,
       });
+
+      const extracted = (data?.extracted && typeof data.extracted === 'object' && !Array.isArray(data.extracted))
+        ? (data.extracted as ExtractedCriteria)
+        : {};
 
       return {
         correctedQuery: typeof data?.correctedQuery === "string" ? data.correctedQuery : transcript,
         isSearch: Boolean(data?.isSearch),
         reply: typeof data?.reply === "string" ? data.reply : "",
-        filter: data?.filter ?? null,
+        extracted,
       };
     } catch (err) {
       this.logger.warn(`[voice] analyzeVoice failed: ${String(err)}`);
@@ -538,9 +573,98 @@ ${VOICE_UNIFIED_RESPONSE_FORMAT}`;
         correctedQuery: transcript,
         isSearch: false,
         reply: "Kechirasiz, so'rovingizni qayta yuboring.",
-        filter: null,
+        extracted: {},
       };
     }
+  }
+
+  /** AI extracted criteria dan MongoDB filter quradi — kalit so'zlar asosida */
+  private buildFilterFromExtracted(ext: ExtractedCriteria): Record<string, unknown> {
+    const filter: Record<string, unknown> = {};
+
+    // Shahar: case-insensitive regex, barcha til fieldlarida, rus/ingliz variantlari bilan
+    if (ext.city) {
+      const aliases = this.findCityAliases(ext.city);
+      const orClauses: Record<string, unknown>[] = [];
+      for (const lang of ['uz', 'ru', 'en']) {
+        for (const alias of aliases) {
+          orClauses.push({ [`address.${lang}`]: { $regex: alias, $options: 'i' } });
+        }
+      }
+      if (orClauses.length > 0) filter.$or = orClauses;
+    }
+
+    // Xona soni
+    if (typeof ext.bedrooms === 'number' && ext.bedrooms > 0) {
+      filter.bedrooms = ext.bedrooms;
+    }
+
+    // Kategoriya: propertyType + dealType kombinatsiyasi
+    const category = this.mapToCategory(ext.propertyType, ext.dealType);
+    if (category !== null) filter.category = category;
+
+    // Narx
+    if (ext.minPrice || ext.maxPrice) {
+      const priceFilter: Record<string, number> = {};
+      if (ext.minPrice) priceFilter.$gte = ext.minPrice;
+      if (ext.maxPrice) priceFilter.$lte = ext.maxPrice;
+      filter.price = priceFilter;
+    }
+
+    // Valyuta
+    if (ext.currency) filter.currency = ext.currency;
+
+    return filter;
+  }
+
+  private findCityAliases(city: string): string[] {
+    if (CITY_ALIASES[city]) return CITY_ALIASES[city];
+    const lower = city.toLowerCase().replace(/['']/g, '');
+    for (const [key, vals] of Object.entries(CITY_ALIASES)) {
+      if (key.toLowerCase().replace(/['']/g, '') === lower) return vals;
+    }
+    return [city];
+  }
+
+  private mapToCategory(
+    propertyType: string | null | undefined,
+    dealType: string | null | undefined,
+  ): unknown {
+    const type = (propertyType ?? '').toLowerCase();
+    const deal = (dealType ?? '').toLowerCase();
+
+    const isRent = deal.includes('ijara') || deal.includes('rent');
+    const isSale = deal.includes('sotish') || deal.includes('sale') || deal.includes('sotib');
+    const isApartment = type.includes('kvartira') || type.includes('apartment');
+    const isHovli = type.includes('hovli');
+    const isCommercial = type.includes('ofis') || type.includes('commercial') || type.includes('noturar');
+    const isLand = type.includes('yer') || type.includes('land');
+    const isGarage = type.includes('garaj') || type.includes('garage');
+
+    if (isApartment && isRent) return 'APARTMENT_RENT';
+    if (isApartment && isSale) return 'APARTMENT_SALE';
+    if (isApartment) return { $in: ['APARTMENT_RENT', 'APARTMENT_SALE'] };
+
+    if (isHovli && isRent) return 'HOVLI_RENT';
+    if (isHovli && isSale) return 'HOVLI_SALE';
+    if (isHovli) return { $in: ['HOVLI_SALE', 'HOVLI_RENT'] };
+
+    if (isCommercial && isRent) return 'COMMERCIAL_RENT';
+    if (isCommercial && isSale) return 'COMMERCIAL_SALE';
+    if (isCommercial) return { $in: ['COMMERCIAL_RENT', 'COMMERCIAL_SALE'] };
+
+    if (isLand && isRent) return 'LAND_RENT';
+    if (isLand && isSale) return 'LAND_SALE';
+    if (isLand) return { $in: ['LAND_SALE', 'LAND_RENT'] };
+
+    if (isGarage && isRent) return 'GARAGE_RENT';
+    if (isGarage && isSale) return 'GARAGE_SALE';
+    if (isGarage) return { $in: ['GARAGE_SALE', 'GARAGE_RENT'] };
+
+    if (isRent) return { $in: ['APARTMENT_RENT', 'HOVLI_RENT', 'COMMERCIAL_RENT'] };
+    if (isSale) return { $in: ['APARTMENT_SALE', 'HOVLI_SALE', 'COMMERCIAL_SALE'] };
+
+    return null;
   }
 
   /** Body matnidan TTS uchun intro qism (birinchi gap yoki ~200 belgi) */
