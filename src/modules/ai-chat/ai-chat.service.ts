@@ -57,18 +57,35 @@ const RESPONSE_SCHEMA_PROMPT = `Natija STRICTLY quyidagi JSON shaklida bo'lsin:
 // Voice transkripsiya xatolarini tuzatish uchun system prompt qo'shimchasi
 const VOICE_CORRECTION_SYSTEM = `
 VOICE TRANSKRIPSIYA TUZATISH:
-Oxirgi user xabari ovozdan transkript qilingan — nutq tanish xatolari bo'lishi mumkin.
-Siz asl matnni emas, USER NIMA DEMOQCHI EKANLIGINI tushunishingiz kerak.
+User xabari ovozdan transkript qilingan — nutq tanish xatolari bo'lishi mumkin.
+USER NIMA DEMOQCHI EKANLIGINI tushunish muhim, asl matnni emas.
 
 Keng tarqalgan xatolar:
-- Shahar nomlari: "xarshi"→"Qarshi", "tashkent"→"Toshkent", "samarkan"→"Samarqand", "namagan"→"Namangan", "buxara"→"Buxoro", "andijon"→"Andijon"
-- Raqamlar: "ich"/"ish"→"uch(3)", "to'r"→"to'rt(4)", "besh"→"besh(5)", "ikki"→"ikki(2)"
-- Mulk turlari: "kvartera"/"kvartira"→"kvartira", "xona"→"xona", "uy"→"uy"
-- Boshqa: "shaxr"→"shahar", "narxi"→"narxi", "ming"→"ming", "mln"→"million"
+- Shahar nomlari: "xarshi"→"Qarshi", "tashkent"→"Toshkent", "samarkan"→"Samarqand", "namagan"→"Namangan", "buxara"→"Buxoro", "andijon"→"Andijon", "fargona"→"Farg'ona", "jizzax"→"Jizzax"
+- Raqamlar: "ich"/"ish"→"uch(3)", "to'r"→"to'rt(4)", "besh"→"besh(5)", "ikki"→"ikki(2)", "bir"→"bir(1)"
+- Mulk turlari: "kvartera"/"kvertira"→"kvartira", "xovli"→"hovli", "yer"→"yer"
+- Boshqa: "shaxr"→"shahar", "arzon"→"arzon", "qimmat"→"qimmat"
 
-correctedQuery: xatolarni tuzatib, user nima demoqchi bo'lganini TO'LIQ va ANIQ yozing.
-Misol kiritish: "xarshi shaxridan ich xonali kvartera kerak"
-Misol correctedQuery: "Qarshi shahridan uch xonali kvartira kerak"`;
+isSearch=true bo'lishi kerak bo'lgan holatlar:
+- Aniq joy ("Toshkentda"), xona soni ("3 xonali"), narx ("500 mln gacha"), kategoriya ("ijara", "sotish")
+- "Ko'rsat", "qidir", "top", "ber", "boshqa ko'rsat", "yana ko'rsat", "boshqasi" kabi so'rovlar
+- "Boshqa shahardan", "Qarshidan boshqa", "arzonroq", "kattaroq" — ham isSearch=true
+
+isSearch=false faqat: salomlashish, umumiy savol, platforma haqida so'rash.
+
+correctedQuery: xatolarni tuzatib, user nima so'raganini TO'LIQ yozing.
+Misol: "xarshi shaxridan ich xonali kvartera" → correctedQuery: "Qarshi shahridan uch xonali kvartira"`;
+
+const VOICE_FILTER_RULES = `
+FILTER GENERATSIYA QOIDALARI (isSearch=true bo'lsa):
+- Filter KENG bo'lsin — faqat user ANIQ aytgan narsalar kiritilsin
+- Shahar/joy uchun: address.uz, address.ru, address.en hammasiga $or + $regex/$options:"i" ishlatilsin
+- APARTMENT_SALE va APARTMENT_RENT ikkalasini ham qamrab olish kerak bo'lsa — category ni kiritma
+- Faqat user xona soni aytsa (masalan "3 xonali") → bedrooms:3 qo'sh, category emas
+- Narx: user aytsa + currency field mos bo'lsa qo'sh
+- Agar so'rov juda umumiy bo'lsa ("uylar ko'rsat", "boshqa ko'rsat") → filter: {} (bo'sh — hammasi qaytsin)
+- "Boshqa shahardan", "Qarshidan boshqa" kabi negatsiyada → filter: {} (address filtrsiz)
+HECH QACHON: $where, $expr, $function ishlatilmaydi`;
 
 
 const VOICE_UNIFIED_RESPONSE_FORMAT = `JAVOB FORMAT - STRICTLY JSON:
@@ -76,8 +93,9 @@ const VOICE_UNIFIED_RESPONSE_FORMAT = `JAVOB FORMAT - STRICTLY JSON:
   "correctedQuery": "user so'rovining to'g'rilangan varianti (masalan: Qarshi 3 xonali kvartira)",
   "isSearch": true yoki false,
   "reply": "faqat isSearch=false holda qisqa matn, aks holda bo'sh string",
-  "filter": { MongoDB FilterQuery } yoki null
-}`;
+  "filter": { MongoDB FilterQuery yoki {} (bo'sh) }
+}
+MUHIM: filter hech qachon null bo'lmasin. isSearch=true bo'lsa filter {} bo'lsa ham yaxshi.`;
 
 const HISTORY_LIMIT = 12;
 const SEARCH_RESULT_LIMIT = 5;
@@ -311,13 +329,13 @@ export class AiChatService {
     );
 
     this.logger.log(
-      `[voice] analyze → isSearch=${analyzed.isSearch} correctedQuery="${analyzed.correctedQuery}"`,
+      `[voice] analyze → isSearch=${analyzed.isSearch} correctedQuery="${analyzed.correctedQuery}" filter=${JSON.stringify(analyzed.filter)}`,
     );
 
     // DB query — AI call yo'q, tayyor filter bilan to'g'ridan-to'g'ri qidiruv
     const searchLang = VOICE_LANG_MAP[opts.language ?? ''] ?? EnumLanguage.EN;
     let properties: CompactProperty[] = [];
-    if (analyzed.isSearch && analyzed.filter) {
+    if (analyzed.isSearch) {
       const result = await this.aiPropertyService.findByRawFilter({
         rawFilter: analyzed.filter,
         page: 1,
@@ -482,7 +500,9 @@ export class AiChatService {
 
 ${VOICE_CORRECTION_SYSTEM}
 
-AGAR isSearch=true BO'LSA FILTER GENERATSIYA QOIDALARI:
+${VOICE_FILTER_RULES}
+
+FILTER SCHEMA (isSearch=true bo'lsa foydalaning):
 ${filterSchemaPrompt}
 
 ${VOICE_UNIFIED_RESPONSE_FORMAT}`;
