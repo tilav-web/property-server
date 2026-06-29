@@ -251,6 +251,7 @@ export class AiChatService {
         filename: opts.filename ?? 'voice.webm',
         mimeType: opts.mimeType,
         language: opts.language,
+        model: 'gpt-4o-transcribe',
         priority: true,
       });
     } catch (err) {
@@ -266,6 +267,8 @@ export class AiChatService {
       );
     }
 
+    this.logger.log(`[voice] transcript: "${transcript}" (lang=${opts.language ?? 'auto'})`);
+
     const history: MessageRecord[] = [
       ...(opts.history ?? []),
       { role: 'user' as const, content: transcript },
@@ -273,11 +276,16 @@ export class AiChatService {
 
     const classified = await this.classify(history, { isVoice: true });
 
+    this.logger.log(
+      `[voice] classify → isSearch=${classified.isSearch} searchQuery="${classified.searchQuery}"`,
+    );
+
     const searchLang = VOICE_LANG_MAP[opts.language ?? ''] ?? EnumLanguage.EN;
 
     let properties: CompactProperty[] = [];
     if (classified.isSearch && classified.searchQuery.trim()) {
       properties = await this.searchProperties(classified.searchQuery, searchLang);
+      this.logger.log(`[voice] search → found=${properties.length}`);
     }
 
     let body = classified.reply;
