@@ -2,15 +2,15 @@ import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import OpenAI from 'openai';
 import { toFile } from 'openai/uploads';
 
-// gpt-4o-mini-transcribe (va gpt-4o-transcribe) qabul qiladigan til kodlari.
-// uz (o'zbek) qo'shildi — yangi GPT-4o transcribe modellari uni qo'llab-quvvatlaydi.
-// whisper-1 uchun uz yo'q edi, lekin u endi default model emas.
+// gpt-4o-mini-transcribe qabul qiladigan til kodlari.
+// uz (o'zbek) ro'yxatda yo'q — API 400 qaytaradi. Buning o'rniga
+// WHISPER_LANGUAGE_PROMPTS orqali prompt biasing ishlatiladi.
 const WHISPER_SUPPORTED_LANGUAGES = new Set([
   'af', 'ar', 'hy', 'az', 'be', 'bs', 'bg', 'ca', 'zh', 'hr', 'cs', 'da',
   'nl', 'en', 'et', 'fi', 'fr', 'gl', 'de', 'el', 'he', 'hi', 'hu', 'is',
   'id', 'it', 'ja', 'kn', 'kk', 'ko', 'lv', 'lt', 'mk', 'ms', 'mr', 'mi',
   'ne', 'no', 'fa', 'pl', 'pt', 'ro', 'ru', 'sr', 'sk', 'sl', 'es', 'sw',
-  'sv', 'tl', 'ta', 'th', 'tr', 'uk', 'ur', 'uz', 'vi', 'cy',
+  'sv', 'tl', 'ta', 'th', 'tr', 'uk', 'ur', 'vi', 'cy',
 ]);
 
 // Whisper auto-detect uz/ms/kk uchun zaif (Pashto/Urdu/Tatar bilan adashadi).
