@@ -23,6 +23,10 @@ export class StatisticService {
     const totalProperties = properties.length;
     const totalLikes = properties.reduce((sum, p) => sum + p.liked, 0);
     const totalSaves = properties.reduce((sum, p) => sum + p.saved, 0);
+    const totalViews = properties.reduce(
+      (sum, p) => sum + (p.viewCount ?? 0),
+      0,
+    );
 
     const totalInquiries = await this.inquiryModel
       .countDocuments({
@@ -35,6 +39,7 @@ export class StatisticService {
       totalLikes,
       totalSaves,
       totalInquiries,
+      totalViews,
     };
   }
 }

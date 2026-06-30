@@ -78,6 +78,12 @@ export class Property {
   @Prop({ type: Number, default: 0 })
   saved: number;
 
+  @Prop({ type: Number, default: 0 })
+  viewCount: number;
+
+  @Prop({ type: Number, default: 0 })
+  inquiryCount: number;
+
   @Prop({ type: [String], required: true })
   photos: string[];
 
@@ -128,4 +134,5 @@ PropertySchema.index({
 });
 PropertySchema.index({ status: 1, is_archived: 1, category: 1, rating: -1 });
 PropertySchema.index({ status: 1, is_archived: 1, liked: -1, createdAt: -1 });
+PropertySchema.index({ status: 1, is_archived: 1, viewCount: -1, createdAt: -1 });
 PropertySchema.index({ status: 1, is_archived: 1, currency: 1, price: 1 });

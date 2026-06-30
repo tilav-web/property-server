@@ -19,10 +19,12 @@ import { HovliRentSchema } from './schemas/categories/hovli-rent.schema';
 import { Property, PropertySchema } from './schemas/property.schema';
 import { EnumPropertyCategory } from './enums/property-category.enum';
 import { Seller, SellerSchema } from '../seller/schemas/seller.schema';
+import { User, UserSchema } from '../user/user.schema';
 
 import { GenaiModule } from '../openai/openai.module';
 import { TagModule } from '../tag/tag.module';
 import { ExchangeRateModule } from '../exchange-rate/exchange-rate.module';
+import { PropertyViewModule } from '../property-view/property-view.module';
 
 @Module({
   imports: [
@@ -46,12 +48,14 @@ import { ExchangeRateModule } from '../exchange-rate/exchange-rate.module';
       { name: Like.name, schema: LikeSchema },
       { name: Save.name, schema: SaveSchema },
       { name: Seller.name, schema: SellerSchema },
+      { name: User.name, schema: UserSchema },
     ]),
     FileModule,
     MessageModule,
     GenaiModule,
     TagModule,
     ExchangeRateModule,
+    PropertyViewModule,
   ],
   providers: [PropertyService],
   controllers: [PropertyController],

@@ -9,6 +9,7 @@ import { SellerModule } from './modules/seller/seller.module';
 import { BankAccountModule } from './modules/bank-account/bank-account.module';
 import { CommissionerModule } from './modules/commissioner/commissioner.module';
 import { ScheduleModule } from '@nestjs/schedule';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { InteractionsModule } from './modules/interactions/interactions.module';
@@ -45,6 +46,7 @@ import { AppVersionModule } from './modules/app-version/app-version.module';
       isGlobal: true,
     }),
     ScheduleModule.forRoot(),
+    EventEmitterModule.forRoot(),
     CountryConfigModule,
     ThrottlerModule.forRoot([
       {

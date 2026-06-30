@@ -54,6 +54,14 @@ export class InquiryService {
       seller: property.author,
     }).save();
 
+    this.propertyModel
+      .updateOne(
+        { _id: new Types.ObjectId(dto.property) },
+        { $inc: { inquiryCount: 1 } },
+      )
+      .exec()
+      .catch(() => {});
+
     // --- Chat integration: shu inquiry chat'da ko'rinadi ---
     try {
       const { conversation } = await this.chatService.findOrCreateConversation(

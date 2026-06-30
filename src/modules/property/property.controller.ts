@@ -38,11 +38,15 @@ import { AdminGuard } from '../admin/guards/admin.guard';
 import { ApiMultipartBody } from 'src/common/swagger/file-upload.decorator';
 import { ApiStandardErrors } from 'src/common/swagger/api-errors.decorator';
 import { OptionalJwtGuard } from '../push/guards/optional-jwt.guard';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
 @ApiTags('Properties')
 @Controller('properties')
 export class PropertyController {
-  constructor(private readonly service: PropertyService) {}
+  constructor(
+    private readonly service: PropertyService,
+    private readonly eventEmitter: EventEmitter2,
+  ) {}
 
   @Post()
   @UseGuards(AuthGuard('jwt'))
@@ -291,9 +295,17 @@ export class PropertyController {
   @UseGuards(OptionalJwtGuard)
   @ApiOperation({ summary: 'E’lon tafsiloti (id bo‘yicha)' })
   @ApiStandardErrors({ notFound: true })
-  findById(@Param('id') id: string, @Req() req: IRequestCustom) {
+  async findById(@Param('id') id: string, @Req() req: IRequestCustom) {
     const language = req.headers['accept-language'] as EnumLanguage;
     const userId = req.user?._id;
-    return this.service.findById({ id, language, userId });
+    const result = await this.service.findById({ id, language, userId });
+
+    this.eventEmitter.emit('property.viewed', {
+      propertyId: id,
+      userId: userId?.toString(),
+      ip: req.ip ?? (req.socket as any)?.remoteAddress,
+    });
+
+    return result;
   }
 }
