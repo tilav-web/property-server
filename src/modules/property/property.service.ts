@@ -22,6 +22,7 @@ import { MessageService } from '../message/message.service';
 import { CreateMessageDto } from '../message/dto/create-message.dto';
 import { EnumPropertyStatus } from './enums/property-status.enum';
 import { Seller, SellerDocument } from '../seller/schemas/seller.schema';
+import { User, UserDocument } from '../user/user.schema';
 import { TagService } from '../tag/tag.service';
 import { EnumFilesFolder } from '../file/enums/files-folder.enum';
 import { ApartmentRentDocument } from './schemas/categories/apartment-rent.schema';
@@ -83,6 +84,8 @@ export class PropertyService {
     private readonly hovliRentModel: Model<PropertyDocument>,
     @InjectModel(Seller.name)
     private readonly sellerModel: Model<SellerDocument>,
+    @InjectModel(User.name)
+    private readonly userModel: Model<UserDocument>,
     private readonly fileService: FileService,
     private readonly openaiService: OpenaiService,
     private readonly messageService: MessageService,
@@ -121,6 +124,11 @@ export class PropertyService {
     }
     if (!author) {
       throw new BadRequestException('Log back in system!');
+    }
+
+    const authorUser = await this.userModel.findById(author).select('phone');
+    if (!authorUser?.phone?.isVerified) {
+      throw new ForbiddenException('phone_not_verified');
     }
 
     // Premium / property limit tekshiruvi: bepul user free_property_limit

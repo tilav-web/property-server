@@ -138,3 +138,17 @@ export class WebAuthResponseDto extends AccessTokenResponseDto {
   @ApiProperty({ type: Object })
   user: Record<string, unknown>;
 }
+
+export class RequestPhoneVerificationDto {
+  @ApiProperty({ example: '+998901234567' })
+  @IsString()
+  @IsNotEmpty()
+  phone: string;
+}
+
+export class ConfirmLoggedInOtpDto {
+  @ApiProperty({ example: '123456' })
+  @IsString()
+  @IsNotEmpty()
+  code: string;
+}

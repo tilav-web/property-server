@@ -37,11 +37,13 @@ import {
   AccessTokenResponseDto,
   AuthResponseDto,
   ChangePasswordDto,
+  ConfirmLoggedInOtpDto,
   ConfirmOtpDto,
   ForgotPasswordDto,
   LoginDto,
   MessageResponseDto,
   RefreshTokenDto,
+  RequestPhoneVerificationDto,
   ResendOtpDto,
   ResetPasswordDto,
   TokenPairResponseDto,
@@ -681,6 +683,33 @@ export class UserController {
       if (error instanceof Error) throw new InternalServerErrorException(error.message);
       throw new InternalServerErrorException("Xatolik ketdi.");
     }
+  }
+
+  @Throttle({ default: { limit: 3, ttl: 60000 } })
+  @Post('/request-phone-verification')
+  @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth('bearer')
+  @ApiOperation({ summary: 'Kirgan foydalanuvchi uchun telefon OTP yuborish' })
+  async requestPhoneVerification(
+    @Body() dto: RequestPhoneVerificationDto,
+    @Req() req: IRequestCustom,
+  ) {
+    const language = detectSmsLanguage(req);
+    const userId = req.user?._id as string;
+    return this.service.requestPhoneVerification(userId, dto.phone, language);
+  }
+
+  @Throttle({ default: { limit: 5, ttl: 10000 } })
+  @Post('/confirm-phone-otp')
+  @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth('bearer')
+  @ApiOperation({ summary: 'Kirgan foydalanuvchi telefon OTP tasdiqlash' })
+  async confirmPhoneOtp(
+    @Body() dto: ConfirmLoggedInOtpDto,
+    @Req() req: IRequestCustom,
+  ) {
+    const userId = req.user?._id as string;
+    return this.service.confirmLoggedInPhoneOtp(userId, dto.code);
   }
 
   @Post('/logout')

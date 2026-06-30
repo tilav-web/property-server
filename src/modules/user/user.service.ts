@@ -693,6 +693,78 @@ export class UserService {
     return saveUser;
   }
 
+  async requestPhoneVerification(
+    userId: string,
+    phone: string,
+    language: SmsLanguage,
+  ) {
+    const normalized = normalizePhone(phone);
+    if (!PHONE_REGEX.test(normalized)) {
+      throw new BadRequestException("Noto'g'ri telefon formati!");
+    }
+
+    const existing = await this.model.findOne({
+      'phone.value': normalized,
+      'phone.isVerified': true,
+      _id: { $ne: userId },
+    });
+    if (existing) {
+      throw new ConflictException('Bu telefon boshqa foydalanuvchiga bog\'liq!');
+    }
+
+    const user = await this.model.findById(userId);
+    if (!user) throw new NotFoundException('Foydalanuvchi topilmadi!');
+
+    user.phone = { value: normalized, isVerified: false };
+    await user.save();
+
+    await this.otpService.deleteMany(userId);
+    const code = generateOtp();
+    await this.otpService.create({ code, user: userId, target: OtpTarget.PHONE });
+
+    try {
+      await this.smsService.sendOtp(normalized, code, language);
+    } catch (err) {
+      const detail = err instanceof Error ? err.message : String(err);
+      throw new InternalServerErrorException(`SMS yuborishda xatolik: ${detail}`);
+    }
+
+    return { message: 'Tasdiqlash kodi yuborildi!' };
+  }
+
+  async confirmLoggedInPhoneOtp(userId: string, code: string) {
+    const otp = await this.otpService.findByUser(userId);
+    if (!otp) throw new BadRequestException('Tasdiqlash kodi eskirgan!');
+
+    if (otp.lockedUntil && otp.lockedUntil > new Date()) {
+      throw new BadRequestException(
+        "Juda ko'p urinish bo'ldi. Yangi kod so'rang.",
+      );
+    }
+
+    if (otp.code !== code) {
+      const updatedOtp = await this.otpService.incrementAttempts(userId);
+      if ((updatedOtp?.attempts ?? 0) >= 5) {
+        await this.otpService.lock(userId, new Date(Date.now() + 60_000));
+        throw new BadRequestException(
+          "Tasdiqlash kodi 5 marta noto'g'ri kiritildi. Yangi kod so'rang.",
+        );
+      }
+      throw new BadRequestException(
+        "Tasdiqlash kodida xatolik bor, qayta urinib ko'ring",
+      );
+    }
+
+    const user = await this.model.findById(userId);
+    if (!user) throw new NotFoundException('Foydalanuvchi topilmadi!');
+
+    user.phone.isVerified = true;
+    const savedUser = await user.save();
+    await this.otpService.deleteMany(userId);
+
+    return savedUser;
+  }
+
   async deleteAccount(userId: string): Promise<void> {
     const user = await this.model.findById(userId);
     if (!user) throw new NotFoundException('Foydalanuvchi topilmadi');
