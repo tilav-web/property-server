@@ -24,39 +24,39 @@ export class AdminPropertyController {
   constructor(private readonly adminPropertyService: AdminPropertyService) {}
 
   @Get()
-  @ApiOperation({ summary: "E'lonlar ro‘yxati (admin)" })
+  @ApiOperation({ summary: "E'lonlar ro'yxati (admin)" })
   async findAll(@Query() dto: FindPropertiesDto) {
     return this.adminPropertyService.findAll(dto);
   }
 
-  @Get(‘/user/:userId’)
-  @ApiOperation({ summary: "Foydalanuvchi bo’yicha e’lonlar" })
+  @Get('/user/:userId')
+  @ApiOperation({ summary: "Foydalanuvchi bo'yicha e'lonlar" })
   @ApiStandardErrors({ auth: true, notFound: true })
-  async findByUser(@Param(‘userId’) userId: string) {
+  async findByUser(@Param('userId') userId: string) {
     return this.adminPropertyService.findByUser(userId);
   }
 
-  @Get(‘:id’)
-  @ApiOperation({ summary: "E’lon tafsiloti" })
+  @Get(':id')
+  @ApiOperation({ summary: "E'lon tafsiloti" })
   @ApiStandardErrors({ auth: true, notFound: true })
-  async findOne(@Param(‘id’) id: string) {
+  async findOne(@Param('id') id: string) {
     return this.adminPropertyService.findOne(id);
   }
 
-  @Put(‘:id’)
-  @ApiOperation({ summary: "E’lonni yangilash (admin)" })
+  @Put(':id')
+  @ApiOperation({ summary: "E'lonni yangilash (admin)" })
   @ApiStandardErrors({ auth: true, notFound: true, validation: true })
   async update(
-    @Param(‘id’) propertyId: string,
+    @Param('id') propertyId: string,
     @Body() dto: UpdatePropertyDto,
   ) {
     return this.adminPropertyService.update(propertyId, dto);
   }
 
-  @Delete(‘:id’)
-  @ApiOperation({ summary: "E’lonni o’chirish (admin)" })
+  @Delete(':id')
+  @ApiOperation({ summary: "E'lonni o'chirish (admin)" })
   @ApiStandardErrors({ auth: true, notFound: true })
-  async delete(@Param(‘id’) id: string) {
+  async delete(@Param('id') id: string) {
     return this.adminPropertyService.delete(id);
   }
 }
