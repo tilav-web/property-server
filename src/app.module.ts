@@ -5,9 +5,6 @@ import { UserModule } from './modules/user/user.module';
 import { FileModule } from './modules/file/file.module';
 import { PropertyModule } from './modules/property/property.module';
 import { MessageModule } from './modules/message/message.module';
-import { SellerModule } from './modules/seller/seller.module';
-import { BankAccountModule } from './modules/bank-account/bank-account.module';
-import { CommissionerModule } from './modules/commissioner/commissioner.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
@@ -71,9 +68,6 @@ import { AppVersionModule } from './modules/app-version/app-version.module';
     PropertyModule,
     InteractionsModule,
     MessageModule,
-    SellerModule,
-    BankAccountModule,
-    CommissionerModule,
     InquiryModule,
     AdvertiseModule,
     GenaiModule,

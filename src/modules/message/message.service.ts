@@ -18,8 +18,6 @@ import {
   Property,
   PropertyDocument,
 } from '../property/schemas/property.schema';
-import { Seller, SellerDocument } from '../seller/schemas/seller.schema';
-import { EnumSellerStatus } from 'src/enums/seller-status.enum';
 import { NotificationService } from '../notification/notification.service';
 import { NotificationType } from '../notification/enums/notification-type.enum';
 
@@ -39,8 +37,6 @@ export class MessageService {
     private messageStatusModel: Model<MessageStatusDocument>,
     @InjectModel(Property.name)
     private propertyModel: Model<PropertyDocument>,
-    @InjectModel(Seller.name)
-    private sellerModel: Model<SellerDocument>,
     private readonly notificationService: NotificationService,
   ) {}
 
@@ -148,43 +144,29 @@ export class MessageService {
     });
 
     if (message && property.author) {
-      const seller = await this.sellerModel
-        .findOne({
-          user: property.author,
-          status: {
-            $in: [EnumSellerStatus.COMPLETED, EnumSellerStatus.APPROVED],
+      await this.createMessageStatus({
+        message: message._id as string,
+        seller: property.author.toString(),
+      });
+
+      try {
+        const snippet =
+          dto.comment.length > 80
+            ? `${dto.comment.slice(0, 79)}…`
+            : dto.comment;
+        await this.notificationService.create({
+          user: property.author.toString(),
+          type: NotificationType.NEW_MESSAGE,
+          title: `Yangi fikr (${rating ? rating.toFixed(1) : 0}★)`,
+          body: snippet,
+          link: `/property/${String(property._id)}`,
+          payload: {
+            propertyId: String(property._id),
+            rating: message.rating,
           },
-        })
-        .lean();
-
-      if (seller) {
-        await this.createMessageStatus({
-          message: message._id as string,
-          seller: property.author.toString(),
         });
-
-        // Sellerga ham umumiy notification yaratamiz — bell badge'ida ko'rinadi
-        try {
-          const snippet =
-            dto.comment.length > 80
-              ? `${dto.comment.slice(0, 79)}…`
-              : dto.comment;
-          await this.notificationService.create({
-            user: property.author.toString(),
-            type: NotificationType.NEW_MESSAGE,
-            title: `Yangi fikr (${rating ? rating.toFixed(1) : 0}★)`,
-            body: snippet,
-            link: `/property/${String(property._id)}`,
-            payload: {
-              propertyId: String(property._id),
-              rating: message.rating,
-            },
-          });
-        } catch (err) {
-          this.logger.warn(
-            `Feedback notification create failed: ${String(err)}`,
-          );
-        }
+      } catch (err) {
+        this.logger.warn(`Feedback notification create failed: ${String(err)}`);
       }
     }
 

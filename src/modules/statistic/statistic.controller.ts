@@ -21,13 +21,13 @@ import { ApiStandardErrors } from 'src/common/swagger/api-errors.decorator';
 export class StatisticController {
   constructor(private readonly statisticService: StatisticService) {}
 
-  @Get('/seller-dashboard')
+  @Get('/dashboard')
   @UseGuards(AuthGuard('jwt'))
   @ApiBearerAuth('bearer')
   @ApiCookieAuth('access_token')
-  @ApiOperation({ summary: 'Seller dashboard statistikasi' })
+  @ApiOperation({ summary: 'User dashboard statistikasi' })
   @ApiStandardErrors({ auth: true })
-  async getSellerDashboard(@Req() req: IRequestCustom) {
+  async getDashboard(@Req() req: IRequestCustom) {
     const user = req.user;
     if (!user?._id) {
       throw new UnauthorizedException('User not found in request');

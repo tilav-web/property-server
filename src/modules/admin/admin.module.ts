@@ -14,9 +14,6 @@ import { UserModule } from '../user/user.module';
 import { Property, PropertySchema } from '../property/schemas/property.schema';
 import { AdminPropertyController } from './controllers/admin-property.controller';
 import { AdminPropertyService } from './services/admin-property.service';
-import { Seller, SellerSchema } from '../seller/schemas/seller.schema';
-import { AdminSellerController } from './controllers/admin-seller.controller';
-import { AdminSellerService } from './services/admin-seller.service';
 import { Advertise, AdvertiseSchema } from '../advertise/advertise.schema';
 import { AdminAdvertiseController } from './controllers/admin-advertise.controller';
 import { AdminAdvertiseService } from './services/admin-advertise.service';
@@ -34,7 +31,6 @@ import { PremiumModule } from '../premium/premium.module';
       { name: Admin.name, schema: AdminSchema },
       { name: User.name, schema: UserSchema },
       { name: Property.name, schema: PropertySchema },
-      { name: Seller.name, schema: SellerSchema },
       { name: Advertise.name, schema: AdvertiseSchema },
       { name: Tag.name, schema: TagSchema },
     ]),
@@ -55,7 +51,6 @@ import { PremiumModule } from '../premium/premium.module';
     AdminJwtStrategy,
     AdminUserService,
     AdminPropertyService,
-    AdminSellerService,
     AdminAdvertiseService,
     AdminStatisticService,
     AdminTagService,
@@ -64,7 +59,6 @@ import { PremiumModule } from '../premium/premium.module';
     AdminController,
     AdminUserController,
     AdminPropertyController,
-    AdminSellerController,
     AdminAdvertiseController,
     AdminStatisticController,
     AdminTagController,
@@ -73,7 +67,6 @@ import { PremiumModule } from '../premium/premium.module';
     AdminService,
     AdminUserService,
     AdminPropertyService,
-    AdminSellerService,
     AdminAdvertiseService,
     AdminStatisticService,
   ],

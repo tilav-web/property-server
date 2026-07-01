@@ -382,7 +382,7 @@ export class PremiumService implements ApprovalHandler {
         type: NotificationType.PREMIUM_GRANTED,
         title: 'Premium faollashtirildi',
         body: `Administrator sizga ${days} kunlik Premium berdi. ${newUntil.toLocaleDateString()} gacha amal qiladi.`,
-        link: '/seller',
+        link: '/dashboard',
       });
     } catch (err) {
       this.logger.warn(
@@ -451,7 +451,7 @@ export class PremiumService implements ApprovalHandler {
           type: NotificationType.PREMIUM_EXPIRED_GRACE,
           title: 'Premium muddati tugadi',
           body: `Sizda ${count} ta property bor, bepul limit ${config.freePropertyLimit}. ${GRACE_DAYS} kun ichida Premium'ni qayta yoqmasangiz, ${extras} ta eng eski property avtomatik arxivlanadi.`,
-          link: '/seller',
+          link: '/dashboard',
         });
         sent++;
       } catch (err) {
@@ -540,7 +540,7 @@ export class PremiumService implements ApprovalHandler {
           type: NotificationType.PREMIUM_EXPIRED_ARCHIVED,
           title: 'Ortiqcha e\'lonlar arxivlandi',
           body: `Premium qayta yoqilmadi. ${ids.length} ta eng eski property avtomatik arxivlandi. Premium oling va arxivdan qaytaring.`,
-          link: '/seller/properties',
+          link: '/dashboard/properties',
         });
       } catch (err) {
         this.logger.warn(

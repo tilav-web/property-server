@@ -3,7 +3,6 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Property } from 'src/modules/property/schemas/property.schema';
 import { User } from 'src/modules/user/user.schema';
-import { Seller } from 'src/modules/seller/schemas/seller.schema';
 import { Advertise } from 'src/modules/advertise/advertise.schema';
 import { EnumPropertyStatus } from 'src/modules/property/enums/property-status.enum';
 import { EnumAdvertiseStatus } from 'src/enums/advertise-status.enum';
@@ -14,7 +13,6 @@ export class AdminStatisticService {
   constructor(
     @InjectModel(Property.name) private readonly propertyModel: Model<Property>,
     @InjectModel(User.name) private readonly userModel: Model<User>,
-    @InjectModel(Seller.name) private readonly sellerModel: Model<Seller>,
     @InjectModel(Advertise.name)
     private readonly advertiseModel: Model<Advertise>,
   ) {}
@@ -26,7 +24,9 @@ export class AdminStatisticService {
       .exec();
 
     const totalUsers = await this.userModel.countDocuments().exec();
-    const totalSellers = await this.sellerModel.countDocuments().exec();
+    const verifiedUsers = await this.userModel
+      .countDocuments({ 'phone.isVerified': true })
+      .exec();
 
     const totalAdvertises = await this.advertiseModel.countDocuments().exec();
     const approvedAdvertises = await this.advertiseModel
@@ -43,7 +43,7 @@ export class AdminStatisticService {
       totalProperties,
       approvedProperties,
       totalUsers,
-      totalSellers,
+      verifiedUsers,
       totalAdvertises,
       approvedAdvertises,
       pendingAdvertises,

@@ -35,7 +35,7 @@ export class Inquiry {
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
   user: Types.ObjectId;
 
-  @Prop({ type: Types.ObjectId, ref: 'Seller', required: true })
+  @Prop({ type: Types.ObjectId, ref: 'User', required: true })
   seller: Types.ObjectId;
 
   // 🏡 Qaysi property uchun

@@ -20,7 +20,7 @@ export class InquiryResponse {
   @Prop({ type: String, required: true, maxlength: 1000 })
   description: string;
 
-  @Prop({ type: Types.ObjectId, ref: 'Seller', required: true })
+  @Prop({ type: Types.ObjectId, ref: 'User', required: true })
   seller: Types.ObjectId;
 
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })

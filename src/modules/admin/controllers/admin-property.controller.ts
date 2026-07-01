@@ -28,14 +28,14 @@ export class AdminPropertyController {
     return this.adminPropertyService.findAll(dto);
   }
 
-  @Get('/seller/:sellerId')
-  @ApiOperation({ summary: 'Sotuvchi bo‘yicha e’lonlar' })
+  @Get(‘/user/:userId’)
+  @ApiOperation({ summary: ‘Foydalanuvchi bo’yicha e’lonlar’ })
   @ApiStandardErrors({ auth: true, notFound: true })
-  async findBySeller(@Param('sellerId') sellerId: string) {
-    return this.adminPropertyService.findBySeller(sellerId);
+  async findByUser(@Param(‘userId’) userId: string) {
+    return this.adminPropertyService.findByUser(userId);
   }
 
-  @Get(':id')
+  @Get(‘:id’)
   @ApiOperation({ summary: 'E’lon tafsiloti' })
   @ApiStandardErrors({ auth: true, notFound: true })
   async findOne(@Param('id') id: string) {

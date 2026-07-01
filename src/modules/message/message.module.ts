@@ -8,7 +8,6 @@ import {
   MessageStatusSchema,
 } from './schemas/message-status.schema';
 import { Property, PropertySchema } from '../property/schemas/property.schema';
-import { Seller, SellerSchema } from '../seller/schemas/seller.schema';
 import { NotificationModule } from '../notification/notification.module';
 
 @Module({
@@ -20,7 +19,6 @@ import { NotificationModule } from '../notification/notification.module';
         name: Property.name,
         schema: PropertySchema,
       },
-      { name: Seller.name, schema: SellerSchema },
     ]),
     NotificationModule,
   ],

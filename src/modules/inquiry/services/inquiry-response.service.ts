@@ -19,10 +19,6 @@ import {
   Inquiry,
   InquiryDocument,
 } from '../schemas/inquiry.schema';
-import {
-  Seller,
-  SellerDocument,
-} from 'src/modules/seller/schemas/seller.schema';
 import { ChatService } from 'src/modules/chat/chat.service';
 import { MessageType } from 'src/modules/chat/enums/message-type.enum';
 
@@ -33,8 +29,6 @@ export class InquiryResponseService {
   constructor(
     @InjectModel(InquiryResponse.name)
     private readonly inquiryResponseModel: Model<InquiryResponseDocument>,
-    @InjectModel(Seller.name)
-    private readonly sellerModel: Model<SellerDocument>,
     @InjectModel(Inquiry.name)
     private readonly inquiryModel: Model<InquiryDocument>,
     private readonly inquiryService: InquiryService,
@@ -61,20 +55,13 @@ export class InquiryResponseService {
       throw new BadRequestException("Ushbu so'rovga allaqachon javob berilgan");
     }
 
-    const seller = await this.sellerModel.findOne({
-      user: new Types.ObjectId(userId),
-    });
-    if (!seller) {
-      throw new NotFoundException('Sotuvchi topilmadi');
-    }
-
     const response = await this.inquiryResponseModel.create({
       status: dto.status,
       description: dto.description,
       user: inquiry.user,
       inquiry: inquiry._id,
       property: inquiry.property,
-      seller: seller._id,
+      seller: new Types.ObjectId(userId),
     });
 
     const inquiryStatus =
@@ -84,7 +71,6 @@ export class InquiryResponseService {
 
     await this.inquiryService.updateStatus(String(inquiry._id), inquiryStatus);
 
-    // --- Chat'ga SYSTEM message yuborish — buyer chatda javob ko'radi ---
     try {
       const { conversation } = await this.chatService.findOrCreateConversation(
         String(inquiry.user),

@@ -10,7 +10,6 @@ import { InquiryController } from './controllers/inquiry.controller';
 import { InquiryService } from './services/inquiry.service';
 import { InquiryResponseController } from './controllers/inquiry-response.controller';
 import { InquiryResponseService } from './services/inquiry-response.service';
-import { Seller, SellerSchema } from 'src/modules/seller/schemas/seller.schema';
 import { ChatModule } from '../chat/chat.module';
 
 @Module({
@@ -19,7 +18,6 @@ import { ChatModule } from '../chat/chat.module';
       { name: Inquiry.name, schema: InquirySchema },
       { name: Property.name, schema: PropertySchema },
       { name: InquiryResponse.name, schema: InquiryResponseSchema },
-      { name: Seller.name, schema: SellerSchema },
     ]),
     ChatModule,
   ],

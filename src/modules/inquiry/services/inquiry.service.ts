@@ -300,7 +300,7 @@ export class InquiryService {
         },
         {
           $lookup: {
-            from: 'sellers',
+            from: 'users',
             localField: 'seller',
             foreignField: '_id',
             as: 'seller',
@@ -309,17 +309,6 @@ export class InquiryService {
         { $unwind: { path: '$inquiry', preserveNullAndEmptyArrays: true } },
         { $unwind: { path: '$property', preserveNullAndEmptyArrays: true } },
         { $unwind: { path: '$seller', preserveNullAndEmptyArrays: true } },
-        {
-          $lookup: {
-            from: 'users',
-            localField: 'seller.user',
-            foreignField: '_id',
-            as: 'seller_user',
-          },
-        },
-        {
-          $unwind: { path: '$seller_user', preserveNullAndEmptyArrays: true },
-        },
         { $sort: { createdAt: -1 } },
         {
           $project: {
@@ -348,12 +337,9 @@ export class InquiryService {
             },
             seller: {
               _id: '$seller._id',
-              user: {
-                _id: '$seller_user._id',
-                first_name: '$seller_user.first_name',
-                last_name: '$seller_user.last_name',
-                avatar: '$seller_user.avatar',
-              },
+              first_name: '$seller.first_name',
+              last_name: '$seller.last_name',
+              avatar: '$seller.avatar',
             },
           },
         },

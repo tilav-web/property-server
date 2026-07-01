@@ -5,10 +5,6 @@ import {
   Property,
   PropertyDocument,
 } from 'src/modules/property/schemas/property.schema';
-import {
-  Seller,
-  SellerDocument,
-} from 'src/modules/seller/schemas/seller.schema';
 import { FindPropertiesDto } from '../dto/find-properties.dto';
 import { UpdatePropertyDto } from '../dto/update-property.dto';
 import { PropertySearchCache } from 'src/modules/property/property-search.cache';
@@ -17,7 +13,6 @@ import { PropertySearchCache } from 'src/modules/property/property-search.cache'
 export class AdminPropertyService {
   constructor(
     @InjectModel(Property.name) private propertyModel: Model<PropertyDocument>,
-    @InjectModel(Seller.name) private sellerModel: Model<SellerDocument>,
     private readonly searchCache: PropertySearchCache,
   ) {}
 
@@ -74,17 +69,11 @@ export class AdminPropertyService {
     };
   }
 
-  async findBySeller(sellerId: string) {
-    const seller = await this.sellerModel.findById(sellerId);
-    if (!seller) {
-      throw new NotFoundException(`Seller with ID ${sellerId} not found`);
-    }
-
+  async findByUser(userId: string) {
     const properties = await this.propertyModel
-      .find({ author: seller.user })
+      .find({ author: userId })
       .populate('author', 'first_name last_name email phone')
       .exec();
-
     return properties;
   }
 
