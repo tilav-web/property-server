@@ -24,6 +24,8 @@ import { Like } from '../interactions/schemas/like.schema';
 import { Save } from '../interactions/schemas/save.schema';
 import { Notification } from '../notification/schemas/notification.schema';
 import { DeviceToken } from '../push/schemas/device-token.schema';
+import { Inquiry } from '../inquiry/schemas/inquiry.schema';
+import { InquiryResponse } from '../inquiry/schemas/inquiry-response.schema';
 
 const PHONE_REGEX = /^\+?\d{9,15}$/;
 
@@ -44,6 +46,8 @@ export class UserService {
     @InjectModel(Save.name) private saveModel: Model<Save>,
     @InjectModel(Notification.name) private notificationModel: Model<Notification>,
     @InjectModel(DeviceToken.name) private deviceTokenModel: Model<DeviceToken>,
+    @InjectModel(Inquiry.name) private inquiryModel: Model<Inquiry>,
+    @InjectModel(InquiryResponse.name) private inquiryResponseModel: Model<InquiryResponse>,
     private readonly jwtService: JwtService,
     private readonly otpService: OtpService,
     private readonly mailService: MailService,
@@ -787,6 +791,20 @@ export class UserService {
       }
     }
     await this.propertyModel.deleteMany({ author: userId });
+
+    // Inquiry records (both as buyer and as property owner)
+    const inquiryIds = await this.inquiryModel
+      .find({ $or: [{ user: userId }, { seller: userId }] })
+      .distinct('_id');
+    if (inquiryIds.length > 0) {
+      await this.inquiryResponseModel.deleteMany({ inquiry: { $in: inquiryIds } });
+    }
+    await this.inquiryResponseModel.deleteMany({
+      $or: [{ user: userId }, { seller: userId }],
+    });
+    await this.inquiryModel.deleteMany({
+      $or: [{ user: userId }, { seller: userId }],
+    });
 
     // User's interactions + notifications + device tokens
     await Promise.all([

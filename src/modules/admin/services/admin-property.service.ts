@@ -8,12 +8,14 @@ import {
 import { FindPropertiesDto } from '../dto/find-properties.dto';
 import { UpdatePropertyDto } from '../dto/update-property.dto';
 import { PropertySearchCache } from 'src/modules/property/property-search.cache';
+import { FileService } from 'src/modules/file/file.service';
 
 @Injectable()
 export class AdminPropertyService {
   constructor(
     @InjectModel(Property.name) private propertyModel: Model<PropertyDocument>,
     private readonly searchCache: PropertySearchCache,
+    private readonly fileService: FileService,
   ) {}
 
   async findAll(dto: FindPropertiesDto) {
@@ -113,5 +115,21 @@ export class AdminPropertyService {
     const saved = await property.save();
     this.searchCache.invalidate();
     return saved;
+  }
+
+  async delete(id: string) {
+    const property = await this.propertyModel.findById(id);
+    if (!property) {
+      throw new NotFoundException(`Property with ID ${id} not found`);
+    }
+
+    const photos: string[] = property.photos ?? [];
+    for (const photo of photos) {
+      await this.fileService.deleteFile(photo).catch(() => null);
+    }
+
+    await this.propertyModel.findByIdAndDelete(id);
+    this.searchCache.invalidate();
+    return { deleted: true, id };
   }
 }

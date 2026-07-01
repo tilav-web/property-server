@@ -19,6 +19,8 @@ import { Like, LikeSchema } from '../interactions/schemas/like.schema';
 import { Save, SaveSchema } from '../interactions/schemas/save.schema';
 import { Notification, NotificationSchema } from '../notification/schemas/notification.schema';
 import { DeviceToken, DeviceTokenSchema } from '../push/schemas/device-token.schema';
+import { Inquiry, InquirySchema } from '../inquiry/schemas/inquiry.schema';
+import { InquiryResponse, InquiryResponseSchema } from '../inquiry/schemas/inquiry-response.schema';
 
 @Module({
   imports: [
@@ -29,6 +31,8 @@ import { DeviceToken, DeviceTokenSchema } from '../push/schemas/device-token.sch
       { name: Save.name, schema: SaveSchema },
       { name: Notification.name, schema: NotificationSchema },
       { name: DeviceToken.name, schema: DeviceTokenSchema },
+      { name: Inquiry.name, schema: InquirySchema },
+      { name: InquiryResponse.name, schema: InquiryResponseSchema },
     ]),
     JwtModule.registerAsync({
       inject: [ConfigService],

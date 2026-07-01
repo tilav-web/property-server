@@ -6,6 +6,7 @@ import {
   Param,
   Body,
   Put,
+  Delete,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AdminGuard } from '../guards/admin.guard';
@@ -42,13 +43,20 @@ export class AdminPropertyController {
     return this.adminPropertyService.findOne(id);
   }
 
-  @Put(':id')
-  @ApiOperation({ summary: 'E’lonni yangilash (admin)' })
+  @Put(‘:id’)
+  @ApiOperation({ summary: ‘E’lonni yangilash (admin)’ })
   @ApiStandardErrors({ auth: true, notFound: true, validation: true })
   async update(
-    @Param('id') propertyId: string,
+    @Param(‘id’) propertyId: string,
     @Body() dto: UpdatePropertyDto,
   ) {
     return this.adminPropertyService.update(propertyId, dto);
+  }
+
+  @Delete(‘:id’)
+  @ApiOperation({ summary: "E’lonni o’chirish (admin)" })
+  @ApiStandardErrors({ auth: true, notFound: true })
+  async delete(@Param(‘id’) id: string) {
+    return this.adminPropertyService.delete(id);
   }
 }
