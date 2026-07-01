@@ -30,21 +30,21 @@ export class AdminPropertyController {
   }
 
   @Get(‘/user/:userId’)
-  @ApiOperation({ summary: ‘Foydalanuvchi bo’yicha e’lonlar’ })
+  @ApiOperation({ summary: "Foydalanuvchi bo’yicha e’lonlar" })
   @ApiStandardErrors({ auth: true, notFound: true })
   async findByUser(@Param(‘userId’) userId: string) {
     return this.adminPropertyService.findByUser(userId);
   }
 
   @Get(‘:id’)
-  @ApiOperation({ summary: 'E’lon tafsiloti' })
+  @ApiOperation({ summary: "E’lon tafsiloti" })
   @ApiStandardErrors({ auth: true, notFound: true })
-  async findOne(@Param('id') id: string) {
+  async findOne(@Param(‘id’) id: string) {
     return this.adminPropertyService.findOne(id);
   }
 
   @Put(‘:id’)
-  @ApiOperation({ summary: ‘E’lonni yangilash (admin)’ })
+  @ApiOperation({ summary: "E’lonni yangilash (admin)" })
   @ApiStandardErrors({ auth: true, notFound: true, validation: true })
   async update(
     @Param(‘id’) propertyId: string,
