@@ -24,6 +24,9 @@ import { AdminTagService } from './services/admin-tag.service';
 import { Tag, TagSchema } from '../tag/schemas/tag.schema';
 import { TagModule } from '../tag/tag.module';
 import { PremiumModule } from '../premium/premium.module';
+import { Inquiry, InquirySchema } from '../inquiry/schemas/inquiry.schema';
+import { AdminInquiryService } from './services/admin-inquiry.service';
+import { AdminInquiryController } from './controllers/admin-inquiry.controller';
 
 @Module({
   imports: [
@@ -33,6 +36,7 @@ import { PremiumModule } from '../premium/premium.module';
       { name: Property.name, schema: PropertySchema },
       { name: Advertise.name, schema: AdvertiseSchema },
       { name: Tag.name, schema: TagSchema },
+      { name: Inquiry.name, schema: InquirySchema },
     ]),
     JwtModule.registerAsync({
       inject: [ConfigService],
@@ -54,6 +58,7 @@ import { PremiumModule } from '../premium/premium.module';
     AdminAdvertiseService,
     AdminStatisticService,
     AdminTagService,
+    AdminInquiryService,
   ],
   controllers: [
     AdminController,
@@ -62,6 +67,7 @@ import { PremiumModule } from '../premium/premium.module';
     AdminAdvertiseController,
     AdminStatisticController,
     AdminTagController,
+    AdminInquiryController,
   ],
   exports: [
     AdminService,
