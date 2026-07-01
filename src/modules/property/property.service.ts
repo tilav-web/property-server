@@ -21,7 +21,6 @@ import { FindAllPropertiesDto } from './dto/find-all-properties.dto';
 import { MessageService } from '../message/message.service';
 import { CreateMessageDto } from '../message/dto/create-message.dto';
 import { EnumPropertyStatus } from './enums/property-status.enum';
-import { Seller, SellerDocument } from '../seller/schemas/seller.schema';
 import { User, UserDocument } from '../user/user.schema';
 import { TagService } from '../tag/tag.service';
 import { EnumFilesFolder } from '../file/enums/files-folder.enum';
@@ -82,8 +81,6 @@ export class PropertyService {
     private readonly hovliSaleModel: Model<PropertyDocument>,
     @InjectModel(EnumPropertyCategory.HOVLI_RENT)
     private readonly hovliRentModel: Model<PropertyDocument>,
-    @InjectModel(Seller.name)
-    private readonly sellerModel: Model<SellerDocument>,
     @InjectModel(User.name)
     private readonly userModel: Model<UserDocument>,
     private readonly fileService: FileService,
@@ -1102,17 +1099,9 @@ export class PropertyService {
       throw new NotFoundException('Property not found!');
     }
 
-    const seller = await this.sellerModel
-      .findOne({ user: property.author._id })
-      .lean()
-      .exec();
-
     return {
       ...property,
-      author: {
-        ...property.author,
-        seller,
-      },
+      author: property.author,
       title: property.title[language ?? 'en'] ?? property.title.en,
       description:
         property.description[language ?? 'en'] ?? property.description.en,

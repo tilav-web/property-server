@@ -21,4 +21,16 @@ export class UpdateUserDto {
   @IsEnum(EnumLanguage)
   @IsOptional()
   lan?: EnumLanguage;
+
+  @IsString()
+  @IsOptional()
+  instagram?: string;
+
+  @IsString()
+  @IsOptional()
+  telegram?: string;
+
+  @IsString()
+  @IsOptional()
+  whatsapp?: string;
 }

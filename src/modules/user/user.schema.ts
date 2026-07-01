@@ -93,6 +93,15 @@ export class User {
   /** @deprecated premiumUntil bilan birlashtirilgan. Migration uchun saqlangan. */
   @Prop({ type: Date, default: null })
   voicePremiumUntil?: Date | null;
+
+  @Prop({ type: String, default: null })
+  instagram?: string | null;
+
+  @Prop({ type: String, default: null })
+  telegram?: string | null;
+
+  @Prop({ type: String, default: null })
+  whatsapp?: string | null;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

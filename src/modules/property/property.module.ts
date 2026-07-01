@@ -18,7 +18,6 @@ import { HovliSaleSchema } from './schemas/categories/hovli-sale.schema';
 import { HovliRentSchema } from './schemas/categories/hovli-rent.schema';
 import { Property, PropertySchema } from './schemas/property.schema';
 import { EnumPropertyCategory } from './enums/property-category.enum';
-import { Seller, SellerSchema } from '../seller/schemas/seller.schema';
 import { User, UserSchema } from '../user/user.schema';
 
 import { GenaiModule } from '../openai/openai.module';
@@ -47,7 +46,6 @@ import { PropertyViewModule } from '../property-view/property-view.module';
       },
       { name: Like.name, schema: LikeSchema },
       { name: Save.name, schema: SaveSchema },
-      { name: Seller.name, schema: SellerSchema },
       { name: User.name, schema: UserSchema },
     ]),
     FileModule,

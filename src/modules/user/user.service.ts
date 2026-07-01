@@ -664,6 +664,9 @@ export class UserService {
     avatar,
     user,
     lan,
+    instagram,
+    telegram,
+    whatsapp,
   }: UpdateUserDto & { user: string; avatar?: Express.Multer.File }) {
     const userData = await this.model.findById(user);
     if (!userData) throw new BadRequestException("Tizimdan ro'yhatdan o'ting");
@@ -682,6 +685,9 @@ export class UserService {
     if (last_name) userData.last_name = last_name;
     if (lan) userData.lan = lan;
     if (phone) userData.phone.value = phone;
+    if (instagram !== undefined) userData.instagram = instagram || null;
+    if (telegram !== undefined) userData.telegram = telegram || null;
+    if (whatsapp !== undefined) userData.whatsapp = whatsapp || null;
 
     if (password) {
       const hashPassword = await bcrypt.hash(password, 10);
@@ -705,11 +711,14 @@ export class UserService {
 
     const existing = await this.model.findOne({
       'phone.value': normalized,
-      'phone.isVerified': true,
       _id: { $ne: userId },
     });
     if (existing) {
-      throw new ConflictException('Bu telefon boshqa foydalanuvchiga bog\'liq!');
+      throw new ConflictException(
+        existing.phone.isVerified
+          ? 'Bu telefon boshqa foydalanuvchiga bog\'liq!'
+          : "Bu telefon raqami ro'yxatdan o'tish jarayonida. Bir ozdan so'ng qayta urinib ko'ring.",
+      );
     }
 
     const user = await this.model.findById(userId);
