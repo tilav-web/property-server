@@ -97,6 +97,8 @@ export class CreatePropertyDto {
   heating?: EnumHeating;
 
   @IsOptional()
+  // Multipart'da bitta qiymat string bo'lib keladi — arrayga o'raymiz
+  @Transform(({ value }) => (typeof value === 'string' ? [value] : value))
   @IsArray()
   @IsEnum(EnumAmenities, { each: true })
   amenities?: EnumAmenities[];
@@ -132,6 +134,8 @@ export class CreatePropertyDto {
   contract_duration_months?: number;
 
   @IsOptional()
+  // Multipart'da bitta qiymat string bo'lib keladi — arrayga o'raymiz
+  @Transform(({ value }) => (typeof value === 'string' ? [value] : value))
   @IsArray()
   @IsEnum(EnumRentalTarget, { each: true })
   rental_target?: EnumRentalTarget[];
