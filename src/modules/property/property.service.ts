@@ -36,6 +36,8 @@ import { HovliSaleDocument } from './schemas/categories/hovli-sale.schema';
 import { HovliRentDocument } from './schemas/categories/hovli-rent.schema';
 import { PropertySearchCache } from './property-search.cache';
 import { ExchangeRateService } from '../exchange-rate/exchange-rate.service';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import type { PropertyCreatedEvent } from '../telegram/telegram-admin.service';
 
 type CurrencyRateMap = Partial<Record<CurrencyCode, number>>;
 
@@ -89,6 +91,7 @@ export class PropertyService {
     private readonly tagService: TagService,
     private readonly searchCache: PropertySearchCache,
     private readonly exchangeRateService: ExchangeRateService,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   async onModuleInit() {
@@ -123,7 +126,9 @@ export class PropertyService {
       throw new BadRequestException('Log back in system!');
     }
 
-    const authorUser = await this.userModel.findById(author).select('phone');
+    const authorUser = await this.userModel
+      .findById(author)
+      .select('phone first_name last_name');
     if (!authorUser?.phone?.isVerified) {
       throw new ForbiddenException('phone_not_verified');
     }
@@ -236,6 +241,25 @@ export class PropertyService {
       }
 
       this.searchCache.invalidate();
+
+      // Super admin Telegram xabarnomasi (telegram-admin.service tinglaydi).
+      // Listener xatosi create oqimiga ta'sir qilmaydi.
+      this.eventEmitter.emit('property.created', {
+        propertyId: String(property._id),
+        category,
+        title: translations.title?.uz ?? dto.title,
+        address: translations.address?.uz ?? dto.address,
+        price: dto.price !== undefined ? Number(dto.price) : undefined,
+        currency: dto.currency,
+        bedrooms: bedrooms || undefined,
+        photos,
+        authorName:
+          [authorUser.first_name, authorUser.last_name]
+            .filter(Boolean)
+            .join(' ') || undefined,
+        authorPhone: authorUser.phone?.value ?? undefined,
+      } satisfies PropertyCreatedEvent);
+
       return property;
     } catch (error) {
       await Promise.allSettled(

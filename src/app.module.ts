@@ -36,6 +36,7 @@ import { ExpireCronModule } from './modules/expire-cron/expire-cron.module';
 import { HealthModule } from './modules/health/health.module';
 import { PushModule } from './modules/push/push.module';
 import { AppVersionModule } from './modules/app-version/app-version.module';
+import { TelegramAdminModule } from './modules/telegram/telegram-admin.module';
 
 @Module({
   imports: [
@@ -92,6 +93,7 @@ import { AppVersionModule } from './modules/app-version/app-version.module';
     HealthModule,
     PushModule,
     AppVersionModule,
+    TelegramAdminModule,
   ],
   providers: [
     {
