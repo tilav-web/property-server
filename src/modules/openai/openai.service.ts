@@ -108,7 +108,13 @@ export class OpenaiService implements OnModuleInit {
     } catch (err: unknown) {
       if (retries <= 0) throw err;
 
-      const error = err as { status?: number; message?: string };
+      const error = err as { status?: number; code?: string; message?: string };
+
+      // 429 ikki xil bo'ladi: rate limit (vaqtinchalik — retry foydali) va
+      // insufficient_quota (billing tugagan — retry befoyda, darhol tashlaymiz).
+      if (error?.code === 'insufficient_quota') {
+        throw err;
+      }
 
       // 4xx xatoliklar (429 dan tashqari) qayta urinishda o'zgarmaydi —
       // darhol tashlaymiz, keraksiz kutishni oldini olamiz.
@@ -133,7 +139,24 @@ export class OpenaiService implements OnModuleInit {
     }
   }
 
+  // Tarjima — best-effort: OpenAI ishlamasa (quota, tarmoq, 5xx) property
+  // yaratish yiqilmasligi kerak — asl matnlar bilan fallback qaytaramiz.
   async translateTexts(
+    texts: Record<string, string>,
+  ): Promise<[string[], Record<string, TranslationResponse>]> {
+    try {
+      return await this.translateTextsOrThrow(texts);
+    } catch (err) {
+      this.logger.error(
+        `translateTexts failed, falling back to original texts: ${
+          err instanceof Error ? err.message : String(err)
+        }`,
+      );
+      return this.createFallbackResponse(texts);
+    }
+  }
+
+  private async translateTextsOrThrow(
     texts: Record<string, string>,
   ): Promise<[string[], Record<string, TranslationResponse>]> {
     return this.queueRequest(() =>
