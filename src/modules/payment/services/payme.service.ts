@@ -4,6 +4,7 @@ import { Model, Types } from 'mongoose';
 import { NotificationService } from 'src/modules/notification/notification.service';
 import { NotificationType } from 'src/modules/notification/enums/notification-type.enum';
 import { SiteSettingsService } from 'src/modules/site-settings/site-settings.service';
+import { CountryConfigService } from 'src/common/config/country.config';
 import { OrderTypeEnum } from 'src/enums/order-type.enum';
 import { AdminApprovalStatusEnum } from 'src/enums/admin-approval-status.enum';
 import { PaymentProviderEnum } from 'src/enums/payment-provider.enum';
@@ -59,6 +60,7 @@ export class PaymeService {
     private readonly transactionModel: Model<TransactionDocument>,
     private readonly notificationService: NotificationService,
     private readonly siteSettings: SiteSettingsService,
+    private readonly countryConfig: CountryConfigService,
   ) {}
 
   async handleRequest(body: unknown): Promise<PaymeRpcResponse> {
@@ -755,25 +757,26 @@ export class PaymeService {
     //   10305008004000000 — Dasturiy ta'minotda reklama joylashtirish
     //                        (ADVERTISE)
     //   1546532 / 1546606 — "xizmat (so'm)" o'lchov birligi
+    const brand = this.countryConfig.brandName;
     switch (tx.orderType) {
       case OrderTypeEnum.PREMIUM:
       case OrderTypeEnum.VOICE_PREMIUM: // legacy
-        title = 'Amaar Properties — Premium obuna';
+        title = `${brand} — Premium obuna`;
         code = s.premium_mxik || '10305008003000000';
         packageCode = s.premium_package_code || '1546532';
         break;
       case OrderTypeEnum.PROPERTY_PREMIUM:
-        title = "Amaar Properties — E'lonni TOP'ga chiqarish";
+        title = `${brand} — E'lonni TOP'ga chiqarish`;
         code = s.property_premium_mxik || '10305008003000000';
         packageCode = s.property_premium_package_code || '1546532';
         break;
       case OrderTypeEnum.ADVERTISE:
-        title = 'Amaar Properties — Reklama xizmati';
+        title = `${brand} — Reklama xizmati`;
         code = s.advertise_mxik || '10305008004000000';
         packageCode = s.advertise_package_code || '1546606';
         break;
       default:
-        title = `Amaar Properties — ${tx.orderType}`;
+        title = `${brand} — ${tx.orderType}`;
         code = s.premium_mxik || '10305008003000000';
         packageCode = s.premium_package_code || '1546532';
     }

@@ -21,14 +21,18 @@ import { EnumLanguage } from 'src/enums/language.enum';
 import { CountryConfigService } from 'src/common/config/country.config';
 
 // Country-aware AI prompt - mamlakat va valyuta CountryConfigService'dan
-function buildAiSystemPrompt(country: 'UZ' | 'MY', currency: string): string {
+function buildAiSystemPrompt(
+  country: 'UZ' | 'MY',
+  currency: string,
+  brand: string,
+): string {
   const market = country === 'UZ' ? "O'zbekiston" : 'Malaysia';
   const exampleCity = country === 'UZ' ? 'Toshkentda' : 'KLda';
   const exampleArea = country === 'UZ' ? 'Samarqandda' : 'Selangorda';
   const examplePrice =
     country === 'UZ' ? '500 mln so\'mgacha' : '5 lakhgacha';
 
-  return `Sen Amaar Properties platformasining AI yordamchisisan.
+  return `Sen ${brand} platformasining AI yordamchisisan.
 Platforma ${market} ko'chmas mulk bozori uchun ishlaydi (sotib olish, ijara, ipoteka).
 Asosiy valyuta: ${currency}.
 
@@ -519,6 +523,7 @@ export class AiChatService {
     const system = `${buildAiSystemPrompt(
       this.countryConfig.country,
       this.countryConfig.defaultCurrency,
+      this.countryConfig.brandName,
     )}
 
 ${VOICE_CORRECTION_SYSTEM}
@@ -689,7 +694,7 @@ ${VOICE_UNIFIED_RESPONSE_FORMAT}`;
         conversationId,
         senderId: aiUserId,
         type: MessageType.TEXT,
-        body: `Salom! Men Amaar Properties AI yordamchisiman 🤖\n\nHozircha asosan ${this.marketName} ko'chmas mulki bo'yicha yordam beraman.\n\nMulk qidirish uchun oddiy tilda yozing:\n${examples}\n\nYoki platforma haqida savol bering.`,
+        body: `Salom! Men ${this.countryConfig.brandName} AI yordamchisiman 🤖\n\nHozircha asosan ${this.marketName} ko'chmas mulki bo'yicha yordam beraman.\n\nMulk qidirish uchun oddiy tilda yozing:\n${examples}\n\nYoki platforma haqida savol bering.`,
       });
     } catch (err) {
       this.logger.warn(`AI welcome failed: ${String(err)}`);
@@ -709,6 +714,7 @@ ${VOICE_UNIFIED_RESPONSE_FORMAT}`;
     const system = `${buildAiSystemPrompt(
       this.countryConfig.country,
       this.countryConfig.defaultCurrency,
+      this.countryConfig.brandName,
     )}\n\n${RESPONSE_SCHEMA_PROMPT}`;
 
     const user = `Suhbat:\n${conversationText}\n\nOxirgi User xabariga javob bering.`;

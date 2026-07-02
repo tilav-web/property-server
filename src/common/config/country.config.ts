@@ -32,6 +32,7 @@ const COUNTRY_DEFAULTS: Record<
     mapCenter: [number, number];
     mapZoom: number;
     smsProvider: SmsProvider;
+    brandName: string;
   }
 > = {
   UZ: {
@@ -41,6 +42,8 @@ const COUNTRY_DEFAULTS: Record<
     mapCenter: [41.2995, 69.2401], // Toshkent
     mapZoom: 12,
     smsProvider: 'eskiz',
+    // UZ deploy uybos.uz brendi bilan ishlaydi — AI va user matnlarida shu nom
+    brandName: 'Uybos',
   },
   MY: {
     currency: CurrencyCode.MYR,
@@ -50,6 +53,7 @@ const COUNTRY_DEFAULTS: Record<
     mapZoom: 12,
     // Malaysia uchun SMS yo'q — auth flow: Google OAuth + email/parol
     smsProvider: 'none',
+    brandName: 'Amaar Properties',
   },
 };
 
@@ -66,6 +70,8 @@ export class CountryConfigService {
   readonly smsProvider: SmsProvider;
   /** SMS yoqilganmi (provider !== 'none'). UI/flow shartlarini qisqartirish uchun. */
   readonly smsEnabled: boolean;
+  /** Platforma brendi — AI va foydalanuvchiga ko'rinadigan matnlar uchun (ENV: BRAND_NAME) */
+  readonly brandName: string;
   readonly advertiseDailyPrice: number;
   readonly advertiseCurrency: CurrencyCode;
 
@@ -98,6 +104,8 @@ export class CountryConfigService {
       defaults.smsProvider,
     );
     this.smsEnabled = this.smsProvider !== 'none';
+    this.brandName =
+      this.config.get<string>('BRAND_NAME')?.trim() || defaults.brandName;
     this.advertiseDailyPrice = this.resolveAdvertiseDailyPrice(
       config.get<string>('ADVERTISE_DAILY_PRICE'),
     );
