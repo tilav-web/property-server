@@ -1,5 +1,6 @@
 import { Injectable, Logger, Optional } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Model, Types } from 'mongoose';
 import {
   Notification,
@@ -41,6 +42,7 @@ export class NotificationService {
     private readonly broadcastModel: Model<BroadcastNotificationDocument>,
     @InjectModel(User.name)
     private readonly userModel: Model<UserDocument>,
+    private readonly eventEmitter: EventEmitter2,
     @Optional()
     private readonly adminGateway?: AdminNotificationGateway,
     @Optional()
@@ -119,6 +121,14 @@ export class NotificationService {
         payload: input.payload,
       });
     }
+
+    // Telegram mirror — barcha admin xabarnomalari botga ham boradi
+    // (telegram-admin.service tinglaydi, sozlanmagan bo'lsa jim o'tadi)
+    this.eventEmitter.emit('admin.notification.created', {
+      title: input.title,
+      body: input.body,
+      link: input.link,
+    });
 
     return docs.length;
   }

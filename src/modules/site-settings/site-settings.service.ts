@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { SiteSettings, SiteSettingsDocument } from './site-settings.schema';
 import { FileService } from '../file/file.service';
 import { EnumFilesFolder } from '../file/enums/files-folder.enum';
@@ -28,6 +29,8 @@ interface UpdatePayload {
   advertise_mxik?: string;
   advertise_package_code?: string;
   vat_percent?: number;
+  telegram_bot_token?: string;
+  telegram_admin_chat_ids?: string[];
 }
 
 type HeroSlot = 'main' | 'buy' | 'rent';
@@ -52,6 +55,7 @@ export class SiteSettingsService {
     @InjectModel(SiteSettings.name)
     private readonly model: Model<SiteSettingsDocument>,
     private readonly fileService: FileService,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   /** Singleton — bitta hujjat bo'ladi. Yo'q bo'lsa yaratadi. */
@@ -191,6 +195,19 @@ export class SiteSettingsService {
       settings.vat_percent = dto.vat_percent;
     }
 
+    // Telegram admin bot
+    let telegramChanged = false;
+    if (dto.telegram_bot_token !== undefined) {
+      const next = dto.telegram_bot_token.trim() || null;
+      if (next !== settings.telegram_bot_token) telegramChanged = true;
+      settings.telegram_bot_token = next;
+    }
+    if (dto.telegram_admin_chat_ids !== undefined) {
+      settings.telegram_admin_chat_ids = dto.telegram_admin_chat_ids
+        .map((id) => id.trim())
+        .filter(Boolean);
+    }
+
     await this.replaceFile(settings, 'hero_image', files?.hero_image?.[0]);
     await this.replaceFile(
       settings,
@@ -208,7 +225,15 @@ export class SiteSettingsService {
       files?.qr_code_image?.[0],
     );
 
-    return settings.save();
+    const saved = await settings.save();
+
+    // Token o'zgargan bo'lsa Telegram webhook qayta ro'yxatdan o'tkaziladi
+    // (telegram-admin.service tinglaydi)
+    if (telegramChanged) {
+      this.eventEmitter.emit('telegram.settings.updated');
+    }
+
+    return saved;
   }
 
   async clearHeroImage(slot: HeroSlot) {

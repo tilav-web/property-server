@@ -33,6 +33,20 @@ export class SiteSettingsController {
   @Get()
   @ApiOperation({ summary: 'Site settings (public)' })
   async getPublic() {
+    // Telegram bot token va chat ID'lar maxfiy — public javobdan olib tashlanadi
+    const doc = await this.service.get();
+    const obj = doc.toObject() as Record<string, unknown>;
+    delete obj.telegram_bot_token;
+    delete obj.telegram_admin_chat_ids;
+    return obj;
+  }
+
+  @UseGuards(AdminGuard)
+  @Get('admin')
+  @ApiOperation({ summary: 'Site settings (admin, to‘liq — telegram bilan)' })
+  @ApiBearerAuth('bearer')
+  @ApiStandardErrors({ auth: true })
+  async getForAdmin() {
     return this.service.get();
   }
 

@@ -161,6 +161,22 @@ export class SiteSettings {
    */
   @Prop({ type: Number, default: 12, min: 0, max: 30 })
   vat_percent: number;
+
+  // ============================================================================
+  // Telegram admin bot (super admin xabarnomalari)
+  // ----------------------------------------------------------------------------
+  // Token va chat ID'lar admin paneldan kiritiladi. DIQQAT: bu maydonlar
+  // public GET /site-settings javobidan olib tashlanadi (controller sanitize
+  // qiladi) — faqat GET /site-settings/admin to'liq qaytaradi.
+  // ============================================================================
+
+  /** BotFather'dan olingan bot token. */
+  @Prop({ type: String, default: null })
+  telegram_bot_token?: string | null;
+
+  /** Xabar boradigan admin chat ID'lari. */
+  @Prop({ type: [String], default: [] })
+  telegram_admin_chat_ids: string[];
 }
 
 export const SiteSettingsSchema = SchemaFactory.createForClass(SiteSettings);

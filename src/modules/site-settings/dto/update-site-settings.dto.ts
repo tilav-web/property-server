@@ -164,4 +164,22 @@ export class UpdateSiteSettingsDto {
   @IsNumber()
   @IsOptional()
   default_map_lng?: number;
+
+  // Telegram admin bot
+  @ApiPropertyOptional({ description: 'Telegram bot token (BotFather). Bo\'sh string = o\'chirish.' })
+  @IsString()
+  @IsOptional()
+  telegram_bot_token?: string;
+
+  @ApiPropertyOptional({ description: "Admin chat ID'lari (JSON array string yoki array)", example: '["123456789"]' })
+  @Transform(({ value }) => {
+    if (typeof value === 'string') {
+      try { return JSON.parse(value); } catch { return []; }
+    }
+    return Array.isArray(value) ? value : [];
+  })
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  telegram_admin_chat_ids?: string[];
 }
