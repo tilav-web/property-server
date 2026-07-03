@@ -2,6 +2,7 @@ import {
   IsArray,
   IsBoolean,
   IsEnum,
+  IsNotEmpty,
   IsNumber,
   IsOptional,
   IsString,
@@ -27,16 +28,30 @@ import { EnumLandType } from '../enums/land-type.enum';
  */
 export class CreatePropertyDto {
   // ---- Umumiy, majburiy ----
+  // Bo'sh yoki faqat probeldan iborat qiymat Mongoose'da tushunarsiz
+  // "Path `uz` is required" xatosiga olib keladi — shuning uchun trim + IsNotEmpty.
   @ApiProperty({ example: '3-room apartment in Mont Kiara' })
+  @Transform(({ value }) =>
+    typeof value === 'string' ? value.trim() : (value as unknown),
+  )
   @IsString({ message: 'Sarlavha kiritilmagan!' })
+  @IsNotEmpty({ message: 'Sarlavha kiritilmagan!' })
   title: string;
 
   @ApiProperty({ example: 'Fully furnished apartment near MRT and shops.' })
+  @Transform(({ value }) =>
+    typeof value === 'string' ? value.trim() : (value as unknown),
+  )
   @IsString({ message: 'Tavsif kiritilmagan!' })
+  @IsNotEmpty({ message: 'Tavsif kiritilmagan!' })
   description: string;
 
   @ApiProperty({ example: 'Mont Kiara, Kuala Lumpur' })
+  @Transform(({ value }) =>
+    typeof value === 'string' ? value.trim() : (value as unknown),
+  )
   @IsString({ message: 'Manzil kiritilmagan!' })
+  @IsNotEmpty({ message: 'Manzil kiritilmagan!' })
   address: string;
 
   @ApiProperty({ example: 3.139 })
