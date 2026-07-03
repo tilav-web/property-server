@@ -349,7 +349,7 @@ export class PaymeService {
         type: NotificationType.PAYMENT_AWAITING_APPROVAL,
         title: 'Yangi to‘lov tasdiqlash uchun keldi',
         body: `${orderTypeLabel}: ${tx.amount} ${tx.currency} — tasdiqlash kutilmoqda`,
-        link: `/admins/payments?status=AWAITING`,
+        link: `/admin/payments`,
         payload: {
           transactionId: String(tx._id),
           orderType: tx.orderType,
