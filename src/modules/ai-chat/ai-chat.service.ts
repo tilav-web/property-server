@@ -18,6 +18,7 @@ import {
 import { UserService } from '../user/user.service';
 import { AiPropertyService } from '../ai-property/ai-property.service';
 import { EnumLanguage } from 'src/enums/language.enum';
+import { EnumAmenities } from 'src/enums/amenities.enum';
 import { CountryConfigService } from 'src/common/config/country.config';
 
 // Country-aware AI prompt - mamlakat va valyuta CountryConfigService'dan
@@ -29,39 +30,33 @@ function buildAiSystemPrompt(
   const market = country === 'UZ' ? "O'zbekiston" : 'Malaysia';
   const exampleCity = country === 'UZ' ? 'Toshkentda' : 'KLda';
   const exampleArea = country === 'UZ' ? 'Samarqandda' : 'Selangorda';
-  const examplePrice =
-    country === 'UZ' ? '500 mln so\'mgacha' : '5 lakhgacha';
+  const examplePrice = country === 'UZ' ? "500 mln so'mgacha" : '5 lakhgacha';
 
   return `Sen ${brand} platformasining AI yordamchisisan.
 Platforma ${market} ko'chmas mulk bozori uchun ishlaydi (sotib olish, ijara, ipoteka).
 Asosiy valyuta: ${currency}.
 
 Vazifang:
-- Foydalanuvchi yozgan xabarni tahlil qilish
-- Agar foydalanuvchi mulk qidirayotgan bo'lsa (shahar, xonalar, narx, kategoriya va h.k. bo'yicha) — searchQuery'ni aniqlab qaytar
-- Har doim qisqa va foydali reply (3-5 gap) qaytar
+- Foydalanuvchi xabaridan mulk qidiruv kalit so'zlarini ajratish (shahar, xona soni, narx, tur, ijara/sotish)
+- Bor kalit so'zlar bilan DARHOL qidiruv qilish uchun extracted'ni to'ldirish
 
-MUHIM qoidalar:
-- reply foydalanuvchi tilida bo'lsin (uz/ru/en/ms — yozuvidan aniqla)
-- Agar qidiruv bo'lsa: "Mana men siz uchun topgan variantlar:" kabi tez kirish gapi bilan reply ber
-- Agar savol bo'lsa (umumiy): to'g'ridan-to'g'ri javob ber, searchQuery bo'sh bo'lsin
-- Shaxsiy ma'lumot so'rama
-- isSearch=true bo'lishi uchun foydalanuvchi aniq mulk izlayotgan bo'lishi kerak ("${exampleCity} 2 xonali", "${exampleArea} ijara", "${examplePrice} kvartira", "pool bilan")
-- Salomlashish, umumiy savollar, ma'lumot so'rash uchun isSearch=false`;
+ENG MUHIM QOIDA — HECH QACHON QO'SHIMCHA MA'LUMOT TALAB QILMA:
+- "To'liq ma'lumot bering", "aniqroq yozing", "qaysi shahar?", "yana nimadir qo'shing" kabi javoblar TAQIQLANGAN
+- BITTA kalit so'z ham qidiruv uchun yetarli: "3 xonali kvartira kerak" → isSearch=true, bedrooms=3
+- "2 milliongacha kvartira" → isSearch=true, maxPrice=2000000 — shahar so'ramasdan darhol qidir
+- Yetishmagan ma'lumotni so'rab o'tirmaslik — bor narsa bilan qidiruv, xolos
+
+isSearch qoidalari:
+- Mulkka oid HAR QANDAY belgi bo'lsa isSearch=true: joy ("${exampleCity}"), xona ("2 xonali"), narx ("${examplePrice}"), tur ("kvartira", "hovli", "${exampleArea} ijara"), "ko'rsat/top/qidir/boshqa/arzonroq/kattaroq"
+- isSearch=false FAQAT: salomlashish, platforma haqida savol, mulkka aloqasi yo'q umumiy suhbat
+- reply faqat isSearch=false holda yoziladi va foydalanuvchi tilida bo'lsin (uz/ru/en/ms — yozuvidan aniqla)
+- Shaxsiy ma'lumot so'rama`;
 }
 
-const RESPONSE_SCHEMA_PROMPT = `Natija STRICTLY quyidagi JSON shaklida bo'lsin:
-{
-  "reply": "foydalanuvchiga qisqa javob (faqat qidiruv BO'LMAGAN holda: savol javobi yoki salomlashish)",
-  "isSearch": true yoki false,
-  "searchQuery": "agar isSearch=true bo'lsa, mulk qidiruv so'rovi (qisqa, aniq: 'Toshkent 2 xonali ijara')" yoki "",
-  "correctedQuery": "agar isSearch=true bo'lsa, user so'rovini to'liq tushunilgan ko'rinishi (masalan: 'Qarshi shahridan uch xonali kvartira kerak')" yoki ""
-}`;
-
-// Voice transkripsiya xatolarini tuzatish uchun system prompt qo'shimchasi
-const VOICE_CORRECTION_SYSTEM = `
-VOICE TRANSKRIPSIYA TUZATISH:
-User xabari ovozdan transkript qilingan — nutq tanish xatolari bo'lishi mumkin.
+// Yozuv/transkripsiya xatolarini tuzatish uchun system prompt qo'shimchasi
+const CORRECTION_SYSTEM = `
+XATOLARNI TUZATISH:
+User xabari xato yozilgan yoki ovozdan xato transkript qilingan bo'lishi mumkin.
 USER NIMA DEMOQCHI EKANLIGINI tushunish muhim, asl matnni emas.
 
 Keng tarqalgan xatolar:
@@ -82,24 +77,24 @@ Misol: "xarshi shaxridan ich xonali kvartera" → correctedQuery: "Qarshi shahri
 
 // Shahar nomlari va ularning rus/ingliz variantlari — cross-language qidiruv uchun
 const CITY_ALIASES: Record<string, string[]> = {
-  'Qarshi':    ['Qarshi', 'Карши'],
-  'Toshkent':  ['Toshkent', 'Ташкент', 'Tashkent'],
-  'Samarqand': ['Samarqand', 'Самарканд', 'Samarkand'],
-  'Namangan':  ['Namangan', 'Наманган'],
-  'Buxoro':    ['Buxoro', 'Бухара', 'Bukhara'],
-  'Andijon':   ['Andijon', 'Андижан', 'Andijan'],
-  'Fargona':   ["Farg'ona", 'Фергана', 'Fergana'],
-  'Jizzax':    ['Jizzax', 'Джизак'],
-  'Navoiy':    ['Navoiy', 'Навои'],
-  'Nukus':     ['Nukus', 'Нукус'],
-  'Termiz':    ['Termiz', 'Термез'],
-  'Guliston':  ['Guliston', 'Гулистан'],
-  'Sirdaryo':  ['Sirdaryo', 'Сырдарья'],
+  Qarshi: ['Qarshi', 'Карши'],
+  Toshkent: ['Toshkent', 'Ташкент', 'Tashkent'],
+  Samarqand: ['Samarqand', 'Самарканд', 'Samarkand'],
+  Namangan: ['Namangan', 'Наманган'],
+  Buxoro: ['Buxoro', 'Бухара', 'Bukhara'],
+  Andijon: ['Andijon', 'Андижан', 'Andijan'],
+  Fargona: ["Farg'ona", 'Фергана', 'Fergana'],
+  Jizzax: ['Jizzax', 'Джизак'],
+  Navoiy: ['Navoiy', 'Навои'],
+  Nukus: ['Nukus', 'Нукус'],
+  Termiz: ['Termiz', 'Термез'],
+  Guliston: ['Guliston', 'Гулистан'],
+  Sirdaryo: ['Sirdaryo', 'Сырдарья'],
 };
 
-const VOICE_UNIFIED_RESPONSE_FORMAT = `JAVOB FORMAT - STRICTLY JSON:
+const UNIFIED_RESPONSE_FORMAT = `JAVOB FORMAT - STRICTLY JSON:
 {
-  "correctedQuery": "user so'rovining to'g'rilangan varianti (masalan: Qarshi 3 xonali kvartira ijaraga)",
+  "correctedQuery": "user so'rovining to'g'rilangan, jamlangan varianti (masalan: Qarshi 3 xonali kvartira ijaraga)",
   "isSearch": true yoki false,
   "reply": "faqat isSearch=false holda qisqa matn, aks holda bo'sh string",
   "extracted": {
@@ -109,11 +104,27 @@ const VOICE_UNIFIED_RESPONSE_FORMAT = `JAVOB FORMAT - STRICTLY JSON:
     "dealType": "ijara" yoki "sotish" yoki null,
     "minPrice": null,
     "maxPrice": null,
-    "currency": null
+    "currency": null,
+    "furnished": true/false/null,
+    "amenities": ["POOL"] kabi ro'yxat yoki null
   }
 }
-MUHIM: extracted da faqat user ANIQ AYTGAN narsalar bo'lsin. Taxmin qilma — aytmagan bo'lsa null.
-Misol: "Qarshi 3 xonali" → city:"Qarshi", bedrooms:3, dealType:null, propertyType:null`;
+MUHIM: extracted da faqat user AYTGAN narsalar bo'lsin. Taxmin qilma — aytmagan bo'lsa null.
+amenities faqat shu qiymatlardan: "pool", "balcony", "security", "air_conditioning", "parking", "elevator" (basseyn→pool, balkon→balcony, konditsioner→air_conditioning, avtoturargoh/parkovka→parking, lift→elevator).
+Misol: "Qarshi 3 xonali" → city:"Qarshi", bedrooms:3, dealType:null, propertyType:null
+
+XOTIRA VA MERGE QOIDASI (juda muhim):
+- extracted — faqat oxirgi xabardan EMAS, BUTUN suhbatdan JAMLANGAN holat
+- Oldingi xabarlarda aytilgan kriteriylar (shahar, xona, narx, tur) SAQLANADI
+- Yangi xabar oldingi qiymatga zid bo'lsa — YANGISI olinadi ("aslida 3 xonali" → bedrooms=3)
+- User mavzuni butunlay o'zgartirsa (masalan endi boshqa turdagi mulk so'rasa) — eski mos kelmaydigan kriteriylarni tashla
+- correctedQuery ham jamlangan holatni aks ettirsin
+
+Misol (xotira):
+User: "menga 2 xonali kvartira kerak" → extracted: {bedrooms:2, propertyType:"kvartira"}
+Assistant: (natijalar)
+User: "qarshi shahridan" → extracted: {city:"Qarshi", bedrooms:2, propertyType:"kvartira"} ← oldingilari SAQLANDI
+User: "3 xonalisi ham bo'ladi" → extracted: {city:"Qarshi", bedrooms:3, propertyType:"kvartira"}`;
 
 const HISTORY_LIMIT = 12;
 const SEARCH_RESULT_LIMIT = 5;
@@ -129,13 +140,6 @@ const VOICE_LANG_MAP: Record<string, EnumLanguage> = {
   en: EnumLanguage.EN,
 };
 
-interface ClassifiedReply {
-  reply: string;
-  isSearch: boolean;
-  searchQuery: string;
-  correctedQuery: string;
-}
-
 interface ExtractedCriteria {
   city?: string | null;
   bedrooms?: number | null;
@@ -144,9 +148,11 @@ interface ExtractedCriteria {
   minPrice?: number | null;
   maxPrice?: number | null;
   currency?: string | null;
+  furnished?: boolean | null;
+  amenities?: string[] | null;
 }
 
-interface VoiceAnalysis {
+interface ConversationAnalysis {
   correctedQuery: string;
   isSearch: boolean;
   reply: string;
@@ -213,35 +219,14 @@ export class AiChatService {
           content: m.body,
         }));
 
-      const classified = await this.classify(history);
-
-      let properties: CompactProperty[] = [];
-      if (classified.isSearch && classified.searchQuery.trim()) {
-        properties = await this.searchProperties(classified.searchQuery);
-      }
-
-      const metadata: Record<string, unknown> = {};
-      if (properties.length > 0) {
-        metadata.properties = properties;
-        metadata.searchQuery = classified.searchQuery;
-      } else if (classified.isSearch && classified.searchQuery.trim()) {
-        metadata.searchQuery = classified.searchQuery;
-        metadata.noResults = true;
-      }
-
-      let finalBody = classified.reply;
-      if (classified.isSearch && properties.length === 0) {
-        // Hech narsa topilmadi — AI'ning "mana topildi" gapini almashtirib, aniq
-        // xabar qaytaramiz (hozircha Malayziya bozori ekanligini eslatib).
-        finalBody = `Kechirasiz, "${classified.searchQuery}" bo'yicha mos e'lon topilmadi. Hozircha platformada asosan ${this.marketName} ko'chmas mulki mavjud. Boshqa shahar, narx oralig'i yoki kengroq shartlar bilan urinib ko'ring.`;
-      }
+      const outcome = await this.runSearchFlow(history);
 
       await this.chatService.createSystemMessage({
         conversationId,
         senderId: aiUserId,
         type: MessageType.TEXT,
-        body: finalBody,
-        metadata: Object.keys(metadata).length > 0 ? metadata : undefined,
+        body: outcome.body,
+        metadata: outcome.metadata,
       });
     } catch (err) {
       this.logger.warn(`AI reply failed: ${String(err)}`);
@@ -280,26 +265,121 @@ export class AiChatService {
       };
     }
 
-    const classified = await this.classify(safeHistory);
+    const outcome = await this.runSearchFlow(safeHistory);
+
+    return {
+      body: outcome.body,
+      properties:
+        outcome.properties.length > 0 ? outcome.properties : undefined,
+      searchQuery: outcome.searchQuery,
+      noResults: outcome.noResults || undefined,
+    };
+  }
+
+  /**
+   * Text chat uchun umumiy oqim: suhbatdan kalit so'zlarni ajratish (merge
+   * bilan) → deterministik filter → DB qidiruv → server tomonda javob matni.
+   * AI'dan "qo'shimcha ma'lumot bering" kabi javob kelishi mumkin emas —
+   * javob matnini AI emas, server quradi.
+   */
+  private async runSearchFlow(history: MessageRecord[]): Promise<{
+    body: string;
+    properties: CompactProperty[];
+    searchQuery?: string;
+    noResults: boolean;
+    metadata?: Record<string, unknown>;
+  }> {
+    const latest =
+      [...history].reverse().find((m) => m.role === 'user')?.content ?? '';
+
+    const analyzed = await this.analyzeConversation({
+      history,
+      latest,
+      voiceMode: false,
+    });
+
+    this.logger.log(
+      `[text] analyze → isSearch=${analyzed.isSearch} correctedQuery="${analyzed.correctedQuery}" extracted=${JSON.stringify(analyzed.extracted)}`,
+    );
+
+    if (!analyzed.isSearch) {
+      return {
+        body:
+          analyzed.reply.trim() ||
+          'Salom! Mulk qidirish uchun shahar, xona soni yoki narxni yozing.',
+        properties: [],
+        noResults: false,
+      };
+    }
 
     let properties: CompactProperty[] = [];
-    if (classified.isSearch && classified.searchQuery.trim()) {
-      properties = await this.searchProperties(classified.searchQuery);
+    const builtFilter = this.buildFilterFromExtracted(analyzed.extracted);
+    if (Object.keys(builtFilter).length > 0) {
+      const result = await this.aiPropertyService.findByRawFilter({
+        rawFilter: builtFilter,
+        page: 1,
+        limit: SEARCH_RESULT_LIMIT,
+        language: EnumLanguage.EN,
+      });
+      properties = result.properties.map((p) =>
+        this.toCompact(p as unknown as Record<string, unknown>),
+      );
+    } else {
+      // Structured filter bo'sh — murakkab so'rovlar uchun eski AI-filter yo'li
+      properties = await this.searchProperties(
+        analyzed.correctedQuery.trim() || latest,
+      );
     }
 
-    let body = classified.reply;
-    let noResults = false;
-    if (classified.isSearch && properties.length === 0) {
-      body = `Kechirasiz, "${classified.searchQuery}" bo'yicha mos e'lon topilmadi. Hozircha platformada asosan ${this.marketName} ko'chmas mulki mavjud. Boshqa shahar, narx oralig'i yoki kengroq shartlar bilan urinib ko'ring.`;
-      noResults = true;
-    }
+    const displayQuery = analyzed.correctedQuery.trim() || latest;
+    const noResults = properties.length === 0;
+    const body = this.composeSearchBody({
+      found: properties.length,
+      displayQuery,
+      ext: analyzed.extracted,
+    });
+
+    const metadata: Record<string, unknown> = { searchQuery: displayQuery };
+    if (properties.length > 0) metadata.properties = properties;
+    else metadata.noResults = true;
 
     return {
       body,
-      properties: properties.length > 0 ? properties : undefined,
-      searchQuery: classified.isSearch ? classified.searchQuery : undefined,
-      noResults: noResults || undefined,
+      properties,
+      searchQuery: displayQuery,
+      noResults,
+      metadata,
     };
+  }
+
+  /** Qidiruv natijasi uchun javob matni + bitta foydali maslahat */
+  private composeSearchBody(opts: {
+    found: number;
+    displayQuery: string;
+    ext: ExtractedCriteria;
+  }): string {
+    if (opts.found > 0) {
+      return `"${opts.displayQuery}" bo'yicha ${opts.found} ta e'lon topdim.${this.buildAdvisory(opts.ext)}`;
+    }
+    return `Kechirasiz, "${opts.displayQuery}" bo'yicha hozircha mos e'lon topilmadi. Boshqa shahar, kengroq narx oralig'i yoki boshqa shartlar bilan urinib ko'ring.`;
+  }
+
+  /**
+   * Yetishmayotgan eng muhim kriteriy bo'yicha BITTA maslahat.
+   * "To'liq ma'lumot bering" emas — natija baribir ko'rsatiladi, bu shunchaki
+   * aniqroq qidiruv uchun taklif.
+   */
+  private buildAdvisory(ext: ExtractedCriteria): string {
+    if (!ext.city) {
+      return ' Aniq shahar yoki manzilni aytsangiz, sizga yanada mos variantlarni topib beraman.';
+    }
+    if (!ext.minPrice && !ext.maxPrice) {
+      return " Narx oralig'ini aytsangiz, byudjetingizga mosini tanlab beraman.";
+    }
+    if (!ext.bedrooms) {
+      return ' Xonalar sonini aytsangiz, yanada aniqroq saralab beraman.';
+    }
+    return '';
   }
 
   /**
@@ -343,18 +423,21 @@ export class AiChatService {
       }
       this.logger.warn(`Transcription failed: ${String(err)}`);
       throw new ServiceUnavailableException(
-        'Ovozni transkripsiya qilishda xato yuz berdi. Qayta urinib ko\'ring.',
+        "Ovozni transkripsiya qilishda xato yuz berdi. Qayta urinib ko'ring.",
       );
     }
 
-    this.logger.log(`[voice] transcript: "${transcript}" (lang=${opts.language ?? 'auto'})`);
+    this.logger.log(
+      `[voice] transcript: "${transcript}" (lang=${opts.language ?? 'auto'})`,
+    );
 
     // 2-AI call: transcript + history → correctedQuery + isSearch + filter (bitta qo'ng'iroq)
-    const analyzed = await this.analyzeVoice(
-      transcript,
-      opts.history ?? [],
-      opts.language,
-    );
+    const analyzed = await this.analyzeConversation({
+      history: opts.history ?? [],
+      latest: transcript,
+      voiceMode: true,
+      language: opts.language,
+    });
 
     this.logger.log(
       `[voice] analyze → isSearch=${analyzed.isSearch} correctedQuery="${analyzed.correctedQuery}" extracted=${JSON.stringify(analyzed.extracted)}`,
@@ -382,11 +465,13 @@ export class AiChatService {
 
     let body = analyzed.reply;
     let noResults = false;
-    if (analyzed.isSearch && properties.length > 0) {
-      body = `Topdim! "${displayQuery}" bo'yicha ${properties.length} ta mulk topildi.`;
-    } else if (analyzed.isSearch && properties.length === 0) {
-      body = `"${displayQuery}" bo'yicha mos e'lon topilmadi. Hozircha platformada asosan ${this.marketName} ko'chmas mulki mavjud. Boshqa shahar, narx oralig'i yoki kengroq shartlar bilan urinib ko'ring.`;
-      noResults = true;
+    if (analyzed.isSearch) {
+      body = this.composeSearchBody({
+        found: properties.length,
+        displayQuery,
+        ext: analyzed.extracted,
+      });
+      noResults = properties.length === 0;
     }
 
     const intro =
@@ -512,40 +597,59 @@ export class AiChatService {
   }
 
   /**
-   * Voice unified analysis: bitta AI call bilan transcript → correctedQuery + isSearch + filter.
-   * classify() + findByPrompt() AI call'larini birlashtiradi (3 call → 2 call).
+   * Unified analysis (text + voice): bitta AI call bilan oxirgi xabar +
+   * suhbat tarixi → correctedQuery + isSearch + JAMLANGAN extracted filter.
+   * Tarix orqali "xotira": oldin aytilgan kriteriylar (shahar, xona, narx)
+   * yangi xabar bilan birlashtiriladi.
    */
-  private async analyzeVoice(
-    transcript: string,
-    history: MessageRecord[],
-    language?: string,
-  ): Promise<VoiceAnalysis> {
+  private async analyzeConversation(opts: {
+    history: MessageRecord[];
+    latest: string;
+    voiceMode: boolean;
+    language?: string;
+  }): Promise<ConversationAnalysis> {
+    const { history, latest, voiceMode, language } = opts;
+
     const system = `${buildAiSystemPrompt(
       this.countryConfig.country,
       this.countryConfig.defaultCurrency,
       this.countryConfig.brandName,
     )}
 
-${VOICE_CORRECTION_SYSTEM}
+${CORRECTION_SYSTEM}
 
 KALIT SO'ZLARNI AJRATISH QOIDALARI:
 - city: shahar nomini aniqlash (xatolarni to'g'irla: "xarshi"→"Qarshi", "tashkent"→"Toshkent", "namagan"→"Namangan")
 - bedrooms: xona soni raqam sifatida (ich/ish→3, to'rt→4, besh→5, ikki→2, bir→1)
 - propertyType: "kvartira"/"kvartera"/"kvertira"→"kvartira", "hovli"/"xovli"→"hovli", "yer"→"yer", "ofis"→"ofis", "garaj"→"garaj"
-- dealType: "ijara"/"ijaraga"/"rent"→"ijara", "sotish"/"sotib olish"/"sale"→"sotish"
-- minPrice/maxPrice: narx raqam (million=1000000, mln=1000000, ming=1000)
-- currency: so'm/UZS→"UZS", dollar/USD→"USD"
+- dealType: FAQAT aniq aytilganda — "ijara"/"ijaraga"/"arenda"/"rent"→"ijara", "sotib olish"/"sotib olaman"/"sale"→"sotish". "kerak"/"qidiryapman" kabi so'zlardan dealType TAXMIN QILINMAYDI — null qoladi
+- minPrice/maxPrice: narx raqam (million=1000000, mln=1000000, ming=1000; "2 milliongacha"→maxPrice=2000000; "1 mln dan 3 mln gacha"→minPrice=1000000, maxPrice=3000000)
+- currency: FAQAT user valyutani o'zi aytganda — so'm/UZS→"UZS", dollar/USD→"USD", ringgit/RM→"MYR". Aytmasa null — hech qachon taxmin qilma
+- furnished: "mebelli"/"jihozlangan"→true, "mebelsiz"→false
+- amenities: aytilgan qulayliklar ro'yxati
 
-${VOICE_UNIFIED_RESPONSE_FORMAT}`;
+${UNIFIED_RESPONSE_FORMAT}`;
 
-    const historyText = history
-      .slice(-HISTORY_LIMIT)
+    // Oxirgi xabar tarixning oxirida bo'lsa, takrorlamaslik uchun kesamiz
+    const priorHistory = history.slice(-HISTORY_LIMIT);
+    const trimmed =
+      priorHistory.length > 0 &&
+      priorHistory[priorHistory.length - 1].role === 'user' &&
+      priorHistory[priorHistory.length - 1].content === latest
+        ? priorHistory.slice(0, -1)
+        : priorHistory;
+
+    const historyText = trimmed
       .map((m) => `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content}`)
       .join('\n');
 
+    const sourceLabel = voiceMode
+      ? `Oxirgi voice transcript (til: ${language ?? 'auto'})`
+      : 'Oxirgi User xabari';
+
     const user = historyText
-      ? `Oldingi suhbat:\n${historyText}\n\nOxirgi voice transcript (til: ${language ?? 'auto'}): "${transcript}"`
-      : `Voice transcript (til: ${language ?? 'auto'}): "${transcript}"`;
+      ? `Oldingi suhbat:\n${historyText}\n\n${sourceLabel}: "${latest}"`
+      : `${sourceLabel}: "${latest}"`;
 
     try {
       const { data } = await this.openai.generateJson<{
@@ -559,23 +663,29 @@ ${VOICE_UNIFIED_RESPONSE_FORMAT}`;
         model: 'gpt-4o-mini',
         temperature: 0.2,
         maxTokens: 600,
-        priority: true,
+        priority: voiceMode,
       });
 
-      const extracted = (data?.extracted && typeof data.extracted === 'object' && !Array.isArray(data.extracted))
-        ? (data.extracted as ExtractedCriteria)
-        : {};
+      const extracted =
+        data?.extracted &&
+        typeof data.extracted === 'object' &&
+        !Array.isArray(data.extracted)
+          ? (data.extracted as ExtractedCriteria)
+          : {};
 
       return {
-        correctedQuery: typeof data?.correctedQuery === "string" ? data.correctedQuery : transcript,
+        correctedQuery:
+          typeof data?.correctedQuery === 'string'
+            ? data.correctedQuery
+            : latest,
         isSearch: Boolean(data?.isSearch),
-        reply: typeof data?.reply === "string" ? data.reply : "",
+        reply: typeof data?.reply === 'string' ? data.reply : '',
         extracted,
       };
     } catch (err) {
-      this.logger.warn(`[voice] analyzeVoice failed: ${String(err)}`);
+      this.logger.warn(`analyzeConversation failed: ${String(err)}`);
       return {
-        correctedQuery: transcript,
+        correctedQuery: latest,
         isSearch: false,
         reply: "Kechirasiz, so'rovingizni qayta yuboring.",
         extracted: {},
@@ -584,7 +694,9 @@ ${VOICE_UNIFIED_RESPONSE_FORMAT}`;
   }
 
   /** AI extracted criteria dan MongoDB filter quradi — kalit so'zlar asosida */
-  private buildFilterFromExtracted(ext: ExtractedCriteria): Record<string, unknown> {
+  private buildFilterFromExtracted(
+    ext: ExtractedCriteria,
+  ): Record<string, unknown> {
     const filter: Record<string, unknown> = {};
 
     // Shahar: case-insensitive regex, barcha til fieldlarida, rus/ingliz variantlari bilan
@@ -593,7 +705,9 @@ ${VOICE_UNIFIED_RESPONSE_FORMAT}`;
       const orClauses: Record<string, unknown>[] = [];
       for (const lang of ['uz', 'ru', 'en']) {
         for (const alias of aliases) {
-          orClauses.push({ [`address.${lang}`]: { $regex: alias, $options: 'i' } });
+          orClauses.push({
+            [`address.${lang}`]: { $regex: alias, $options: 'i' },
+          });
         }
       }
       if (orClauses.length > 0) filter.$or = orClauses;
@@ -616,8 +730,21 @@ ${VOICE_UNIFIED_RESPONSE_FORMAT}`;
       filter.price = priceFilter;
     }
 
-    // Valyuta
-    if (ext.currency) filter.currency = ext.currency;
+    // Valyuta ataylab filterga QO'SHILMAYDI: bitta mamlakat deploy'ida barcha
+    // e'lonlar bir valyutada, model esa ba'zan taxmin qilib natijani 0 qiladi.
+
+    // Mebel
+    if (typeof ext.furnished === 'boolean') filter.furnished = ext.furnished;
+
+    // Qulayliklar — faqat haqiqiy enum qiymatlari o'tkaziladi
+    if (Array.isArray(ext.amenities) && ext.amenities.length > 0) {
+      const validAmenities = ext.amenities.filter((a) =>
+        (Object.values(EnumAmenities) as string[]).includes(a),
+      );
+      if (validAmenities.length > 0) {
+        filter.amenities = { $all: validAmenities };
+      }
+    }
 
     return filter;
   }
@@ -639,10 +766,16 @@ ${VOICE_UNIFIED_RESPONSE_FORMAT}`;
     const deal = (dealType ?? '').toLowerCase();
 
     const isRent = deal.includes('ijara') || deal.includes('rent');
-    const isSale = deal.includes('sotish') || deal.includes('sale') || deal.includes('sotib');
+    const isSale =
+      deal.includes('sotish') ||
+      deal.includes('sale') ||
+      deal.includes('sotib');
     const isApartment = type.includes('kvartira') || type.includes('apartment');
     const isHovli = type.includes('hovli');
-    const isCommercial = type.includes('ofis') || type.includes('commercial') || type.includes('noturar');
+    const isCommercial =
+      type.includes('ofis') ||
+      type.includes('commercial') ||
+      type.includes('noturar');
     const isLand = type.includes('yer') || type.includes('land');
     const isGarage = type.includes('garaj') || type.includes('garage');
 
@@ -666,8 +799,10 @@ ${VOICE_UNIFIED_RESPONSE_FORMAT}`;
     if (isGarage && isSale) return 'GARAGE_SALE';
     if (isGarage) return { $in: ['GARAGE_SALE', 'GARAGE_RENT'] };
 
-    if (isRent) return { $in: ['APARTMENT_RENT', 'HOVLI_RENT', 'COMMERCIAL_RENT'] };
-    if (isSale) return { $in: ['APARTMENT_SALE', 'HOVLI_SALE', 'COMMERCIAL_SALE'] };
+    if (isRent)
+      return { $in: ['APARTMENT_RENT', 'HOVLI_RENT', 'COMMERCIAL_RENT'] };
+    if (isSale)
+      return { $in: ['APARTMENT_SALE', 'HOVLI_SALE', 'COMMERCIAL_SALE'] };
 
     return null;
   }
@@ -698,57 +833,6 @@ ${VOICE_UNIFIED_RESPONSE_FORMAT}`;
       });
     } catch (err) {
       this.logger.warn(`AI welcome failed: ${String(err)}`);
-    }
-  }
-
-  private async classify(
-    history: MessageRecord[],
-  ): Promise<ClassifiedReply> {
-    const conversationText = history
-      .map((m) => {
-        const prefix = m.role === 'user' ? 'User' : 'Assistant';
-        return `${prefix}: ${m.content}`;
-      })
-      .join('\n');
-
-    const system = `${buildAiSystemPrompt(
-      this.countryConfig.country,
-      this.countryConfig.defaultCurrency,
-      this.countryConfig.brandName,
-    )}\n\n${RESPONSE_SCHEMA_PROMPT}`;
-
-    const user = `Suhbat:\n${conversationText}\n\nOxirgi User xabariga javob bering.`;
-
-    try {
-      const { data } = await this.openai.generateJson<Partial<ClassifiedReply>>(
-        {
-          system,
-          user,
-          model: 'gpt-4o-mini',
-          temperature: 0.4,
-          maxTokens: 600,
-        },
-      );
-
-      return {
-        reply:
-          typeof data?.reply === 'string' && data.reply.trim()
-            ? data.reply.trim()
-            : 'Uzr, sizni to’liq tushunmadim. Qayta yozib ko’ring.',
-        isSearch: Boolean(data?.isSearch),
-        searchQuery:
-          typeof data?.searchQuery === 'string' ? data.searchQuery : '',
-        correctedQuery:
-          typeof data?.correctedQuery === 'string' ? data.correctedQuery : '',
-      };
-    } catch (err) {
-      this.logger.warn(`AI classify failed: ${String(err)}`);
-      return {
-        reply: 'Kechirasiz, savolingizni qayta yuboring.',
-        isSearch: false,
-        searchQuery: '',
-        correctedQuery: '',
-      };
     }
   }
 
