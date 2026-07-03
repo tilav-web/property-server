@@ -42,11 +42,13 @@ export class DeveloperController {
     @Query('page') page?: string,
     @Query('limit') limit?: string,
     @Query('search') search?: string,
+    @Query('include_inactive') includeInactive?: string,
   ) {
     return this.service.findAll({
       page: page ? Number(page) : 1,
-      limit: limit ? Math.min(Number(limit), 50) : 20,
+      limit: limit ? Math.min(Number(limit), 100) : 20,
       search,
+      includeInactive: includeInactive === 'true',
     });
   }
 

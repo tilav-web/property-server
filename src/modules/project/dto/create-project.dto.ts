@@ -6,6 +6,8 @@ import {
   IsNumber,
   IsOptional,
   IsString,
+  Max,
+  Min,
   ValidateNested,
 } from 'class-validator';
 import { Transform, Type } from 'class-transformer';
@@ -49,6 +51,21 @@ export class CreateProjectDto {
   @IsOptional() @IsString() address?: string;
   @IsOptional() @IsString() country?: string;
   @IsOptional() @IsString() city?: string;
+
+  // Xarita nuqtasi — ikkalasi birga yuboriladi (GeoJSON'ga service aylantiradi)
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber({}, { message: "Latitude noto'g'ri!" })
+  @Min(-90)
+  @Max(90)
+  location_lat?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber({}, { message: "Longitude noto'g'ri!" })
+  @Min(-180)
+  @Max(180)
+  location_lng?: number;
 
   @IsOptional() @IsString() delivery_date?: string;
 

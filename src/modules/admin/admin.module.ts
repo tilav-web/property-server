@@ -27,6 +27,16 @@ import { PremiumModule } from '../premium/premium.module';
 import { Inquiry, InquirySchema } from '../inquiry/schemas/inquiry.schema';
 import { AdminInquiryService } from './services/admin-inquiry.service';
 import { AdminInquiryController } from './controllers/admin-inquiry.controller';
+import { Project, ProjectSchema } from '../project/project.schema';
+import { Developer, DeveloperSchema } from '../developer/developer.schema';
+import {
+  ProjectInquiry,
+  ProjectInquirySchema,
+} from '../project-inquiry/project-inquiry.schema';
+import {
+  Transaction,
+  TransactionSchema,
+} from '../payment/schemas/transaction.schema';
 
 @Module({
   imports: [
@@ -37,6 +47,10 @@ import { AdminInquiryController } from './controllers/admin-inquiry.controller';
       { name: Advertise.name, schema: AdvertiseSchema },
       { name: Tag.name, schema: TagSchema },
       { name: Inquiry.name, schema: InquirySchema },
+      { name: Project.name, schema: ProjectSchema },
+      { name: Developer.name, schema: DeveloperSchema },
+      { name: ProjectInquiry.name, schema: ProjectInquirySchema },
+      { name: Transaction.name, schema: TransactionSchema },
     ]),
     JwtModule.registerAsync({
       inject: [ConfigService],

@@ -11,6 +11,23 @@ import { UpdateProjectDto } from './dto/update-project.dto';
 import { FileService } from '../file/file.service';
 import { EnumFilesFolder } from '../file/enums/files-folder.enum';
 import { DeveloperService } from '../developer/developer.service';
+import { Location } from 'src/common/location/location.schema';
+
+/** DTO'dagi location_lat/lng juftligini GeoJSON Point'ga aylantiradi */
+function resolveLocation(dto: {
+  location_lat?: number;
+  location_lng?: number;
+}): Location | undefined {
+  const { location_lat, location_lng } = dto;
+  if (location_lat === undefined && location_lng === undefined)
+    return undefined;
+  if (location_lat === undefined || location_lng === undefined) {
+    throw new BadRequestException(
+      'location_lat va location_lng birga yuborilishi kerak',
+    );
+  }
+  return { type: 'Point', coordinates: [location_lng, location_lat] };
+}
 
 interface FindAllOptions {
   page?: number;
@@ -55,10 +72,15 @@ export class ProjectService {
       throw new BadRequestException('Noto‘g‘ri developer ID');
     }
 
+    const { location_lat, location_lng, ...rest } = dto;
+    void location_lat;
+    void location_lng;
     const data: Partial<Project> = {
-      ...dto,
+      ...rest,
       developer: new Types.ObjectId(dto.developer),
     };
+    const location = resolveLocation(dto);
+    if (location) data.location = location;
 
     if (files?.photos?.length) {
       data.photos = await this.fileService.saveFiles({
@@ -199,7 +221,14 @@ export class ProjectService {
 
     const oldDeveloperId = existing.developer.toString();
 
-    const { developer: developerInput, ...rest } = dto;
+    const {
+      developer: developerInput,
+      location_lat,
+      location_lng,
+      ...rest
+    } = dto;
+    void location_lat;
+    void location_lng;
     const data: Partial<Project> = { ...rest };
     if (developerInput) {
       if (!Types.ObjectId.isValid(developerInput)) {
@@ -207,6 +236,8 @@ export class ProjectService {
       }
       data.developer = new Types.ObjectId(developerInput);
     }
+    const location = resolveLocation(dto);
+    if (location) data.location = location;
 
     if (files?.photos?.length) {
       const newPhotos = await this.fileService.saveFiles({

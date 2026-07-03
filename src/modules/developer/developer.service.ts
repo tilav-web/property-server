@@ -46,12 +46,17 @@ export class DeveloperService {
     page = 1,
     limit = 20,
     search,
+    includeInactive = false,
   }: {
     page?: number;
     limit?: number;
     search?: string;
+    /** Admin panel nofaol developerlarni ham ko'rishi uchun */
+    includeInactive?: boolean;
   }) {
-    const filter: Record<string, unknown> = { is_active: true };
+    const filter: Record<string, unknown> = includeInactive
+      ? {}
+      : { is_active: true };
     if (search) filter.$text = { $search: search };
     const skip = (page - 1) * limit;
     const [items, total] = await Promise.all([
