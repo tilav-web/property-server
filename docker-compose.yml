@@ -79,7 +79,11 @@ services:
     container_name: property-redis
     restart: unless-stopped
     # Kichik VPS'ni siqmasin - navbat uchun 128mb ko'p ortig'i bilan yetadi.
-    command: ["redis-server", "--maxmemory", "128mb", "--maxmemory-policy", "allkeys-lru", "--save", "", "--appendonly", "no"]
+    # noeviction - BullMQ talabi: "lru" siyosati xotira to'lganda navbat
+    # job'larini (kalitlarni) jim o'chirib yuborishi mumkin, bu esa
+    # kutilmagan ma'lumot yo'qotishga olib keladi. noeviction bilan xotira
+    # to'lsa yozish xatolik bilan rad etiladi (jim yo'qolish o'rniga).
+    command: ["redis-server", "--maxmemory", "128mb", "--maxmemory-policy", "noeviction", "--save", "", "--appendonly", "no"]
     networks:
       - app-net
     healthcheck:
