@@ -1,12 +1,20 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { FilterQuery, Model } from 'mongoose';
+import * as bcrypt from 'bcrypt';
 import { User, UserDocument } from '../../user/user.schema';
 import { FindUsersDto } from '../dto/find-users.dto';
 import { UpdateUserDto } from '../dto/update-user.dto';
+import { CreateUserDto } from '../dto/create-user.dto';
 import { FileService } from '../../file/file.service';
 import { EnumFilesFolder } from 'src/modules/file/enums/files-folder.enum';
 import { UserService } from '../../user/user.service';
+import { EnumRole } from 'src/enums/role.enum';
 
 @Injectable()
 export class AdminUserService {
@@ -15,6 +23,56 @@ export class AdminUserService {
     private readonly fileService: FileService,
     private readonly userService: UserService,
   ) {}
+
+  /** Super admin tomonidan qo'lda foydalanuvchi qo'shish — OTP shart emas. */
+  async createUser(dto: CreateUserDto) {
+    const emailValue = dto.emailValue?.trim().toLowerCase();
+    const phoneValue = dto.phoneValue?.trim();
+
+    if (!emailValue && !phoneValue) {
+      throw new BadRequestException(
+        'Email yoki telefon raqamlaridan birini kiriting!',
+      );
+    }
+
+    if (emailValue) {
+      const exists = await this.userModel.findOne({
+        'email.value': emailValue,
+      });
+      if (exists) {
+        throw new ConflictException(
+          'Bu email bilan foydalanuvchi allaqachon mavjud!',
+        );
+      }
+    }
+
+    if (phoneValue) {
+      const exists = await this.userModel.findOne({
+        'phone.value': phoneValue,
+      });
+      if (exists) {
+        throw new ConflictException(
+          'Bu telefon bilan foydalanuvchi allaqachon mavjud!',
+        );
+      }
+    }
+
+    const password = dto.password ? await bcrypt.hash(dto.password, 10) : null;
+
+    return this.userModel.create({
+      first_name: dto.first_name,
+      last_name: dto.last_name,
+      role: dto.role ?? EnumRole.PHYSICAL,
+      lan: dto.lan,
+      email: emailValue
+        ? { value: emailValue, isVerified: Boolean(dto.emailIsVerified) }
+        : undefined,
+      phone: phoneValue
+        ? { value: phoneValue, isVerified: Boolean(dto.phoneIsVerified) }
+        : undefined,
+      password,
+    });
+  }
 
   async findUsers(dto: FindUsersDto) {
     const { page = 1, limit = 10, role, search, isPremium } = dto;

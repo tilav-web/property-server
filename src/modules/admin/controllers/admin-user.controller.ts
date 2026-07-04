@@ -19,6 +19,7 @@ import { AdminUserService } from '../services/admin-user.service';
 import { FindUsersDto } from '../dto/find-users.dto';
 import { AdminGuard } from '../guards/admin.guard';
 import { UpdateUserDto } from '../dto/update-user.dto';
+import { CreateUserDto } from '../dto/create-user.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiMultipartBody } from 'src/common/swagger/file-upload.decorator';
 import { ApiStandardErrors } from 'src/common/swagger/api-errors.decorator';
@@ -40,6 +41,13 @@ export class AdminUserController {
   @ApiOperation({ summary: 'Userlar ro‘yxati (admin)' })
   async findUsers(@Query() dto: FindUsersDto) {
     return this.adminUserService.findUsers(dto);
+  }
+
+  @Post()
+  @ApiOperation({ summary: "Yangi foydalanuvchi qo'shish (admin)" })
+  @ApiStandardErrors({ auth: true, validation: true })
+  async createUser(@Body() dto: CreateUserDto) {
+    return this.adminUserService.createUser(dto);
   }
 
   @Put(':id')
@@ -90,7 +98,8 @@ export class AdminUserController {
 
   @Delete(':id')
   @ApiOperation({
-    summary: "Foydalanuvchini o'chirish (cascade: properties, likes, saves, notifications)",
+    summary:
+      "Foydalanuvchini o'chirish (cascade: properties, likes, saves, notifications)",
   })
   @ApiStandardErrors({ auth: true, notFound: true })
   async deleteUser(@Param('id') userId: string) {
