@@ -43,6 +43,7 @@ interface TelegramUpdate {
   message?: {
     text?: string;
     chat?: { id: number | string };
+    from?: { first_name?: string; last_name?: string };
   };
   callback_query?: {
     id: string;
@@ -55,6 +56,16 @@ interface TelegramUpdate {
     };
   };
 }
+
+/** Reject bosilgach, admin sabab yozib yuborishini kutish holati (chat bo'yicha). */
+interface PendingRejection {
+  propertyId: string;
+  promptMessageId?: number;
+  originalText?: string;
+  requestedAt: number;
+}
+
+const PENDING_REJECTION_TTL_MS = 30 * 60 * 1000; // 30 daqiqa
 
 /**
  * Super admin uchun Telegram xabarnomalar + inline tasdiqlash.
@@ -76,6 +87,9 @@ interface TelegramUpdate {
 @Injectable()
 export class TelegramAdminService implements OnApplicationBootstrap {
   private readonly logger = new Logger(TelegramAdminService.name);
+
+  /** chatId -> kutilayotgan rad etish sababi so'rovi. */
+  private readonly pendingRejections = new Map<string, PendingRejection>();
 
   constructor(
     private readonly siteSettings: SiteSettingsService,
@@ -248,18 +262,36 @@ export class TelegramAdminService implements OnApplicationBootstrap {
         return;
       }
 
-      // /start yoki /id — chat ID'ni qaytarish (sozlashda kerak)
       const msg = update.message;
       const text = msg?.text?.trim();
-      if (msg?.chat?.id && (text === '/start' || text === '/id')) {
+      const chatId = msg?.chat?.id !== undefined ? String(msg.chat.id) : null;
+      if (!chatId) return;
+
+      // /start yoki /id — chat ID'ni qaytarish (sozlashda kerak, hali
+      // config'ga qo'shilmagan chatlar uchun ham ishlashi shart)
+      if (text === '/start' || text === '/id') {
         await this.call(config.token, 'sendMessage', {
-          chat_id: msg.chat.id,
+          chat_id: chatId,
           text:
-            `Sizning chat ID: <code>${msg.chat.id}</code>\n\n` +
+            `Sizning chat ID: <code>${chatId}</code>\n\n` +
             'Ushbu ID\'ni admin panel → Sayt sozlamalari → "Telegram bot" ' +
             "bo'limiga kiriting — shundan so'ng xabarnomalar shu chatga keladi.",
           parse_mode: 'HTML',
         });
+        return;
+      }
+
+      // Kutilayotgan "rad etish sababi" bormi — faqat sozlangan (whitelist)
+      // chatlardan qabul qilinadi
+      if (text && msg && config.chatIds.includes(chatId)) {
+        const pending = this.pendingRejections.get(chatId);
+        if (
+          pending &&
+          Date.now() - pending.requestedAt < PENDING_REJECTION_TTL_MS
+        ) {
+          this.pendingRejections.delete(chatId);
+          await this.finalizeRejection(config, chatId, pending, text, msg);
+        }
       }
     } catch (err) {
       this.logger.warn(`handleUpdate failed: ${String(err)}`);
@@ -276,7 +308,9 @@ export class TelegramAdminService implements OnApplicationBootstrap {
         text,
       }).catch(() => {});
 
-    const match = /^prop:(approve|reject):([a-f0-9]{24})$/.exec(cb.data ?? '');
+    const match = /^prop:(approve|reject|rejectskip):([a-f0-9]{24})$/.exec(
+      cb.data ?? '',
+    );
     if (!match) {
       await answer('Noma’lum buyruq');
       return;
@@ -290,36 +324,136 @@ export class TelegramAdminService implements OnApplicationBootstrap {
     }
 
     const [, action, propertyId] = match;
-    const status =
-      action === 'approve'
-        ? EnumPropertyStatus.APPROVED
-        : EnumPropertyStatus.REJECTED;
+    const adminName = [cb.from?.first_name, cb.from?.last_name]
+      .filter(Boolean)
+      .join(' ');
 
+    if (action === 'approve') {
+      try {
+        await this.propertyService.updateStatus({
+          id: propertyId,
+          status: EnumPropertyStatus.APPROVED,
+        });
+      } catch (err) {
+        this.logger.warn(`updateStatus via telegram failed: ${String(err)}`);
+        await answer('Xatolik: e’lon topilmadi yoki o‘zgartirib bo‘lmadi');
+        return;
+      }
+      await answer('✅ Tasdiqlandi');
+      await this.finalizeMessage(config, cb, '✅ Tasdiqlandi', adminName);
+      return;
+    }
+
+    if (action === 'reject') {
+      // Hali status o'zgarmaydi — avval adminidan sabab (ixtiyoriy) so'raladi
+      this.pendingRejections.set(chatId, {
+        propertyId,
+        promptMessageId: cb.message?.message_id,
+        originalText: cb.message?.text,
+        requestedAt: Date.now(),
+      });
+      await answer('Sababini yozib yuboring (ixtiyoriy)');
+      if (cb.message?.chat?.id && cb.message.message_id) {
+        await this.call(config.token, 'editMessageText', {
+          chat_id: cb.message.chat.id,
+          message_id: cb.message.message_id,
+          text: `${cb.message.text ?? ''}\n\n❓ Rad etish sababini shu chatga yozib yuboring (ixtiyoriy), yoki pastdagi tugmani bosing:`,
+          reply_markup: {
+            inline_keyboard: [
+              [
+                {
+                  text: '⏭ Sababsiz rad etish',
+                  callback_data: `prop:rejectskip:${propertyId}`,
+                },
+              ],
+            ],
+          },
+        }).catch(() => {});
+      }
+      return;
+    }
+
+    // action === 'rejectskip'
+    this.pendingRejections.delete(chatId);
     try {
-      await this.propertyService.updateStatus({ id: propertyId, status });
+      await this.propertyService.updateStatus({
+        id: propertyId,
+        status: EnumPropertyStatus.REJECTED,
+      });
     } catch (err) {
       this.logger.warn(`updateStatus via telegram failed: ${String(err)}`);
       await answer('Xatolik: e’lon topilmadi yoki o‘zgartirib bo‘lmadi');
       return;
     }
+    await answer('❌ Rad etildi');
+    await this.finalizeMessage(
+      config,
+      cb,
+      '❌ Rad etildi (sababsiz)',
+      adminName,
+    );
+  }
 
-    const adminName = [cb.from?.first_name, cb.from?.last_name]
+  /** Admin chatga sabab matnini yozib yuborganda rad etishni yakunlaydi. */
+  private async finalizeRejection(
+    config: TelegramConfig,
+    chatId: string,
+    pending: PendingRejection,
+    note: string,
+    msg: NonNullable<TelegramUpdate['message']>,
+  ): Promise<void> {
+    try {
+      await this.propertyService.updateStatus({
+        id: pending.propertyId,
+        status: EnumPropertyStatus.REJECTED,
+        note,
+      });
+    } catch (err) {
+      this.logger.warn(
+        `updateStatus (sabab bilan) via telegram failed: ${String(err)}`,
+      );
+      await this.call(config.token, 'sendMessage', {
+        chat_id: chatId,
+        text: 'Xatolik: e’lon topilmadi yoki o‘zgartirib bo‘lmadi.',
+      }).catch(() => {});
+      return;
+    }
+
+    const adminName = [msg.from?.first_name, msg.from?.last_name]
       .filter(Boolean)
       .join(' ');
-    const verdict =
-      action === 'approve' ? '✅ Tasdiqlandi' : '❌ Rad etildi';
+    const verdict = `❌ Rad etildi. Sabab: ${note}`;
 
-    await answer(verdict);
+    await this.call(config.token, 'sendMessage', {
+      chat_id: chatId,
+      text: `✅ Qabul qilindi.\n${verdict}`,
+    }).catch(() => {});
 
-    // Tugmali xabarni yakuniy holat bilan almashtiramiz (qayta bosilmasin)
-    if (cb.message?.chat?.id && cb.message.message_id) {
-      const original = cb.message.text ?? '';
+    if (pending.promptMessageId) {
       await this.call(config.token, 'editMessageText', {
-        chat_id: cb.message.chat.id,
-        message_id: cb.message.message_id,
-        text: `${original}\n\n${verdict}${adminName ? ` — ${adminName}` : ''}`,
+        chat_id: chatId,
+        message_id: pending.promptMessageId,
+        text: `${pending.originalText ?? ''}\n\n${verdict}${adminName ? ` — ${adminName}` : ''}`,
+        reply_markup: { inline_keyboard: [] },
       }).catch(() => {});
     }
+  }
+
+  /** Tugmali xabarni yakuniy holat bilan almashtiradi (qayta bosilmasin). */
+  private async finalizeMessage(
+    config: TelegramConfig,
+    cb: NonNullable<TelegramUpdate['callback_query']>,
+    verdict: string,
+    adminName: string,
+  ): Promise<void> {
+    if (!cb.message?.chat?.id || !cb.message.message_id) return;
+    const original = cb.message.text ?? '';
+    await this.call(config.token, 'editMessageText', {
+      chat_id: cb.message.chat.id,
+      message_id: cb.message.message_id,
+      text: `${original}\n\n${verdict}${adminName ? ` — ${adminName}` : ''}`,
+      reply_markup: { inline_keyboard: [] },
+    }).catch(() => {});
   }
 
   // ---- helpers ----

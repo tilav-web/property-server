@@ -66,6 +66,10 @@ export class Property {
   })
   status: EnumPropertyStatus;
 
+  /** Admin REJECTED qilganda yozgan sababi (ixtiyoriy). Boshqa statusda tozalanadi. */
+  @Prop({ type: String, required: false })
+  rejectionNote?: string;
+
   @Prop({ type: Boolean, default: false })
   is_archived: boolean;
 

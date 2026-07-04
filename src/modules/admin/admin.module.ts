@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Admin, AdminSchema } from './admin.schema';
 import { AdminController } from './controllers/admin.controller';
@@ -37,6 +37,7 @@ import {
   Transaction,
   TransactionSchema,
 } from '../payment/schemas/transaction.schema';
+import { PropertyModule } from '../property/property.module';
 
 @Module({
   imports: [
@@ -63,6 +64,7 @@ import {
     TagModule,
     PremiumModule,
     UserModule,
+    forwardRef(() => PropertyModule),
   ],
   providers: [
     AdminService,

@@ -9,6 +9,7 @@ import { FindPropertiesDto } from '../dto/find-properties.dto';
 import { UpdatePropertyDto } from '../dto/update-property.dto';
 import { PropertySearchCache } from 'src/modules/property/property-search.cache';
 import { FileService } from 'src/modules/file/file.service';
+import { PropertyService } from 'src/modules/property/property.service';
 
 @Injectable()
 export class AdminPropertyService {
@@ -16,6 +17,7 @@ export class AdminPropertyService {
     @InjectModel(Property.name) private propertyModel: Model<PropertyDocument>,
     private readonly searchCache: PropertySearchCache,
     private readonly fileService: FileService,
+    private readonly propertyService: PropertyService,
   ) {}
 
   async findAll(dto: FindPropertiesDto) {
@@ -107,13 +109,23 @@ export class AdminPropertyService {
     if (dto.currency !== undefined) property.currency = dto.currency;
     if (dto.price !== undefined) property.price = dto.price;
     if (dto.is_premium !== undefined) property.is_premium = dto.is_premium;
-    if (dto.status !== undefined) property.status = dto.status;
     if (dto.is_archived !== undefined) property.is_archived = dto.is_archived;
     if (dto.photos !== undefined) property.photos = dto.photos;
     if (dto.videos !== undefined) property.videos = dto.videos;
 
     const saved = await property.save();
     this.searchCache.invalidate();
+
+    // Status o'zgarishi alohida delegatsiya qilinadi — shu yerda
+    // rejectionNote saqlanadi va foydalanuvchiga notification ketadi.
+    if (dto.status !== undefined) {
+      return this.propertyService.updateStatus({
+        id: propertyId,
+        status: dto.status,
+        note: dto.rejectionNote,
+      });
+    }
+
     return saved;
   }
 

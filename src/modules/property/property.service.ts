@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
@@ -38,6 +39,8 @@ import { PropertySearchCache } from './property-search.cache';
 import { ExchangeRateService } from '../exchange-rate/exchange-rate.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import type { PropertyCreatedEvent } from '../telegram/telegram-admin.service';
+import { NotificationService } from '../notification/notification.service';
+import { NotificationType } from '../notification/enums/notification-type.enum';
 
 type CurrencyRateMap = Partial<Record<CurrencyCode, number>>;
 
@@ -48,6 +51,8 @@ interface PriceConversionContext {
 
 @Injectable()
 export class PropertyService {
+  private readonly logger = new Logger(PropertyService.name);
+
   /**
    * PremiumService — lazy setter orqali inject qilinadi (circular dep'dan
    * himoya). PremiumModule onApplicationBootstrap'da PropertyService'ga set
@@ -92,6 +97,7 @@ export class PropertyService {
     private readonly searchCache: PropertySearchCache,
     private readonly exchangeRateService: ExchangeRateService,
     private readonly eventEmitter: EventEmitter2,
+    private readonly notificationService: NotificationService,
   ) {}
 
   async onModuleInit() {
@@ -1169,18 +1175,61 @@ export class PropertyService {
   async updateStatus({
     id,
     status,
+    note,
   }: {
     id: string;
     status: EnumPropertyStatus;
+    note?: string;
   }) {
     const property = await this.propertyModel.findById(id);
     if (!property) {
       throw new NotFoundException('Property not found!');
     }
     property.status = status;
+    property.rejectionNote =
+      status === EnumPropertyStatus.REJECTED ? note : undefined;
     const saved = await property.save();
     this.searchCache.invalidate();
+
+    if (
+      status === EnumPropertyStatus.APPROVED ||
+      status === EnumPropertyStatus.REJECTED
+    ) {
+      await this.notifyStatusChange(saved, status, note);
+    }
+
     return saved;
+  }
+
+  private async notifyStatusChange(
+    property: PropertyDocument,
+    status: EnumPropertyStatus.APPROVED | EnumPropertyStatus.REJECTED,
+    note?: string,
+  ): Promise<void> {
+    const title = property.title?.uz ?? "E'lon";
+    const approved = status === EnumPropertyStatus.APPROVED;
+    const body = approved
+      ? `"${title}" e'loningiz admin tomonidan tasdiqlandi va endi saytda ko'rinadi.`
+      : note
+        ? `"${title}" e'loningiz rad etildi. Sabab: ${note}`
+        : `"${title}" e'loningiz rad etildi.`;
+
+    try {
+      await this.notificationService.create({
+        user: property.author,
+        type: approved
+          ? NotificationType.PROPERTY_APPROVED
+          : NotificationType.PROPERTY_REJECTED,
+        title: approved ? "E'lon tasdiqlandi" : "E'lon rad etildi",
+        body,
+        link: '/seller/properties',
+        payload: { propertyId: String(property._id), note },
+      });
+    } catch (err) {
+      this.logger.warn(
+        `Property status notification failed (property=${String(property._id)}): ${(err as Error).message}`,
+      );
+    }
   }
 
   async toggleArchive({ id, userId }: { id: string; userId: string }) {

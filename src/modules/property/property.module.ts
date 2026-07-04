@@ -24,6 +24,7 @@ import { GenaiModule } from '../openai/openai.module';
 import { TagModule } from '../tag/tag.module';
 import { ExchangeRateModule } from '../exchange-rate/exchange-rate.module';
 import { PropertyViewModule } from '../property-view/property-view.module';
+import { NotificationModule } from '../notification/notification.module';
 
 @Module({
   imports: [
@@ -54,6 +55,7 @@ import { PropertyViewModule } from '../property-view/property-view.module';
     TagModule,
     ExchangeRateModule,
     PropertyViewModule,
+    NotificationModule,
   ],
   providers: [PropertyService],
   controllers: [PropertyController],

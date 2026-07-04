@@ -55,6 +55,11 @@ export class UpdatePropertyDto {
   @IsIn(Object.values(EnumPropertyStatus))
   status?: EnumPropertyStatus;
 
+  /** status=REJECTED bo'lganda admin yozgan sababi (ixtiyoriy). */
+  @IsOptional()
+  @IsString()
+  rejectionNote?: string;
+
   @IsOptional()
   @IsBoolean()
   is_archived?: boolean;

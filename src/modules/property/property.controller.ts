@@ -232,6 +232,7 @@ export class PropertyController {
     return this.service.updateStatus({
       id,
       status: dto.status,
+      note: dto.note,
     });
   }
 
