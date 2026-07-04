@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { FilterQuery, Model } from 'mongoose';
 import {
@@ -9,6 +13,7 @@ import { FindPropertiesDto } from '../dto/find-properties.dto';
 import { UpdatePropertyDto } from '../dto/update-property.dto';
 import { PropertySearchCache } from 'src/modules/property/property-search.cache';
 import { FileService } from 'src/modules/file/file.service';
+import { EnumFilesFolder } from 'src/modules/file/enums/files-folder.enum';
 import { PropertyService } from 'src/modules/property/property.service';
 
 @Injectable()
@@ -127,6 +132,43 @@ export class AdminPropertyService {
     }
 
     return saved;
+  }
+
+  async addPhotos(id: string, files: Express.Multer.File[]) {
+    const property = await this.propertyModel.findById(id);
+    if (!property) {
+      throw new NotFoundException(`Property with ID ${id} not found`);
+    }
+
+    if (files.length > 0) {
+      const urls = await this.fileService.saveFiles({
+        files,
+        folder: EnumFilesFolder.PHOTOS,
+      });
+      property.photos = [...(property.photos ?? []), ...urls];
+      await property.save();
+      this.searchCache.invalidate();
+    }
+
+    return property;
+  }
+
+  async removePhoto(id: string, url: string) {
+    const property = await this.propertyModel.findById(id);
+    if (!property) {
+      throw new NotFoundException(`Property with ID ${id} not found`);
+    }
+
+    if (!property.photos?.includes(url)) {
+      throw new BadRequestException("Bu rasm ushbu e'londa topilmadi");
+    }
+
+    await this.fileService.deleteFile(url);
+    property.photos = property.photos.filter((p) => p !== url);
+    await property.save();
+    this.searchCache.invalidate();
+
+    return property;
   }
 
   async delete(id: string) {

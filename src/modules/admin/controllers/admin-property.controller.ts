@@ -6,13 +6,23 @@ import {
   Param,
   Body,
   Put,
+  Post,
   Delete,
+  UseInterceptors,
+  UploadedFiles,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { FilesInterceptor } from '@nestjs/platform-express';
+import {
+  ApiBearerAuth,
+  ApiConsumes,
+  ApiOperation,
+  ApiTags,
+} from '@nestjs/swagger';
 import { AdminGuard } from '../guards/admin.guard';
 import { AdminPropertyService } from '../services/admin-property.service';
 import { FindPropertiesDto } from '../dto/find-properties.dto';
 import { UpdatePropertyDto } from '../dto/update-property.dto';
+import { RemovePhotoDto } from '../dto/remove-photo.dto';
 import { ApiStandardErrors } from 'src/common/swagger/api-errors.decorator';
 
 @UseGuards(AdminGuard)
@@ -51,6 +61,25 @@ export class AdminPropertyController {
     @Body() dto: UpdatePropertyDto,
   ) {
     return this.adminPropertyService.update(propertyId, dto);
+  }
+
+  @Post(':id/photos')
+  @UseInterceptors(FilesInterceptor('photos', 25))
+  @ApiConsumes('multipart/form-data')
+  @ApiOperation({ summary: "E'longa rasm qo'shish (admin)" })
+  @ApiStandardErrors({ auth: true, notFound: true })
+  async addPhotos(
+    @Param('id') id: string,
+    @UploadedFiles() files: Express.Multer.File[],
+  ) {
+    return this.adminPropertyService.addPhotos(id, files ?? []);
+  }
+
+  @Delete(':id/photos')
+  @ApiOperation({ summary: "E'londan rasm o'chirish (admin)" })
+  @ApiStandardErrors({ auth: true, notFound: true, validation: true })
+  async removePhoto(@Param('id') id: string, @Body() dto: RemovePhotoDto) {
+    return this.adminPropertyService.removePhoto(id, dto.url);
   }
 
   @Delete(':id')
