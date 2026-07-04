@@ -339,7 +339,6 @@ export class AiChatService {
     const noResults = properties.length === 0;
     const body = this.composeSearchBody({
       found: properties.length,
-      displayQuery,
       ext: analyzed.extracted,
       priceRelaxed,
     });
@@ -357,20 +356,60 @@ export class AiChatService {
     };
   }
 
-  /** Qidiruv natijasi uchun javob matni + bitta foydali maslahat */
+  /**
+   * Qidiruv natijasi uchun TABIIY, insoniy ohangdagi javob matni.
+   * Foydalanuvchi yozgan matnni tirnoq ichida qaytarmaymiz (bu robotga
+   * o'xshab qolar edi) — o'rniga topilgan mezonlarni (shahar, xona, tur)
+   * oddiy gap qilib, keyin qisqa samimiy taklif bilan tugatamiz. Bir nechta
+   * variant orasidan tasodifiy tanlanadi — har doim bir xil gap
+   * takrorlanmasin.
+   */
   private composeSearchBody(opts: {
     found: number;
-    displayQuery: string;
     ext: ExtractedCriteria;
     priceRelaxed?: boolean;
   }): string {
+    const phrase = this.naturalCriteriaPhrase(opts.ext);
+
     if (opts.found > 0 && opts.priceRelaxed) {
-      return `Aytilgan narx oralig'ida "${opts.displayQuery}" bo'yicha mos e'lon topilmadi, lekin yaqin variantlarni topdim (${opts.found} ta):`;
+      return `Aytilgan narxda ${phrase} topilmadi, lekin yaqinroq variantlar bor ekan (${opts.found} ta). Ko'rib chiqasizmi?`;
     }
+
     if (opts.found > 0) {
-      return `"${opts.displayQuery}" bo'yicha ${opts.found} ta e'lon topdim.${this.buildAdvisory(opts.ext)}`;
+      const templates = [
+        `${phrase} bor ekan (${opts.found} ta). Sizga bu maqul keladimi? Istasangiz aniq manzil bilan yordam beraman.`,
+        `Ha, ${phrase} topildi — ${opts.found} ta variant bor. Ko'rib chiqing, birortasi yoqsa batafsil ma'lumot beraman.`,
+        `${phrase} bo'yicha ${opts.found} ta mos variant topdim. Qaysidir yoqsa aytavering.`,
+      ];
+      return templates[Math.floor(Math.random() * templates.length)];
     }
-    return `Kechirasiz, "${opts.displayQuery}" bo'yicha hozircha mos e'lon topilmadi. Boshqa shahar, kengroq narx oralig'i yoki boshqa shartlar bilan urinib ko'ring.`;
+
+    const notFoundTemplates = [
+      `Uzr, ${phrase} topa olmadim. Boshqa shahar yoki narxda urinib ko'raymi?`,
+      `Afsuski, hozircha ${phrase} yo'q ekan. Boshqa shartlar bilan qidiraymi?`,
+    ];
+    return notFoundTemplates[
+      Math.floor(Math.random() * notFoundTemplates.length)
+    ];
+  }
+
+  /** Ajratilgan mezonlardan (shahar, xona, tur, bitim) tabiiy o'zbekcha gap qismi quradi. */
+  private naturalCriteriaPhrase(ext: ExtractedCriteria): string {
+    const parts: string[] = [];
+    if (ext.city) parts.push(`${ext.city} shahridan`);
+    if (typeof ext.bedrooms === 'number' && ext.bedrooms > 0) {
+      parts.push(`${ext.bedrooms} xonali`);
+    }
+    parts.push(ext.propertyType || 'mulk');
+
+    const suffix =
+      ext.dealType === 'ijara'
+        ? ' (ijaraga)'
+        : ext.dealType === 'sotish'
+          ? ' (sotish uchun)'
+          : '';
+
+    return parts.join(' ') + suffix;
   }
 
   /**
@@ -416,24 +455,6 @@ export class AiChatService {
       properties: relaxedProperties,
       relaxed: relaxedProperties.length > 0,
     };
-  }
-
-  /**
-   * Yetishmayotgan eng muhim kriteriy bo'yicha BITTA maslahat.
-   * "To'liq ma'lumot bering" emas — natija baribir ko'rsatiladi, bu shunchaki
-   * aniqroq qidiruv uchun taklif.
-   */
-  private buildAdvisory(ext: ExtractedCriteria): string {
-    if (!ext.city) {
-      return ' Aniq shahar yoki manzilni aytsangiz, sizga yanada mos variantlarni topib beraman.';
-    }
-    if (!ext.minPrice && !ext.maxPrice) {
-      return " Narx oralig'ini aytsangiz, byudjetingizga mosini tanlab beraman.";
-    }
-    if (!ext.bedrooms) {
-      return ' Xonalar sonini aytsangiz, yanada aniqroq saralab beraman.';
-    }
-    return '';
   }
 
   /**
@@ -520,7 +541,6 @@ export class AiChatService {
     if (analyzed.isSearch) {
       body = this.composeSearchBody({
         found: properties.length,
-        displayQuery,
         ext: analyzed.extracted,
         priceRelaxed,
       });
