@@ -118,13 +118,19 @@ XOTIRA VA MERGE QOIDASI (juda muhim):
 - Oldingi xabarlarda aytilgan kriteriylar (shahar, xona, narx, tur) SAQLANADI
 - Yangi xabar oldingi qiymatga zid bo'lsa — YANGISI olinadi ("aslida 3 xonali" → bedrooms=3)
 - User mavzuni butunlay o'zgartirsa (masalan endi boshqa turdagi mulk so'rasa) — eski mos kelmaydigan kriteriylarni tashla
+- MUHIM ISTISNO: agar yangi xabarda OLDINGISIDAN BOSHQA SHAHAR aytilsa, bu odatda YANGI, mustaqil qidiruv demakdir — eski narx (minPrice/maxPrice) va mebel/qulaylik kabi mezonlarni SAQLAMA, faqat yangi xabarda va undan oldingi (hali ham mos) xona soni/tur kabi umumiy mezonlarni ol. Narx odatda shaharga bog'liq bo'lgani uchun eski shahar uchun aytilgan narxni yangi shaharga ko'chirish noto'g'ri.
 - correctedQuery ham jamlangan holatni aks ettirsin
 
 Misol (xotira):
 User: "menga 2 xonali kvartira kerak" → extracted: {bedrooms:2, propertyType:"kvartira"}
 Assistant: (natijalar)
 User: "qarshi shahridan" → extracted: {city:"Qarshi", bedrooms:2, propertyType:"kvartira"} ← oldingilari SAQLANDI
-User: "3 xonalisi ham bo'ladi" → extracted: {city:"Qarshi", bedrooms:3, propertyType:"kvartira"}`;
+User: "3 xonalisi ham bo'ladi" → extracted: {city:"Qarshi", bedrooms:3, propertyType:"kvartira"}
+
+Misol (shahar o'zgarsa, narx tashlanadi):
+User: "Toshkentda 100 mln gacha kvartira" → extracted: {city:"Toshkent", maxPrice:100000000, propertyType:"kvartira"}
+Assistant: (natijalar)
+User: "qarshi shahridan 3 xonali" → extracted: {city:"Qarshi", bedrooms:3, propertyType:"kvartira"} ← maxPrice:100000000 TASHLANDI (boshqa shahar)`;
 
 const HISTORY_LIMIT = 12;
 const SEARCH_RESULT_LIMIT = 5;
@@ -313,17 +319,15 @@ export class AiChatService {
     }
 
     let properties: CompactProperty[] = [];
+    let priceRelaxed = false;
     const builtFilter = this.buildFilterFromExtracted(analyzed.extracted);
     if (Object.keys(builtFilter).length > 0) {
-      const result = await this.aiPropertyService.findByRawFilter({
-        rawFilter: builtFilter,
-        page: 1,
-        limit: SEARCH_RESULT_LIMIT,
-        language: EnumLanguage.EN,
-      });
-      properties = result.properties.map((p) =>
-        this.toCompact(p as unknown as Record<string, unknown>),
+      const found = await this.findPropertiesWithFallback(
+        builtFilter,
+        EnumLanguage.EN,
       );
+      properties = found.properties;
+      priceRelaxed = found.relaxed;
     } else {
       // Structured filter bo'sh — murakkab so'rovlar uchun eski AI-filter yo'li
       properties = await this.searchProperties(
@@ -337,6 +341,7 @@ export class AiChatService {
       found: properties.length,
       displayQuery,
       ext: analyzed.extracted,
+      priceRelaxed,
     });
 
     const metadata: Record<string, unknown> = { searchQuery: displayQuery };
@@ -357,11 +362,60 @@ export class AiChatService {
     found: number;
     displayQuery: string;
     ext: ExtractedCriteria;
+    priceRelaxed?: boolean;
   }): string {
+    if (opts.found > 0 && opts.priceRelaxed) {
+      return `Aytilgan narx oralig'ida "${opts.displayQuery}" bo'yicha mos e'lon topilmadi, lekin yaqin variantlarni topdim (${opts.found} ta):`;
+    }
     if (opts.found > 0) {
       return `"${opts.displayQuery}" bo'yicha ${opts.found} ta e'lon topdim.${this.buildAdvisory(opts.ext)}`;
     }
     return `Kechirasiz, "${opts.displayQuery}" bo'yicha hozircha mos e'lon topilmadi. Boshqa shahar, kengroq narx oralig'i yoki boshqa shartlar bilan urinib ko'ring.`;
+  }
+
+  /**
+   * Filter bilan qidiradi; agar natija bo'sh chiqsa VA filterda narx
+   * cheklovi bo'lsa, narxni olib tashlab qayta qidiradi. Suhbat xotirasida
+   * eski narx cheklovi qolib ketgan bo'lishi mumkin (masalan foydalanuvchi
+   * ancha oldin "100 mln gacha" degan, keyin butunlay boshqa shahar
+   * so'ragan) — bu holda natijalarni sababsiz yo'qotib qo'yish o'rniga,
+   * inson agent kabi "bu narxda yo'q, lekin yaqinlarini ko'rsataman" deb
+   * yumshatib qidiramiz.
+   */
+  private async findPropertiesWithFallback(
+    builtFilter: Record<string, unknown>,
+    language: EnumLanguage,
+  ): Promise<{ properties: CompactProperty[]; relaxed: boolean }> {
+    const result = await this.aiPropertyService.findByRawFilter({
+      rawFilter: builtFilter,
+      page: 1,
+      limit: SEARCH_RESULT_LIMIT,
+      language,
+    });
+    const properties = result.properties.map((p) =>
+      this.toCompact(p as unknown as Record<string, unknown>),
+    );
+    if (properties.length > 0 || !builtFilter.price) {
+      return { properties, relaxed: false };
+    }
+
+    const withoutPrice: Record<string, unknown> = {};
+    for (const key of Object.keys(builtFilter)) {
+      if (key !== 'price') withoutPrice[key] = builtFilter[key];
+    }
+    const relaxedResult = await this.aiPropertyService.findByRawFilter({
+      rawFilter: withoutPrice,
+      page: 1,
+      limit: SEARCH_RESULT_LIMIT,
+      language,
+    });
+    const relaxedProperties = relaxedResult.properties.map((p) =>
+      this.toCompact(p as unknown as Record<string, unknown>),
+    );
+    return {
+      properties: relaxedProperties,
+      relaxed: relaxedProperties.length > 0,
+    };
   }
 
   /**
@@ -446,18 +500,16 @@ export class AiChatService {
     // DB query — AI call yo'q, tayyor filter bilan to'g'ridan-to'g'ri qidiruv
     const searchLang = VOICE_LANG_MAP[opts.language ?? ''] ?? EnumLanguage.EN;
     let properties: CompactProperty[] = [];
+    let priceRelaxed = false;
     if (analyzed.isSearch) {
       const builtFilter = this.buildFilterFromExtracted(analyzed.extracted);
       this.logger.log(`[voice] built filter=${JSON.stringify(builtFilter)}`);
-      const result = await this.aiPropertyService.findByRawFilter({
-        rawFilter: builtFilter,
-        page: 1,
-        limit: SEARCH_RESULT_LIMIT,
-        language: searchLang,
-      });
-      properties = result.properties.map((p) =>
-        this.toCompact(p as unknown as Record<string, unknown>),
+      const found = await this.findPropertiesWithFallback(
+        builtFilter,
+        searchLang,
       );
+      properties = found.properties;
+      priceRelaxed = found.relaxed;
       this.logger.log(`[voice] search → found=${properties.length}`);
     }
 
@@ -470,6 +522,7 @@ export class AiChatService {
         found: properties.length,
         displayQuery,
         ext: analyzed.extracted,
+        priceRelaxed,
       });
       noResults = properties.length === 0;
     }
