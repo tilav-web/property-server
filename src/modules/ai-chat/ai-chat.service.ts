@@ -412,6 +412,19 @@ export class AiChatService {
     return parts.join(' ') + suffix;
   }
 
+  /** extracted'da qidiruv uchun ishlatsa bo'ladigan kamida bitta mezon bormi. */
+  private hasActionableCriteria(ext: ExtractedCriteria): boolean {
+    return Boolean(
+      ext.city ||
+        ext.propertyType ||
+        ext.dealType ||
+        (typeof ext.bedrooms === 'number' && ext.bedrooms > 0) ||
+        ext.minPrice ||
+        ext.maxPrice ||
+        (Array.isArray(ext.amenities) && ext.amenities.length > 0),
+    );
+  }
+
   /**
    * Filter bilan qidiradi; agar natija bo'sh chiqsa VA filterda narx
    * cheklovi bo'lsa, narxni olib tashlab qayta qidiradi. Suhbat xotirasida
@@ -751,7 +764,15 @@ ${UNIFIED_RESPONSE_FORMAT}`;
           typeof data?.correctedQuery === 'string'
             ? data.correctedQuery
             : latest,
-        isSearch: Boolean(data?.isSearch),
+        // Model ba'zan "X bormi?" kabi savol shaklidagi xabarlarda
+        // extracted'ni to'g'ri to'ldiradi (masalan city+propertyType), lekin
+        // isSearch=false deb noto'g'ri belgilaydi (savol deb qabul qilib).
+        // extracted'da haqiqatan foydali mezon bo'lsa, isSearch'ni kod
+        // darajasida kafolatlab qo'yamiz — modelning bitta maydoni
+        // (isSearch) boshqa maydoni (extracted) bilan ziddiyatga
+        // qolmasligi kerak.
+        isSearch:
+          Boolean(data?.isSearch) || this.hasActionableCriteria(extracted),
         reply: typeof data?.reply === 'string' ? data.reply : '',
         extracted,
       };
