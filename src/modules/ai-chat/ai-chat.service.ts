@@ -426,6 +426,49 @@ export class AiChatService {
   }
 
   /**
+   * Model ba'zan (temperature > 0 tufayli barqaror emas) oxirgi xabarda
+   * aniq yozilgan shahar/mulk turini ham extracted'ga qo'ymay qoladi —
+   * masalan "Toshkentdan kvartira bormi" so'roviga extracted={} qaytarishi
+   * mumkin. Bu holatlarni model qaytarishiga umuman ishonmasdan, oddiy
+   * kalit so'z qidiruvi bilan to'ldiramiz (qo'shimcha AI chaqiruvisiz,
+   * darhol va bepul).
+   */
+  private fallbackExtractFromText(
+    text: string,
+    extracted: ExtractedCriteria,
+  ): ExtractedCriteria {
+    const lower = text.toLowerCase();
+    const result = { ...extracted };
+
+    if (!result.city) {
+      for (const [cityName, aliases] of Object.entries(CITY_ALIASES)) {
+        if (aliases.some((alias) => lower.includes(alias.toLowerCase()))) {
+          result.city = cityName;
+          break;
+        }
+      }
+    }
+
+    if (!result.propertyType) {
+      const typeKeywords: Array<[string[], string]> = [
+        [['kvartira', 'kvartera', 'kvertira'], 'kvartira'],
+        [['hovli', 'xovli'], 'hovli'],
+        [['ofis'], 'ofis'],
+        [['garaj'], 'garaj'],
+        [['yer'], 'yer'],
+      ];
+      for (const [keywords, type] of typeKeywords) {
+        if (keywords.some((kw) => lower.includes(kw))) {
+          result.propertyType = type;
+          break;
+        }
+      }
+    }
+
+    return result;
+  }
+
+  /**
    * Filter bilan qidiradi; agar natija bo'sh chiqsa VA filterda narx
    * cheklovi bo'lsa, narxni olib tashlab qayta qidiradi. Suhbat xotirasida
    * eski narx cheklovi qolib ketgan bo'lishi mumkin (masalan foydalanuvchi
@@ -752,12 +795,13 @@ ${UNIFIED_RESPONSE_FORMAT}`;
         priority: voiceMode,
       });
 
-      const extracted =
+      const rawExtracted =
         data?.extracted &&
         typeof data.extracted === 'object' &&
         !Array.isArray(data.extracted)
           ? (data.extracted as ExtractedCriteria)
           : {};
+      const extracted = this.fallbackExtractFromText(latest, rawExtracted);
 
       return {
         correctedQuery:
