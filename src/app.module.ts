@@ -37,6 +37,7 @@ import { HealthModule } from './modules/health/health.module';
 import { PushModule } from './modules/push/push.module';
 import { AppVersionModule } from './modules/app-version/app-version.module';
 import { TelegramAdminModule } from './modules/telegram/telegram-admin.module';
+import { BullRootModule } from './common/queue/bull-root.module';
 
 @Module({
   imports: [
@@ -46,12 +47,21 @@ import { TelegramAdminModule } from './modules/telegram/telegram-admin.module';
     ScheduleModule.forRoot(),
     EventEmitterModule.forRoot(),
     CountryConfigModule,
+    // Global default: har bir IP uchun 1 daqiqada 120 so'rov. Eski qiymat
+    // (ttl: 10, limit: 5) millisekundlarda hisoblangani uchun aslida
+    // "10ms ichida 5 ta parallel so'rov" degani edi — bitta sahifa
+    // yuklanganda brauzer osongina 5+ parallel so'rov yuboradi (property
+    // ro'yxati + notification counter + favorites va h.k.), shu sabab
+    // haqiqiy foydalanuvchilar tasodifiy 429 olar edi. Har bir route
+    // o'zining @Throttle bilan buni qattiqroq qilib qo'yishi mumkin
+    // (login, OTP, AI so'rovlar kabi haqiqatan himoya kerak joylarda).
     ThrottlerModule.forRoot([
       {
-        ttl: 10,
-        limit: 5,
+        ttl: 60_000,
+        limit: 120,
       },
     ]),
+    BullRootModule,
     MongooseModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],

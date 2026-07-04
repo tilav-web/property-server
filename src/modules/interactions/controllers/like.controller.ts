@@ -8,23 +8,27 @@ import {
 import { AuthGuard } from '@nestjs/passport';
 import type { IRequestCustom } from 'src/interfaces/custom-request.interface';
 import { LikeService } from '../services/like.service';
-import { Throttle } from '@nestjs/throttler';
+import { SkipThrottle } from '@nestjs/throttler';
 import { EnumLanguage } from 'src/enums/language.enum';
 import { ApiStandardErrors } from 'src/common/swagger/api-errors.decorator';
 
+// Like/unlike arzon, idempotent, foydalanuvchi bevosita bosadigan amal —
+// throttler bu yerda UX'ga zarar keltiradi (tez-tez bosish oddiy holat).
+// Yuklama himoyasi navbat (queue) darajasida hal qilinadi, so'rovni
+// bloklash orqali emas.
+@SkipThrottle()
 @UseGuards(AuthGuard('jwt'))
 @ApiBearerAuth('bearer')
 @ApiCookieAuth('access_token')
 @ApiTags('Likes')
-@ApiStandardErrors({ auth: true, throttle: true })
+@ApiStandardErrors({ auth: true })
 @Controller('likes')
 export class LikeController {
   constructor(private readonly likeService: LikeService) {}
 
-  @Throttle({ default: { limit: 10, ttl: 10000 } })
   @Post('/:propertyId')
   @ApiOperation({ summary: 'E’lonni like / unlike qilish' })
-  @ApiStandardErrors({ auth: true, notFound: true, throttle: true })
+  @ApiStandardErrors({ auth: true, notFound: true })
   async likeProperty(
     @Param('propertyId') propertyId: string,
     @Req() req: IRequestCustom,
@@ -34,7 +38,6 @@ export class LikeController {
     return this.likeService.likeProperty({ userId, propertyId, language });
   }
 
-  @Throttle({ default: { limit: 15, ttl: 10000 } })
   @Get('/')
   @ApiOperation({ summary: 'Mening like’larim' })
   async findMyLikes(@Req() req: IRequestCustom) {

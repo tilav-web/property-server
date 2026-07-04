@@ -1,5 +1,7 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
 import { Model, Types } from 'mongoose';
 import { EnumLanguage } from 'src/enums/language.enum';
 import { Like, LikeDocument } from '../schemas/like.schema';
@@ -12,6 +14,10 @@ import {
   PropertyWithAuthorAggregation,
   LikeWithPropertyAndAuthorAggregation,
 } from '../interfaces/interaction-aggregation.interface';
+import {
+  PROPERTY_COUNTER_QUEUE,
+  PropertyCounterJob,
+} from '../queues/property-counter.queue';
 
 @Injectable()
 export class LikeService {
@@ -19,6 +25,8 @@ export class LikeService {
     @InjectModel(Like.name) private readonly likeModel: Model<LikeDocument>,
     @InjectModel(Property.name)
     private readonly propertyModel: Model<PropertyDocument>,
+    @InjectQueue(PROPERTY_COUNTER_QUEUE)
+    private readonly counterQueue: Queue<PropertyCounterJob>,
   ) {}
 
   async likeProperty({
@@ -56,20 +64,23 @@ export class LikeService {
     const action = isUnlike ? 'unlike' : 'like';
     const likeIncrement = isUnlike ? -1 : 1;
 
-    // ✅ Parallel operatsiyalar
-    const [likeResult] = await Promise.all([
-      isUnlike
-        ? this.likeModel.findByIdAndDelete(existingLike._id)
-        : this.likeModel.create({
-            user: userObjectId,
-            property: propertyObjectId,
-          }),
-      this.propertyModel.findByIdAndUpdate(
-        propertyObjectId,
-        { $inc: { liked: likeIncrement } },
-        { new: false }, // yangi qiymat kerak emas
-      ),
-    ]);
+    // ✅ Like/unlike yozuvi (foydalanuvchi-property munosabati) — darhol,
+    // chunki bu keyingi so'rovlarda "hozir like qilinganmi" javobiga kerak.
+    // Property.liked counter esa navbatga qo'yiladi (pastda) — sahifa
+    // yuklanganda ko'p parallel like/unlike bo'lsa ham bazaga darhol
+    // yozilishi shart emas.
+    const likeResult = isUnlike
+      ? await this.likeModel.findByIdAndDelete(existingLike._id)
+      : await this.likeModel.create({
+          user: userObjectId,
+          property: propertyObjectId,
+        });
+
+    await this.counterQueue.add(
+      'inc',
+      { propertyId, field: 'liked', delta: likeIncrement },
+      { removeOnComplete: true, removeOnFail: 100 },
+    );
 
     // ✅ Aggregation bilan bir query da property + author
     const [propertyWithAuthor] =
@@ -121,6 +132,14 @@ export class LikeService {
           },
         },
       ]);
+
+    // Counter navbatda hali qo'llanmagani uchun javobda optimistik
+    // ravishda tuzatib beramiz (foydalanuvchi UI'da darhol to'g'ri sonni
+    // ko'radi, haqiqiy yozuv esa fon rejimida boradi).
+    if (propertyWithAuthor) {
+      propertyWithAuthor.liked =
+        (propertyWithAuthor.liked ?? 0) + likeIncrement;
+    }
 
     return {
       _id: likeResult?._id,

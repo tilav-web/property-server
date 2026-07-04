@@ -1,5 +1,7 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
 import { Model, Types } from 'mongoose';
 import { EnumLanguage } from 'src/enums/language.enum';
 import { Save, SaveDocument } from '../schemas/save.schema';
@@ -12,6 +14,10 @@ import {
   PropertyWithAuthorAggregation,
   SaveWithPropertyAndAuthorAggregation,
 } from '../interfaces/interaction-aggregation.interface';
+import {
+  PROPERTY_COUNTER_QUEUE,
+  PropertyCounterJob,
+} from '../queues/property-counter.queue';
 
 @Injectable()
 export class SaveService {
@@ -19,6 +25,8 @@ export class SaveService {
     @InjectModel(Save.name) private readonly saveModel: Model<SaveDocument>,
     @InjectModel(Property.name)
     private readonly propertyModel: Model<PropertyDocument>,
+    @InjectQueue(PROPERTY_COUNTER_QUEUE)
+    private readonly counterQueue: Queue<PropertyCounterJob>,
   ) {}
 
   async saveProperty({
@@ -56,20 +64,20 @@ export class SaveService {
     const action = isUnsave ? 'unsave' : 'save';
     const saveIncrement = isUnsave ? -1 : 1;
 
-    // ✅ Parallel operatsiyalar
-    const [saveResult] = await Promise.all([
-      isUnsave
-        ? this.saveModel.findByIdAndDelete(existingSave._id)
-        : this.saveModel.create({
-            user: userObjectId,
-            property: propertyObjectId,
-          }),
-      this.propertyModel.findByIdAndUpdate(
-        propertyObjectId,
-        { $inc: { saved: saveIncrement } },
-        { new: false }, // yangi qiymat kerak emas
-      ),
-    ]);
+    // ✅ Save/unsave yozuvi darhol, Property.saved counter esa navbatga
+    // qo'yiladi (like.service.ts'dagi bir xil mulohaza — qarang).
+    const saveResult = isUnsave
+      ? await this.saveModel.findByIdAndDelete(existingSave._id)
+      : await this.saveModel.create({
+          user: userObjectId,
+          property: propertyObjectId,
+        });
+
+    await this.counterQueue.add(
+      'inc',
+      { propertyId, field: 'saved', delta: saveIncrement },
+      { removeOnComplete: true, removeOnFail: 100 },
+    );
 
     // ✅ Aggregation bilan bir query da property + author + related fields
     const [propertyWithAuthor] =
@@ -121,6 +129,13 @@ export class SaveService {
           },
         },
       ]);
+
+    // Counter navbatda hali qo'llanmagani uchun javobda optimistik
+    // ravishda tuzatib beramiz (like.service.ts'dagi bir xil mulohaza).
+    if (propertyWithAuthor) {
+      propertyWithAuthor.saved =
+        (propertyWithAuthor.saved ?? 0) + saveIncrement;
+    }
 
     return {
       _id: saveResult?._id,

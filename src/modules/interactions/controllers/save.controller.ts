@@ -8,9 +8,13 @@ import {
 import { AuthGuard } from '@nestjs/passport';
 import type { IRequestCustom } from 'src/interfaces/custom-request.interface';
 import { SaveService } from '../services/save.service';
+import { SkipThrottle } from '@nestjs/throttler';
 import { EnumLanguage } from 'src/enums/language.enum';
 import { ApiStandardErrors } from 'src/common/swagger/api-errors.decorator';
 
+// Like'dagi bilan bir xil sabab — arzon, idempotent toggle, throttler
+// shart emas (qarang: like.controller.ts).
+@SkipThrottle()
 @UseGuards(AuthGuard('jwt'))
 @ApiBearerAuth('bearer')
 @ApiCookieAuth('access_token')
