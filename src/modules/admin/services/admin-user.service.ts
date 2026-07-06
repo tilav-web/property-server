@@ -15,6 +15,7 @@ import { FileService } from '../../file/file.service';
 import { EnumFilesFolder } from 'src/modules/file/enums/files-folder.enum';
 import { UserService } from '../../user/user.service';
 import { EnumRole } from 'src/enums/role.enum';
+import { normalizePhone } from 'src/utils/normalize-phone';
 
 @Injectable()
 export class AdminUserService {
@@ -27,7 +28,7 @@ export class AdminUserService {
   /** Super admin tomonidan qo'lda foydalanuvchi qo'shish — OTP shart emas. */
   async createUser(dto: CreateUserDto) {
     const emailValue = dto.emailValue?.trim().toLowerCase();
-    const phoneValue = dto.phoneValue?.trim();
+    const phoneValue = dto.phoneValue ? normalizePhone(dto.phoneValue) : undefined;
 
     if (!emailValue && !phoneValue) {
       throw new BadRequestException(
@@ -115,6 +116,7 @@ export class AdminUserService {
 
     const users = await this.userModel
       .find(filter)
+      .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
       .exec();
@@ -176,7 +178,7 @@ export class AdminUserService {
     // Update nested phone identifier
     if (dto.phoneValue !== undefined) {
       if (!user.phone) user.phone = { value: '', isVerified: false };
-      user.phone.value = dto.phoneValue;
+      user.phone.value = normalizePhone(dto.phoneValue);
     }
     if (dto.phoneIsVerified !== undefined) {
       if (!user.phone) user.phone = { value: '', isVerified: false };

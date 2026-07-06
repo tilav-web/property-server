@@ -26,16 +26,7 @@ import { Notification } from '../notification/schemas/notification.schema';
 import { DeviceToken } from '../push/schemas/device-token.schema';
 import { Inquiry } from '../inquiry/schemas/inquiry.schema';
 import { InquiryResponse } from '../inquiry/schemas/inquiry-response.schema';
-
-const PHONE_REGEX = /^\+?\d{9,15}$/;
-
-function isPhone(identifier: string): boolean {
-  return PHONE_REGEX.test(identifier.replace(/[\s-]/g, ''));
-}
-
-function normalizePhone(input: string): string {
-  return input.replace(/[^\d]/g, '');
-}
+import { isPhone, normalizePhone, PHONE_REGEX } from 'src/utils/normalize-phone';
 
 @Injectable()
 export class UserService {
@@ -688,7 +679,7 @@ export class UserService {
     if (first_name) userData.first_name = first_name;
     if (last_name) userData.last_name = last_name;
     if (lan) userData.lan = lan;
-    if (phone) userData.phone.value = phone;
+    if (phone) userData.phone.value = normalizePhone(phone);
     if (instagram !== undefined) userData.instagram = instagram || null;
     if (telegram !== undefined) userData.telegram = telegram || null;
     if (whatsapp !== undefined) userData.whatsapp = whatsapp || null;
