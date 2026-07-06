@@ -88,14 +88,18 @@ export class OpenaiService implements OnModuleInit {
   private async queueRequest<T>(fn: () => Promise<T>, priority = false): Promise<T> {
     if (priority) return fn();
 
-    const previousRequest = this.requestQueue;
+    // `run` navbatdagi oldingi so'rov TO'LIQ tugashini kutadi (natijasidan
+    // qat'iy nazar), so'ng 450ms kutib fn()ni chaqiradi — shu bilan haqiqiy
+    // ketma-ketlikni ta'minlaydi. Oldingi versiyada faqat delay navbatga
+    // qo'shilib, fn() chaqiruvlari navbatdan tashqarida parallel ketardi.
+    const run = this.requestQueue.then(() => this.delay(450)).then(fn);
 
-    this.requestQueue = previousRequest
-      .then(() => this.delay(450))
-      .catch(() => {});
+    this.requestQueue = run.then(
+      () => undefined,
+      () => undefined,
+    );
 
-    await previousRequest;
-    return fn();
+    return run;
   }
 
   private async withRetry<T>(

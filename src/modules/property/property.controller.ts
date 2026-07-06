@@ -40,6 +40,10 @@ import { ApiStandardErrors } from 'src/common/swagger/api-errors.decorator';
 import { OptionalJwtGuard } from '../push/guards/optional-jwt.guard';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 
+// Multer memory storage'da fayllar to'liq RAM'da saqlanadi — chegarasiz
+// hajm bir nechta yirik video/rasm bilan serverni OOM qilishi mumkin.
+const MAX_UPLOAD_FILE_SIZE = 100 * 1024 * 1024; // 100MB / fayl
+
 @ApiTags('Properties')
 @Controller('properties')
 export class PropertyController {
@@ -51,10 +55,13 @@ export class PropertyController {
   @Post()
   @UseGuards(AuthGuard('jwt'))
   @UseInterceptors(
-    FileFieldsInterceptor([
-      { name: 'photos', maxCount: 45 },
-      { name: 'videos', maxCount: 2 },
-    ]),
+    FileFieldsInterceptor(
+      [
+        { name: 'photos', maxCount: 45 },
+        { name: 'videos', maxCount: 2 },
+      ],
+      { limits: { fileSize: MAX_UPLOAD_FILE_SIZE } },
+    ),
   )
   @ApiOperation({ summary: 'Create property' })
   @ApiBearerAuth('bearer')
@@ -164,10 +171,13 @@ export class PropertyController {
   @Patch(':id')
   @UseGuards(AuthGuard('jwt'))
   @UseInterceptors(
-    FileFieldsInterceptor([
-      { name: 'new_photos', maxCount: 25 },
-      { name: 'new_videos', maxCount: 2 },
-    ]),
+    FileFieldsInterceptor(
+      [
+        { name: 'new_photos', maxCount: 25 },
+        { name: 'new_videos', maxCount: 2 },
+      ],
+      { limits: { fileSize: MAX_UPLOAD_FILE_SIZE } },
+    ),
   )
   @ApiOperation({ summary: 'Update property' })
   @ApiBearerAuth('bearer')

@@ -4,6 +4,7 @@ import {
   PutObjectCommand,
   DeleteObjectCommand,
 } from '@aws-sdk/client-s3';
+import { NodeHttpHandler } from '@smithy/node-http-handler';
 import { promises as fs } from 'fs';
 import { join, resolve, sep } from 'path';
 import * as crypto from 'crypto';
@@ -34,6 +35,13 @@ export class FileService {
       accessKeyId: process.env.DO_SPACES_KEY ?? '',
       secretAccessKey: process.env.DO_SPACES_SECRET ?? '',
     },
+    // DO Spaces bilan ulanish osilib qolsa cheksiz kutmasin — SDK
+    // default'da so'rov timeout'i o'chirilgan (0), bu holni chegaralaymiz.
+    requestHandler: new NodeHttpHandler({
+      connectionTimeout: 5_000,
+      requestTimeout: 30_000,
+    }),
+    maxAttempts: 2,
   });
 
   // Legacy local uploads — still served via /uploads route for pre-migration data
