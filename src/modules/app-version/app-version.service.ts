@@ -1,8 +1,15 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { AppVersion, AppVersionDocument, AppPlatform } from './app-version.schema';
 import { UpsertAppVersionDto } from './dto/upsert-app-version.dto';
+import { PushTokenService } from '../push/push-token.service';
+import { FcmService } from '../push/fcm.service';
+import {
+  BroadcastNotification,
+  BroadcastNotificationDocument,
+  BroadcastTargetGroup,
+} from '../push/schemas/broadcast-notification.schema';
 
 function parseVersion(v: string): number[] {
   return v.split('.').map(Number);
@@ -21,9 +28,15 @@ function isNewer(stored: string, current: string): boolean {
 
 @Injectable()
 export class AppVersionService {
+  private readonly logger = new Logger(AppVersionService.name);
+
   constructor(
     @InjectModel(AppVersion.name)
     private readonly model: Model<AppVersionDocument>,
+    @InjectModel(BroadcastNotification.name)
+    private readonly broadcastModel: Model<BroadcastNotificationDocument>,
+    private readonly pushTokenService: PushTokenService,
+    private readonly fcmService: FcmService,
   ) {}
 
   async getForPlatform(
@@ -59,7 +72,11 @@ export class AppVersionService {
   }
 
   async upsert(dto: UpsertAppVersionDto): Promise<AppVersionDocument> {
-    return this.model.findOneAndUpdate(
+    const previous = await this.model
+      .findOne({ platform: dto.platform }, { version: 1 })
+      .lean();
+
+    const updated = (await this.model.findOneAndUpdate(
       { platform: dto.platform },
       {
         $set: {
@@ -70,6 +87,50 @@ export class AppVersionService {
         },
       },
       { upsert: true, new: true, setDefaultsOnInsert: true },
-    ) as Promise<AppVersionDocument>;
+    )) as AppVersionDocument;
+
+    // Faqat versiya haqiqatan o'zgarganda va release_notes yozilganda
+    // xabar yuboramiz — aks holda har bir kichik saqlash (masalan faqat
+    // is_force_update belgisini o'zgartirish) userlarga bildirishnoma
+    // yuborib yubormasligi kerak.
+    const versionChanged = previous?.version !== dto.version;
+    if (versionChanged && dto.release_notes?.trim()) {
+      void this.broadcastVersionUpdate(dto.platform, dto.version, dto.release_notes);
+    }
+
+    return updated;
+  }
+
+  /**
+   * Yangi versiya release_notes bilan saqlanganda barcha foydalanuvchilarga
+   * FCM push + in-app broadcast yuboradi. Fire-and-forget — admin panelga
+   * versiya saqlash javobini bloklamaydi.
+   */
+  private async broadcastVersionUpdate(
+    platform: AppPlatform,
+    version: string,
+    releaseNotes: string,
+  ): Promise<void> {
+    try {
+      const tokens = await this.pushTokenService.findAllUserTokens();
+      const title = `Yangi versiya chiqdi: ${version}`;
+
+      const sentCount = await this.fcmService.sendToTokens(tokens, {
+        title,
+        body: releaseNotes,
+        data: { type: 'app_version_update', platform, version },
+      });
+
+      await this.broadcastModel.create({
+        title,
+        body: releaseNotes,
+        targetGroup: BroadcastTargetGroup.ALL,
+        sentCount,
+      });
+    } catch (err) {
+      this.logger.warn(
+        `Versiya yangilanishi xabari yuborilmadi (${platform} ${version}): ${(err as Error).message}`,
+      );
+    }
   }
 }
