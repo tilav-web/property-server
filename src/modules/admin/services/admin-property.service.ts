@@ -16,6 +16,41 @@ import { FileService } from 'src/modules/file/file.service';
 import { EnumFilesFolder } from 'src/modules/file/enums/files-folder.enum';
 import { PropertyService } from 'src/modules/property/property.service';
 
+/**
+ * Property discriminator schema'lariga (apartment/commercial/land/garage/
+ * hovli, sale/rent) tarqalgan ixtiyoriy maydonlar. `propertyModel` orqali
+ * o'qilgan hujjat Mongoose tomonidan o'z category'siga mos discriminator
+ * schema bilan hydratsiya qilinadi — shu sabab mos kelmagan maydonni
+ * (masalan LAND_SALE hujjatiga 'bedrooms') yozishga urinish xavfsiz: u
+ * hujjat sxemasida yo'q path bo'lgani uchun `save()` uni e'tiborsiz
+ * qoldiradi, boshqa kategoriya ma'lumotlari bilan aralashib qolmaydi.
+ */
+const CATEGORY_SPECIFIC_FIELDS = [
+  'bedrooms',
+  'bathrooms',
+  'floor_level',
+  'total_floors',
+  'area',
+  'rooms',
+  'land_area',
+  'floors',
+  'contract_duration_months',
+  'furnished',
+  'mortgage_available',
+  'has_pit',
+  'has_electricity',
+  'is_heated',
+  'is_electricity',
+  'is_water',
+  'is_gas',
+  'road_access',
+  'repair_type',
+  'heating',
+  'land_type',
+  'amenities',
+  'rental_target',
+] as const satisfies readonly (keyof UpdatePropertyDto)[];
+
 @Injectable()
 export class AdminPropertyService {
   constructor(
@@ -117,6 +152,12 @@ export class AdminPropertyService {
     if (dto.is_archived !== undefined) property.is_archived = dto.is_archived;
     if (dto.photos !== undefined) property.photos = dto.photos;
     if (dto.videos !== undefined) property.videos = dto.videos;
+
+    const mutableProperty = property as unknown as Record<string, unknown>;
+    for (const key of CATEGORY_SPECIFIC_FIELDS) {
+      const value = dto[key];
+      if (value !== undefined) mutableProperty[key] = value;
+    }
 
     const saved = await property.save();
     this.searchCache.invalidate();
