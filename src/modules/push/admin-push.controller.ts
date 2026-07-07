@@ -1,9 +1,12 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpStatus,
+  NotFoundException,
+  Param,
   Post,
   Req,
   UploadedFile,
@@ -100,5 +103,16 @@ export class AdminPushController {
       .limit(50)
       .lean();
     return { items };
+  }
+
+  /** Yuborilgan broadcast yozuvini tarixdan o'chirish (userlarga qayta push ketmaydi). */
+  @Delete(':id')
+  @HttpCode(HttpStatus.OK)
+  async remove(@Param('id') id: string) {
+    const result = await this.broadcastModel.deleteOne({ _id: id });
+    if (result.deletedCount === 0) {
+      throw new NotFoundException('Broadcast topilmadi');
+    }
+    return { success: true };
   }
 }
