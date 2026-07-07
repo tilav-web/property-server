@@ -8,6 +8,7 @@ import { MessageModule } from './modules/message/message.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { ThrottlerStorageRedisService } from '@nest-lab/throttler-storage-redis';
 import { APP_GUARD } from '@nestjs/core';
 import { InteractionsModule } from './modules/interactions/interactions.module';
 import { InquiryModule } from './modules/inquiry/inquiry.module';
@@ -55,12 +56,28 @@ import { BullRootModule } from './common/queue/bull-root.module';
     // haqiqiy foydalanuvchilar tasodifiy 429 olar edi. Har bir route
     // o'zining @Throttle bilan buni qattiqroq qilib qo'yishi mumkin
     // (login, OTP, AI so'rovlar kabi haqiqatan himoya kerak joylarda).
-    ThrottlerModule.forRoot([
-      {
-        ttl: 60_000,
-        limit: 120,
-      },
-    ]),
+    //
+    // Storage Redis'da saqlanadi (BullMQ bilan bir xil REDIS_URL) — shunda
+    // hisoblagich bitta jarayonga bog'lanib qolmaydi: deploy PM2/Docker
+    // cluster'ga (bir nechta workerga) o'tsa ham, barcha instance'lar bitta
+    // umumiy counterni ko'radi. In-memory storage'da har bir worker o'z
+    // alohida hisobini yuritgani uchun haqiqiy limit son marta ko'payib
+    // ketishi yoki instance'lar orasida notekis 429 berishi mumkin edi.
+    ThrottlerModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => ({
+        throttlers: [
+          {
+            ttl: 60_000,
+            limit: 120,
+          },
+        ],
+        storage: new ThrottlerStorageRedisService(
+          config.get<string>('REDIS_URL') ?? 'redis://127.0.0.1:6379',
+        ),
+      }),
+    }),
     BullRootModule,
     MongooseModule.forRootAsync({
       imports: [ConfigModule],

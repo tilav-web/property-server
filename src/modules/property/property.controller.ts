@@ -80,7 +80,13 @@ export class PropertyController {
     return this.service.create({ dto, files, author: req.user?._id });
   }
 
-  @Throttle({ default: { limit: 60, ttl: 60_000 } })
+  // Eng ko'p urib turadigan public endpoint: kategoriya/filtr almashtirish,
+  // pagination, sort — hammasi shu route'ga tushadi. Global default'dan
+  // (120/60s) PASTROQ qo'yish bu yerda aynan zid natija beradi — foydalanuvchi
+  // bir necha marta kategoriya bosganda tezda 429 ko'radi. Global default'dan
+  // sezilarli yuqori qo'yamiz, chunki bu faqat o'qish (GET) va OpenAI kabi
+  // xarajat talab qilmaydi.
+  @Throttle({ default: { limit: 300, ttl: 60_000 } })
   @Get()
   @ApiOperation({ summary: 'E’lonlar bo‘yicha qidiruv (public)' })
   @ApiStandardErrors({ validation: true, throttle: true })
