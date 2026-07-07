@@ -10,7 +10,7 @@ import {
   Min,
   ValidateNested,
 } from 'class-validator';
-import { Transform, Type } from 'class-transformer';
+import { Transform, Type, plainToInstance } from 'class-transformer';
 import { EnumProjectStatus, EnumProjectUnitCategory } from '../project.schema';
 
 class UnitTypeInput {
@@ -31,14 +31,32 @@ class PaymentPlanInput {
   @IsOptional() @IsString() description?: string;
 }
 
-const parseJson = ({ value }: { value: unknown }) => {
-  if (typeof value !== 'string') return value;
+/**
+ * FormData orqali JSON-string sifatida kelgan massivni parse qilib,
+ * har bir elementni `cls` instansiyasiga aylantiradi. Buni bitta
+ * `@Transform` ichida qilish shart — `@Transform(parseJson)` va
+ * `@Type(() => X)`ni alohida decorator sifatida stacklash tartibga
+ * bog'liq bo'lib chiqdi: `class-transformer` ba'zan `@Type`ning ichki
+ * transformini `@Transform`dan OLDIN yoki keyin chalkash tartibda
+ * bajarib, natijada array elementlari hech qachon `X` instansiyasiga
+ * aylanmay qoladi — shu sabab `whitelist: true` validatsiyasi ularning
+ * har bir maydonini "should not exist" deb rad etardi.
+ */
+function parseJsonArray<T extends object>(cls: new () => T) {
+  return ({ value }: { value: unknown }) => {
+    const parsed = typeof value === 'string' ? safeJsonParse(value) : value;
+    if (!Array.isArray(parsed)) return parsed;
+    return parsed.map((item) => plainToInstance(cls, item));
+  };
+}
+
+function safeJsonParse(raw: string): unknown {
   try {
-    return JSON.parse(value);
+    return JSON.parse(raw);
   } catch {
-    return value;
+    return raw;
   }
-};
+}
 
 export class CreateProjectDto {
   @IsMongoId()
@@ -77,17 +95,15 @@ export class CreateProjectDto {
   @IsOptional() @IsString() currency?: string;
 
   @IsOptional()
-  @Transform(parseJson)
+  @Transform(parseJsonArray(UnitTypeInput))
   @IsArray()
   @ValidateNested({ each: true })
-  @Type(() => UnitTypeInput)
   unit_types?: UnitTypeInput[];
 
   @IsOptional()
-  @Transform(parseJson)
+  @Transform(parseJsonArray(PaymentPlanInput))
   @IsArray()
   @ValidateNested({ each: true })
-  @Type(() => PaymentPlanInput)
   payment_plans?: PaymentPlanInput[];
 
   @IsOptional() @IsString() video_url?: string;
