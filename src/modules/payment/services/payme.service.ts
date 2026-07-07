@@ -12,6 +12,7 @@ import { PaymentStatusEnum } from 'src/enums/payment-status.enum';
 import { PaymeErrorCodeEnum } from 'src/enums/payme-error-code.enum';
 import { PaymeMethodEnum } from 'src/enums/payme-method.enum';
 import { PaymeTransactionStateEnum } from 'src/enums/payme-transaction-state.enum';
+import { formatOrderTypeLabel } from '../utils/order-type-label.util';
 import {
   Transaction,
   TransactionDocument,
@@ -344,7 +345,7 @@ export class PaymeService {
     tx: TransactionDocument,
   ): Promise<void> {
     try {
-      const orderTypeLabel = this.formatOrderType(tx.orderType);
+      const orderTypeLabel = formatOrderTypeLabel(tx.orderType);
       await this.notificationService.notifyAllAdmins({
         type: NotificationType.PAYMENT_AWAITING_APPROVAL,
         title: 'Yangi to‘lov tasdiqlash uchun keldi',
@@ -362,17 +363,6 @@ export class PaymeService {
       this.logger.warn(
         `Admin notification yuborilmadi (tx=${String(tx._id)}): ${(err as Error).message}`,
       );
-    }
-  }
-
-  private formatOrderType(orderType: string): string {
-    switch (orderType) {
-      case 'PROPERTY_PREMIUM':
-        return 'E’lon premium upgrade';
-      case 'ADVERTISE':
-        return 'Reklama';
-      default:
-        return orderType;
     }
   }
 

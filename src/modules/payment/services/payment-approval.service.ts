@@ -8,7 +8,11 @@ import { ModuleRef } from '@nestjs/core';
 import { OrderTypeEnum } from 'src/enums/order-type.enum';
 import { PaymentStatusEnum } from 'src/enums/payment-status.enum';
 import { AdminApprovalStatusEnum } from 'src/enums/admin-approval-status.enum';
+import { NotificationService } from 'src/modules/notification/notification.service';
+import { NotificationType } from 'src/modules/notification/enums/notification-type.enum';
 import { TransactionService } from './transaction.service';
+import { TransactionDocument } from '../schemas/transaction.schema';
+import { formatOrderTypeLabel } from '../utils/order-type-label.util';
 
 /**
  * Admin tasdiqlashidan keyin orderType'ga qarab real natijani ishga
@@ -50,6 +54,7 @@ export class PaymentApprovalService {
   constructor(
     private readonly transactionService: TransactionService,
     private readonly moduleRef: ModuleRef,
+    private readonly notificationService: NotificationService,
   ) {}
 
   async approve(transactionId: string, adminId: string) {
@@ -86,6 +91,8 @@ export class PaymentApprovalService {
       adminId,
     );
 
+    void this.notifyUserAboutDecision(updated, 'approved');
+
     return {
       transaction: updated,
       activationResult,
@@ -93,7 +100,55 @@ export class PaymentApprovalService {
   }
 
   async reject(transactionId: string, adminId: string, reason: string) {
-    return this.transactionService.markRejected(transactionId, adminId, reason);
+    const updated = await this.transactionService.markRejected(
+      transactionId,
+      adminId,
+      reason,
+    );
+
+    void this.notifyUserAboutDecision(updated, 'rejected', reason);
+
+    return updated;
+  }
+
+  /**
+   * To'lov qilgan userga tasdiq/rad javobini yuboradi. Fire-and-forget —
+   * notification xatosi approve/reject natijasini bloklamasin
+   * (payme.service.ts'dagi admin xabarnomasi bilan bir xil pattern).
+   */
+  private async notifyUserAboutDecision(
+    tx: TransactionDocument,
+    decision: 'approved' | 'rejected',
+    rejectReason?: string,
+  ): Promise<void> {
+    try {
+      const orderTypeLabel = formatOrderTypeLabel(tx.orderType);
+      if (decision === 'approved') {
+        await this.notificationService.create({
+          user: tx.user,
+          type: NotificationType.PAYMENT_APPROVED,
+          title: "To'lovingiz tasdiqlandi",
+          body: `${orderTypeLabel}: ${tx.amount} ${tx.currency} — to'lovingiz tasdiqlandi`,
+          link: '/profile/payments',
+          payload: { transactionId: String(tx._id), orderType: tx.orderType },
+        });
+      } else {
+        await this.notificationService.create({
+          user: tx.user,
+          type: NotificationType.PAYMENT_REJECTED,
+          title: "To'lovingiz rad etildi",
+          body: rejectReason
+            ? `${orderTypeLabel}: ${tx.amount} ${tx.currency} — rad etildi. Sabab: ${rejectReason}`
+            : `${orderTypeLabel}: ${tx.amount} ${tx.currency} — rad etildi`,
+          link: '/profile/payments',
+          payload: { transactionId: String(tx._id), orderType: tx.orderType },
+        });
+      }
+    } catch (err) {
+      this.logger.warn(
+        `Foydalanuvchiga to'lov javobi yuborilmadi (tx=${String(tx._id)}): ${(err as Error).message}`,
+      );
+    }
   }
 
   private resolveHandler(orderType: OrderTypeEnum): ApprovalHandler {
