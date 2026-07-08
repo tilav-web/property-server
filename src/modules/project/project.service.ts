@@ -190,16 +190,11 @@ export class ProjectService {
     };
   }
 
-  async findById(id: string, incrementView = false) {
+  async findById(id: string) {
     if (!Types.ObjectId.isValid(id)) {
       throw new BadRequestException('Noto‘g‘ri loyiha ID');
     }
-    const project = incrementView
-      ? await this.model
-          .findByIdAndUpdate(id, { $inc: { views: 1 } }, { new: true })
-          .populate('developer')
-          .lean()
-      : await this.model.findById(id).populate('developer').lean();
+    const project = await this.model.findById(id).populate('developer').lean();
     if (!project) throw new NotFoundException('Loyiha topilmadi');
     return project;
   }

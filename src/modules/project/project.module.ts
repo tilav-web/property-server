@@ -6,12 +6,14 @@ import { ProjectController } from './project.controller';
 import { FileModule } from '../file/file.module';
 import { DeveloperModule } from '../developer/developer.module';
 import { AdminModule } from '../admin/admin.module';
+import { ProjectViewModule } from '../project-view/project-view.module';
 
 @Module({
   imports: [
     MongooseModule.forFeature([{ name: Project.name, schema: ProjectSchema }]),
     FileModule,
     DeveloperModule,
+    ProjectViewModule,
     forwardRef(() => AdminModule),
   ],
   controllers: [ProjectController],

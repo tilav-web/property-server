@@ -7,6 +7,7 @@ import {
   Patch,
   Post,
   Query,
+  Req,
   UploadedFiles,
   UseGuards,
   UseInterceptors,
@@ -19,11 +20,14 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { ProjectService } from './project.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { EnumProjectStatus } from './project.schema';
 import { AdminGuard } from '../admin/guards/admin.guard';
+import { OptionalJwtGuard } from '../push/guards/optional-jwt.guard';
+import type { IRequestCustom } from 'src/interfaces/custom-request.interface';
 import { ApiMultipartBody } from 'src/common/swagger/file-upload.decorator';
 import { ApiStandardErrors } from 'src/common/swagger/api-errors.decorator';
 
@@ -35,7 +39,10 @@ const FILE_FIELDS = [
 @ApiTags('Projects')
 @Controller('projects')
 export class ProjectController {
-  constructor(private readonly service: ProjectService) {}
+  constructor(
+    private readonly service: ProjectService,
+    private readonly eventEmitter: EventEmitter2,
+  ) {}
 
   @Get()
   @ApiOperation({ summary: 'List projects' })
@@ -93,10 +100,19 @@ export class ProjectController {
   }
 
   @Get(':id')
+  @UseGuards(OptionalJwtGuard)
   @ApiOperation({ summary: 'Project tafsiloti' })
   @ApiStandardErrors({ notFound: true })
-  async getOne(@Param('id') id: string) {
-    return this.service.findById(id, true);
+  async getOne(@Param('id') id: string, @Req() req: IRequestCustom) {
+    const result = await this.service.findById(id);
+
+    this.eventEmitter.emit('project.viewed', {
+      projectId: id,
+      userId: req.user?._id?.toString(),
+      ip: req.ip ?? (req.socket as any)?.remoteAddress,
+    });
+
+    return result;
   }
 
   // ---- Admin endpoints ----
