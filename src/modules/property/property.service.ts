@@ -974,6 +974,8 @@ export class PropertyService {
       bedrooms: 1,
       bathrooms: 1,
       area: 1,
+      viewCount: 1,
+      inquiryCount: 1,
     };
 
     if (isMapView) {
