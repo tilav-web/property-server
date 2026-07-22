@@ -13,10 +13,13 @@ import {
   Put,
   Post,
   Delete,
+  Res,
 } from '@nestjs/common';
+import type { Response } from 'express';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AdminUserService } from '../services/admin-user.service';
 import { FindUsersDto } from '../dto/find-users.dto';
+import { ExportUsersDto } from '../dto/export-users.dto';
 import { AdminGuard } from '../guards/admin.guard';
 import { UpdateUserDto } from '../dto/update-user.dto';
 import { CreateUserDto } from '../dto/create-user.dto';
@@ -41,6 +44,23 @@ export class AdminUserController {
   @ApiOperation({ summary: 'Userlar ro‘yxati (admin)' })
   async findUsers(@Query() dto: FindUsersDto) {
     return this.adminUserService.findUsers(dto);
+  }
+
+  @Get('export')
+  @ApiOperation({
+    summary: "Foydalanuvchilar ro'yxatini Excel (.xlsx) formatda yuklab olish",
+    description:
+      "Joriy filtrlarga (rol, qidiruv, premium) mos barcha foydalanuvchilarning to'liq ma'lumotlarini eksport qiladi.",
+  })
+  async exportUsers(@Query() dto: ExportUsersDto, @Res() res: Response) {
+    const buffer = await this.adminUserService.exportUsers(dto);
+    const filename = `foydalanuvchilar-${new Date().toISOString().slice(0, 10)}.xlsx`;
+    res.set({
+      'Content-Type':
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'Content-Disposition': `attachment; filename="${filename}"`,
+    });
+    res.send(buffer);
   }
 
   @Post()

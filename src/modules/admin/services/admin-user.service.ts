@@ -7,8 +7,10 @@ import {
 import { InjectModel } from '@nestjs/mongoose';
 import { FilterQuery, Model } from 'mongoose';
 import * as bcrypt from 'bcrypt';
+import { Workbook } from 'exceljs';
 import { User, UserDocument } from '../../user/user.schema';
 import { FindUsersDto } from '../dto/find-users.dto';
+import { ExportUsersDto } from '../dto/export-users.dto';
 import { UpdateUserDto } from '../dto/update-user.dto';
 import { CreateUserDto } from '../dto/create-user.dto';
 import { FileService } from '../../file/file.service';
@@ -16,6 +18,11 @@ import { EnumFilesFolder } from 'src/modules/file/enums/files-folder.enum';
 import { UserService } from '../../user/user.service';
 import { EnumRole } from 'src/enums/role.enum';
 import { normalizePhone } from 'src/utils/normalize-phone';
+
+const ROLE_LABELS: Record<EnumRole, string> = {
+  [EnumRole.PHYSICAL]: 'Jismoniy shaxs',
+  [EnumRole.LEGAL]: 'Yuridik shaxs',
+};
 
 @Injectable()
 export class AdminUserService {
@@ -28,7 +35,9 @@ export class AdminUserService {
   /** Super admin tomonidan qo'lda foydalanuvchi qo'shish — OTP shart emas. */
   async createUser(dto: CreateUserDto) {
     const emailValue = dto.emailValue?.trim().toLowerCase();
-    const phoneValue = dto.phoneValue ? normalizePhone(dto.phoneValue) : undefined;
+    const phoneValue = dto.phoneValue
+      ? normalizePhone(dto.phoneValue)
+      : undefined;
 
     if (!emailValue && !phoneValue) {
       throw new BadRequestException(
@@ -75,10 +84,10 @@ export class AdminUserService {
     });
   }
 
-  async findUsers(dto: FindUsersDto) {
-    const { page = 1, limit = 10, role, search, isPremium } = dto;
-    const skip = (page - 1) * limit;
-
+  private buildUsersFilter(
+    dto: Pick<FindUsersDto, 'role' | 'search' | 'isPremium'>,
+  ): FilterQuery<UserDocument> {
+    const { role, search, isPremium } = dto;
     const filter: FilterQuery<UserDocument> = {};
 
     if (role) {
@@ -114,6 +123,14 @@ export class AdminUserService {
       }
     }
 
+    return filter;
+  }
+
+  async findUsers(dto: FindUsersDto) {
+    const { page = 1, limit = 10 } = dto;
+    const skip = (page - 1) * limit;
+    const filter = this.buildUsersFilter(dto);
+
     const users = await this.userModel
       .find(filter)
       .sort({ createdAt: -1 })
@@ -131,6 +148,68 @@ export class AdminUserService {
       limit,
       hasMore,
     };
+  }
+
+  /** Filtrlarga mos foydalanuvchilar ro'yxatini Excel (.xlsx) buferga eksport qiladi. */
+  async exportUsers(dto: ExportUsersDto): Promise<Buffer> {
+    const filter = this.buildUsersFilter(dto);
+    const users = await this.userModel
+      .find(filter)
+      .sort({ createdAt: -1 })
+      .exec();
+
+    const workbook = new Workbook();
+    const sheet = workbook.addWorksheet('Foydalanuvchilar');
+
+    sheet.columns = [
+      { header: '№', key: 'index', width: 6 },
+      { header: 'Ism', key: 'first_name', width: 18 },
+      { header: 'Familya', key: 'last_name', width: 18 },
+      { header: 'Telefon', key: 'phone', width: 18 },
+      { header: 'Telefon tasdiqlangan', key: 'phoneVerified', width: 18 },
+      { header: 'Email', key: 'email', width: 26 },
+      { header: 'Email tasdiqlangan', key: 'emailVerified', width: 16 },
+      { header: 'Rol', key: 'role', width: 16 },
+      { header: 'Premium holati', key: 'premium', width: 20 },
+      { header: 'Til', key: 'lan', width: 8 },
+      { header: 'Instagram', key: 'instagram', width: 18 },
+      { header: 'Telegram', key: 'telegram', width: 18 },
+      { header: 'WhatsApp', key: 'whatsapp', width: 18 },
+      { header: "Ro'yxatdan o'tgan sana", key: 'createdAt', width: 20 },
+      { header: 'ID', key: 'id', width: 26 },
+    ];
+    sheet.getRow(1).font = { bold: true };
+    sheet.views = [{ state: 'frozen', ySplit: 1 }];
+
+    const now = new Date();
+    users.forEach((user, i) => {
+      const isPremiumActive = Boolean(
+        user.premiumUntil && user.premiumUntil > now,
+      );
+      const createdAt = (user as UserDocument & { createdAt?: Date }).createdAt;
+      sheet.addRow({
+        index: i + 1,
+        first_name: user.first_name ?? '',
+        last_name: user.last_name ?? '',
+        phone: user.phone?.value ?? '',
+        phoneVerified: user.phone?.isVerified ? 'Ha' : "Yo'q",
+        email: user.email?.value ?? '',
+        emailVerified: user.email?.isVerified ? 'Ha' : "Yo'q",
+        role: ROLE_LABELS[user.role] ?? user.role,
+        premium: isPremiumActive
+          ? `Faol (${user.premiumUntil!.toLocaleDateString('uz-UZ')} gacha)`
+          : "Yo'q",
+        lan: user.lan ?? '',
+        instagram: user.instagram ?? '',
+        telegram: user.telegram ?? '',
+        whatsapp: user.whatsapp ?? '',
+        createdAt: createdAt ? createdAt.toLocaleString('uz-UZ') : '',
+        id: String(user._id),
+      });
+    });
+
+    const buffer = await workbook.xlsx.writeBuffer();
+    return Buffer.from(buffer);
   }
 
   async update(
